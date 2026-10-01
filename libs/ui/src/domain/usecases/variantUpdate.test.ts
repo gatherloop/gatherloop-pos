@@ -4,7 +4,7 @@ import {
   VariantUpdateAction,
   VariantUpdateParams,
 } from './variantUpdate';
-import { MockVariantRepository, MockProductRepository } from '../../data/mock';
+import { MockVariantRepository, MockProductRepository, mockTags } from '../../data/mock';
 import { UsecaseTester, flushPromises } from '../../utils/usecase';
 
 describe('VariantUpdateUsecase', () => {
@@ -27,7 +27,7 @@ describe('VariantUpdateUsecase', () => {
 
       tester.dispatch({
         type: 'SUBMIT',
-        values: { productId: 1, name: 'Updated Variant', price: 60000, description: '', materials: [], values: [], pricingTiers: [] },
+        values: { productId: 1, name: 'Updated Variant', price: 60000, description: '', materials: [], values: [], pricingTiers: [], tagIds: [] },
       });
       expect(tester.state.type).toBe('submitting');
 
@@ -80,7 +80,7 @@ describe('VariantUpdateUsecase', () => {
 
       tester.dispatch({
         type: 'SUBMIT',
-        values: { productId: 1, name: 'Updated Variant', price: 60000, description: '', materials: [], values: [], pricingTiers: [] },
+        values: { productId: 1, name: 'Updated Variant', price: 60000, description: '', materials: [], values: [], pricingTiers: [], tagIds: [] },
       });
       expect(tester.state.type).toBe('submitting');
 
@@ -140,6 +140,7 @@ describe('VariantUpdateUsecase', () => {
         materials: [],
         values: [],
         pricingTiers: [],
+        tagIds: [],
       },
     });
 
@@ -196,11 +197,69 @@ describe('VariantUpdateUsecase', () => {
         materials: [],
         values: [],
         pricingTiers: [],
+        tagIds: [],
       },
     });
 
     await flushPromises();
     expect(tester.state.type).toBe('submitSuccess');
     expect(variantRepository.variants.find((v) => v.id === existing.id)?.imageUrl).toBe(expectedImageUrl);
+  });
+
+  describe('tag ids', () => {
+    const taggedAt = '2024-03-20T00:00:00.000Z';
+
+    it('pre-fills tagIds from the preloaded variant tags', () => {
+      const variantRepository = new MockVariantRepository();
+      const productRepository = new MockProductRepository();
+      const usecase = new VariantUpdateUsecase(variantRepository, productRepository, {
+        variantId: 1,
+        variant: { ...variantRepository.variants[0], tags: mockTags.map((tag) => ({ tag, taggedAt })) },
+        productId: 1,
+        product: productRepository.products[0],
+      });
+      const tester = new UsecaseTester<VariantUpdateUsecase, VariantUpdateState, VariantUpdateAction, VariantUpdateParams>(usecase);
+
+      expect(tester.state.values.tagIds).toEqual([1, 2]);
+    });
+
+    it('pre-fills tagIds from the fetched variant', async () => {
+      const variantRepository = new MockVariantRepository();
+      variantRepository.variants[0] = {
+        ...variantRepository.variants[0],
+        tags: [{ tag: mockTags[1], taggedAt }],
+      };
+      const productRepository = new MockProductRepository();
+      const usecase = new VariantUpdateUsecase(variantRepository, productRepository, {
+        variantId: 1,
+        variant: null,
+        productId: 1,
+        product: null,
+      });
+      const tester = new UsecaseTester<VariantUpdateUsecase, VariantUpdateState, VariantUpdateAction, VariantUpdateParams>(usecase);
+
+      await flushPromises();
+
+      expect(tester.state.type).toBe('loaded');
+      expect(tester.state.values.tagIds).toEqual([2]);
+    });
+
+    it('persists the submitted tagIds, including an empty list', async () => {
+      const variantRepository = new MockVariantRepository();
+      const productRepository = new MockProductRepository();
+      const usecase = new VariantUpdateUsecase(variantRepository, productRepository, {
+        variantId: 1,
+        variant: { ...variantRepository.variants[0], tags: [{ tag: mockTags[0], taggedAt }] },
+        productId: 1,
+        product: productRepository.products[0],
+      });
+      const tester = new UsecaseTester<VariantUpdateUsecase, VariantUpdateState, VariantUpdateAction, VariantUpdateParams>(usecase);
+
+      tester.dispatch({ type: 'SUBMIT', values: { ...tester.state.values, tagIds: [] } });
+
+      await flushPromises();
+      expect(tester.state.type).toBe('submitSuccess');
+      expect(variantRepository.lastSubmittedValues?.tagIds).toEqual([]);
+    });
   });
 });

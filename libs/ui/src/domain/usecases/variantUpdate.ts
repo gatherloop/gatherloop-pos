@@ -78,6 +78,7 @@ export class VariantUpdateUsecase extends Usecase<
             optionValueId: value.optionValueId,
           })) ?? [],
         pricingTiers: this.params.variant?.pricingTiers ?? [],
+        tagIds: this.params.variant?.tags?.map(({ tag }) => tag.id) ?? [],
       },
     };
   }
@@ -185,6 +186,7 @@ export class VariantUpdateUsecase extends Usecase<
                   optionValueId: value.optionValueId,
                 })),
                 pricingTiers: variant.pricingTiers,
+                tagIds: variant.tags?.map(({ tag }) => tag.id) ?? [],
               },
             })
           )

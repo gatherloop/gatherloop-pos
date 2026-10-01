@@ -29,6 +29,11 @@ export type VariantCreateAction =
   | { type: 'SUBMIT_ERROR'; errorMessage: string }
   | { type: 'SUBMIT_CANCEL' };
 
+const getProductScopeTagIds = (product: Product | null) =>
+  (product?.tags ?? [])
+    .filter(({ scope }) => scope === 'product')
+    .map(({ tag }) => tag.id);
+
 export type VariantCreateParams = {
   productId: number;
   product: Product | null;
@@ -65,6 +70,7 @@ export class VariantCreateUsecase extends Usecase<
       imageUrl: '',
       values: [],
       pricingTiers: [],
+      tagIds: getProductScopeTagIds(this.params.product),
     };
     return this.params.product !== null
       ? {
@@ -109,6 +115,7 @@ export class VariantCreateUsecase extends Usecase<
           ...state,
           type: 'loaded',
           product,
+          values: { ...state.values, tagIds: getProductScopeTagIds(product) },
         })
       )
       .with(

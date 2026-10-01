@@ -2,6 +2,7 @@ import {
   ApiAuthRepository,
   ApiMaterialRepository,
   ApiProductRepository,
+  ApiTagRepository,
   ApiVariantRepository,
   UrlMaterialListQueryRepository,
 } from '../../data';
@@ -9,6 +10,7 @@ import {
   AuthLogoutUsecase,
   MaterialListParams,
   MaterialListUsecase,
+  TagListUsecase,
   VariantUpdateParams,
   VariantUpdateUsecase,
 } from '../../domain';
@@ -29,8 +31,10 @@ export function VariantUpdate({
   const productRepository = new ApiProductRepository(client);
   const materialRepository = new ApiMaterialRepository(client);
   const materialListQueryRepository = new UrlMaterialListQueryRepository();
+  const tagRepository = new ApiTagRepository(client);
   const authRepository = new ApiAuthRepository();
 
+  const tagListUsecase = new TagListUsecase(tagRepository, { tags: [] });
   const authLogoutUsecase = new AuthLogoutUsecase(authRepository);
   const materialListUsecase = new MaterialListUsecase(
     materialRepository,
@@ -47,6 +51,7 @@ export function VariantUpdate({
     <VariantUpdateHandler
       variantUpdateUsecase={variantUpdateUsecase}
       materialListUsecase={materialListUsecase}
+      tagListUsecase={tagListUsecase}
       authLogoutUsecase={authLogoutUsecase}
     />
   );

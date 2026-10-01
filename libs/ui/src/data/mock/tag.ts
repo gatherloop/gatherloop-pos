@@ -1,7 +1,7 @@
 import { Tag, TagForm } from '../../domain/entities/Tag';
 import { TagRepository } from '../../domain/repositories/tag';
 
-const initialTags: Tag[] = [
+export const mockTags: Tag[] = [
   {
     id: 1,
     name: 'New',
@@ -21,7 +21,7 @@ const initialTags: Tag[] = [
 ];
 
 export class MockTagRepository implements TagRepository {
-  tags: Tag[] = [...initialTags];
+  tags: Tag[] = [...mockTags];
 
   private nextId = 3;
   private shouldFail = false;
@@ -74,7 +74,7 @@ export class MockTagRepository implements TagRepository {
   }
 
   reset() {
-    this.tags = [...initialTags];
+    this.tags = [...mockTags];
     this.nextId = 3;
     this.shouldFail = false;
   }

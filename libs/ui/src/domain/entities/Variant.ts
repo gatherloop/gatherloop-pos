@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { Material } from './Material';
 import { Product } from './Product';
+import { VariantTag } from './Tag';
 
 export type PricingTier = {
   upToMinutes: number;
@@ -28,6 +29,7 @@ export type Variant = {
   availableQuantity?: number;
   isSellable: boolean;
   sellableQuantity?: number;
+  tags?: VariantTag[];
 };
 
 export type VariantValue = {
@@ -58,6 +60,7 @@ export type VariantForm = {
     optionValueId: number;
   }[];
   pricingTiers: PricingTier[];
+  tagIds: number[];
 };
 
 export const variantFormSchema = z.object({
@@ -73,4 +76,5 @@ export const variantFormSchema = z.object({
   pricingTiers: z.array(
     z.lazy(() => z.object({ upToMinutes: z.number(), price: z.number() }))
   ),
+  tagIds: z.array(z.number()),
 });

@@ -22,6 +22,18 @@ export type Tag = {
   createdAt: string;
 };
 
+export type VariantTag = {
+  tag: Tag;
+  taggedAt: string;
+};
+
+export type ProductTag = {
+  tag: Tag;
+  scope: 'product' | 'variant';
+  variantIds: number[];
+  taggedAt: string;
+};
+
 export type TagForm = {
   name: string;
   color: TagColor;

@@ -27,9 +27,15 @@ import {
   XStack,
   YStack,
 } from 'tamagui';
-import { Plus, Trash } from '@tamagui/lucide-icons';
+import { Check, Plus, Trash } from '@tamagui/lucide-icons';
 import { MaterialListItem } from '../materials';
-import { Material, Product, VariantForm, variantFormSchema } from '../../../../domain';
+import {
+  Material,
+  Product,
+  Tag,
+  VariantForm,
+  variantFormSchema,
+} from '../../../../domain';
 import { UseFieldArrayReturn } from 'react-hook-form';
 import { ReactNode } from 'react';
 
@@ -40,6 +46,7 @@ export type VariantFormViewProps = {
   defaultValues: VariantForm;
   onSubmit: (values: VariantForm) => void;
   product: Product | null;
+  tags: Tag[];
   isSubmitDisabled: boolean;
   isSubmitting: boolean;
   MaterialList: (
@@ -126,6 +133,43 @@ export const VariantFormView = (props: VariantFormViewProps) => {
                     </SizableText>
                   </Field>
                 </XStack>
+                {props.tags.length > 0 && (
+                  <YStack gap="$2" marginTop="$3">
+                    <Paragraph>Tags</Paragraph>
+                    <ErrorMessage name="tagIds" />
+                    <FieldWatch control={form.control} name={['tagIds']}>
+                      {([tagIds]) => (
+                        <XStack gap="$2" flexWrap="wrap">
+                          {props.tags.map((tag) => {
+                            const isSelected = tagIds.includes(tag.id);
+                            return (
+                              <Button
+                                key={tag.id}
+                                size="$3"
+                                theme={tag.color}
+                                variant={isSelected ? undefined : 'outlined'}
+                                accessibilityRole="checkbox"
+                                accessibilityLabel={tag.name}
+                                accessibilityState={{ checked: isSelected }}
+                                icon={isSelected ? Check : undefined}
+                                onPress={() =>
+                                  form.setValue(
+                                    'tagIds',
+                                    isSelected
+                                      ? tagIds.filter((id) => id !== tag.id)
+                                      : [...tagIds, tag.id]
+                                  )
+                                }
+                              >
+                                {tag.name}
+                              </Button>
+                            );
+                          })}
+                        </XStack>
+                      )}
+                    </FieldWatch>
+                  </YStack>
+                )}
               </Card.Header>
             </Card>
 
