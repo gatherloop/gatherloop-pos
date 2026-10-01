@@ -7,3 +7,4 @@ export * from './TagList';
 export * from './TagListItem';
 export * from './tagColors';
 export * from './TagAssignmentList';
+export * from './ProductTagBadges';

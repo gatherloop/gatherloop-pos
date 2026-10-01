@@ -10,6 +10,7 @@ import {
 } from 'tamagui';
 import { match, P } from 'ts-pattern';
 import { Product } from '../../../../domain/entities/Product';
+import { VariantTag } from '../../../../domain/entities/Tag';
 import { formatRupiah } from '../../../../utils/currency';
 import { ErrorView } from '../../components/base/ErrorView';
 import { LoadingView } from '../../components/base/LoadingView';
@@ -21,6 +22,7 @@ import {
 import { AmountStepper } from '../../components/menu/AmountStepper';
 import { MenuItemThumbnail } from '../../components/menu/MenuItemThumbnail';
 import { OptionValueChipGroup } from '../../components/menu/OptionValueChipGroup';
+import { TagBadge } from '../../components/tags/TagBadge';
 
 export type MenuItemDetailScreenVariant =
   | { type: 'loading' }
@@ -31,6 +33,7 @@ export type MenuItemDetailScreenVariant =
       price: number | null;
       variantErrorMessage: string | null;
       isVariantSellable: boolean | null;
+      variantTags?: VariantTag[];
       remainingQuantity?: number;
     };
 
@@ -104,6 +107,7 @@ export const MenuItemDetailScreen = ({
               price,
               variantErrorMessage,
               isVariantSellable,
+              variantTags,
               remainingQuantity,
             }) => (
               <YStack flex={1}>
@@ -120,6 +124,23 @@ export const MenuItemDetailScreen = ({
                       <Text fontSize="$7" fontWeight="bold">
                         {product.name}
                       </Text>
+                      {variantTags && variantTags.length > 0 ? (
+                        <XStack gap="$1" flexWrap="wrap">
+                          {[...variantTags]
+                            .sort(
+                              (a, b) =>
+                                a.tag.sortOrder - b.tag.sortOrder ||
+                                a.tag.id - b.tag.id
+                            )
+                            .map(({ tag }) => (
+                              <TagBadge
+                                key={tag.id}
+                                label={tag.name}
+                                color={tag.color}
+                              />
+                            ))}
+                        </XStack>
+                      ) : null}
                       {product.description ? (
                         <Paragraph color="$color10">
                           {product.description}

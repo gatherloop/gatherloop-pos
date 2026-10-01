@@ -18,3 +18,4 @@ export * from './matchMenuSearch';
 export * from './buildAvailabilityUpdateForm';
 export * from './toSerializableProps';
 export * from './buildTagHighlights';
+export * from './buildProductTagBadges';

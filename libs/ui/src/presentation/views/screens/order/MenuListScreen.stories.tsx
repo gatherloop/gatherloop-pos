@@ -75,6 +75,7 @@ const meta: Meta<typeof MenuListScreen> = {
     },
     startingPriceByProductId: { 1: 18000, 2: 25000 },
     matchedLabelsByProductId: {},
+    variantNameById: {},
     itemDetail: null,
     cancelConfirmation: {
       isOpen: false,
