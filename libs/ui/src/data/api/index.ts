@@ -48,3 +48,5 @@ export * from './payment.transformer';
 export * from './customer';
 export * from './kdsDevice';
 export * from './kdsDevice.transformer';
+export * from './tag';
+export * from './tag.transformer';

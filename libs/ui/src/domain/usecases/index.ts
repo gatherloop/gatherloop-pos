@@ -95,3 +95,7 @@ export * from './kdsDeviceRegister';
 export * from './kdsDeviceUnregister';
 export * from './kdsTestNotification';
 export * from './IUsecase';
+export * from './tagList';
+export * from './tagDelete';
+export * from './tagUpdate';
+export * from './tagCreate';
