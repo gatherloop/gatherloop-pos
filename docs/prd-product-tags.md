@@ -227,7 +227,8 @@ ResolveProductTags(variants []Variant) []ProductTag
   for each tag T appearing on any live variant:
     tagged  := live variants carrying T
     scope   := "product" if len(tagged) == len(live) else "variant"
-    emit { Tag: T, Scope: scope, VariantIds: ids(tagged) }
+    emit { Tag: T, Scope: scope, VariantIds: ids(tagged),
+           TaggedAt: max(variant_tags.created_at over tagged) }
   sort by T.SortOrder, then T.Name
 ```
 
@@ -291,8 +292,11 @@ alone** (D10), so older clients and other edit paths never wipe tags.
 
 | Schema | New field |
 | --- | --- |
-| `Variant` | `tags: Tag[]`, `imageUrl?: string` |
-| `Product` | `tags: ProductTag[]` where `ProductTag = { tag: Tag, scope: 'product' \| 'variant', variantIds: int64[] }` |
+| `Variant` | `tags: VariantTag[]` where `VariantTag = { tag: Tag, taggedAt: date-time }`, `imageUrl?: string` |
+| `Product` | `tags: ProductTag[]` where `ProductTag = { tag: Tag, scope: 'product' \| 'variant', variantIds: int64[], taggedAt: date-time }` |
+
+`taggedAt` is `variant_tags.created_at` — for a `ProductTag`, the most recent one among its tagged
+variants. It orders highlight entries newest first (D17).
 
 Populated on the authenticated and the public endpoints alike, computed by
 `ResolveProductTags` (D3) at the same point `ProductUsecase.resolveAvailability`
@@ -325,12 +329,29 @@ entry, ordered by `sortOrder`:
   - product-scope → one **product card**: product image, product name, starting price;
   - variant-scope → one card **per tagged variant**: variant image (fallback: product image),
     "Pancong" + "Ice Cream", that variant's price.
+- **Entries are ordered most recently tagged first** (`taggedAt` descending, then menu order),
+  with **no per-section cap** — the carousel scrolls (D17, D18).
 - **Only sellable entries** appear (D8); an empty section is not rendered.
 - **Tapping** a product card opens the detail sheet as today; tapping a variant card opens it
   with that variant's option values pre-selected — reusing `preselectedOptionValueIds` on
   `menuItemDetail`'s `SELECT_PRODUCT` action (D6).
-- Sections render **only when the search box is empty and no category chip is selected** (D7).
-  Items still appear in their normal category below — sections duplicate, never move.
+- Sections render **only when the search box is empty and no category or tag chip is
+  selected** (D7). Items still appear in their normal category below — sections duplicate, never
+  move.
+
+### FR-7 — Highlighted tags as chips on the order app menu
+
+`CategoryChipList` gains one chip per highlighted tag that has entries, placed after **Semua** and
+before the category chips, in tag `sortOrder`, rendered in the tag's colour so they read as
+different from categories (D16).
+
+- Tapping a tag chip **filters** the menu to that tag's entries, exactly the way a category chip
+  filters to its category today (`selectedCategoryId` in `MenuListUsecase`); the entries render
+  as a vertical list of full-width cards, in the same order as the section (D17).
+- A tag chip and a category chip are **mutually exclusive**: selecting one clears the other.
+  **Semua** clears both and brings the highlight sections back.
+- A tag chip only exists while its section would have at least one entry, so it never leads to an
+  empty list.
 
 ---
 
@@ -406,6 +427,39 @@ differs.
 order app already holds both lists in `MenuListUsecase`'s context — highlight sections are a pure
 function of state the handler already has.
 
+**D16 — Highlighted tags are also chips, and chips filter.** One chip per non-empty highlighted
+tag, between **Semua** and the categories, in the tag's colour. A tag chip filters like a category
+chip already does (`selectedCategoryId` filters `visibleGroups` in `MenuListHandler`; nothing on
+the menu scrolls to an anchor today) — `MenuListUsecase` gains `selectedTagId`, mutually exclusive
+with `selectedCategoryId`. *Alternative rejected:* scroll-to-section — it needs per-section layout
+refs in a `ScrollView` the screen does not track today, and behaves differently from the category
+chips right next to it.
+
+**D17 — Highlight entries are ordered most recently tagged first.** `variant_tags.created_at` is
+exposed as `taggedAt` on `VariantTag` and `ProductTag` (latest across the product's tagged
+variants); `buildTagHighlights` sorts by it descending, then by menu order. This is only true if
+`created_at` means *when this variant got this tag*, so **both write paths diff instead of
+delete-and-reinsert**: `PUT /tags/{tagId}/variants` and `VariantRequest.tagIds` insert only the
+new pairs and delete only the removed ones, leaving untouched rows' `created_at` alone. Re-saving
+the assignment screen must never make every item "newest". Untagging and re-tagging a variant does
+restamp it — that is a deliberate re-promotion.
+
+**D18 — No per-section cap.** The horizontal carousel (D7) already bounds the vertical space a
+section takes, however many entries it has; the tag chip (D16) gives the full list. A cap would
+hide tagged items with no way to reach them from the section.
+
+---
+
+## Settled in review
+
+Answers to the PRD's original open questions, recorded here rather than silently edited in:
+
+| # | Question | Answer | Recorded as |
+| --- | --- | --- | --- |
+| 1 | Should highlighted tags also appear as chips in `CategoryChipList`? | **Yes.** Implemented as a filter, matching how category chips behave. | FR-7, D16, Phase 13 |
+| 2 | Menu order, or most recently tagged first? | **Most recently tagged first.** | FR-4 `taggedAt`, FR-6, D17, Phases 3, 4, 9 |
+| 3 | Cap per section, or is the carousel enough? | **Carousel is enough** — no cap. | FR-6, D18 |
+
 ---
 
 ## Phased plan
@@ -427,7 +481,8 @@ acceptance check.
 | 10 | POS product cards show tag badges | POS | 9 |
 | 11 | Order app menu cards show tag badges | order | 9 |
 | 12 | Order app highlight sections | order | 2, 9 |
-| 13 | Docs site page + e2e coverage | docs, e2e | 7, 10, 11, 12 |
+| 13 | Order app highlighted-tag chips | order | 12 |
+| 14 | Docs site page + e2e coverage | docs, e2e | 7, 10, 11, 13 |
 
 ### What can run in parallel
 
@@ -447,10 +502,11 @@ flowchart LR
   P9 --> P11["11 · Order badges"]
   P9 --> P12["12 · Order highlight sections"]
   P2["2 · Variant image"] --> P12
-  P7 --> P13["13 · Docs + e2e"]
-  P10 --> P13
-  P11 --> P13
-  P12 --> P13
+  P12 --> P13["13 · Order tag chips"]
+  P7 --> P14["14 · Docs + e2e"]
+  P10 --> P14
+  P11 --> P14
+  P13 --> P14
 ```
 
 | Wave | Phases that can be open at the same time |
@@ -460,11 +516,12 @@ flowchart LR
 | 3 | **4**, **6**, **8** |
 | 4 | **7**, **9** |
 | 5 | **10**, **11**, **12** |
-| 6 | **13** |
+| 6 | **13** (10 and 11 may still be open) |
+| 7 | **14** |
 
 Phase 2 is fully independent and can land any time before 12. Admins can create tags after 6 and
 tag products after 7 (or 8) — **before any customer sees anything**. Nothing customer-visible
-changes until 11/12, so the shop can pre-load "New" and "Best Seller" and reveal them in one
+changes until 11–13, so the shop can pre-load "New" and "Best Seller" and reveal them in one
 deploy.
 
 > Every phase that touches `libs/api-contract/src/api.yaml` regenerates both clients
@@ -501,22 +558,25 @@ an optional **Image URL** field in `VariantFormView`. No reader uses it yet.
 
 ### Phase 3 — Variant ↔ tag assignment API
 
-Migration creating `variant_tags` as in the data model. `Tags []Tag` on the Go `Variant`, preloaded
-by every variant read in `variant_repo.go`. `TagUsecase.SetTagVariants(ctx, tagId, variantIds)`
-replacing the set in one DB transaction, rejecting unknown or deleted variant ids;
-`PUT /tags/{tagId}/variants`. `VariantRequest.tagIds` optional — `VariantUsecase.CreateVariant` /
-`UpdateVariantById` replace the variant's tags only when it is present (D10). `Tag.variantCount`
-on the tag list response for the delete confirmation.
+Migration creating `variant_tags` as in the data model. `Tags []VariantTag` (tag + `TaggedAt`) on
+the Go `Variant`, preloaded by every variant read in `variant_repo.go`.
+`TagUsecase.SetTagVariants(ctx, tagId, variantIds)` replacing the set in one DB transaction by
+**diffing** — insert added pairs, delete removed pairs, leave the rest (D17) — rejecting unknown or
+deleted variant ids; `PUT /tags/{tagId}/variants`. `VariantRequest.tagIds` optional —
+`VariantUsecase.CreateVariant` / `UpdateVariantById` apply the same diff only when it is present
+(D10). `Tag.variantCount` on the tag list response for the delete confirmation.
 
 **Acceptance:** `tag_usecase_test.go` covers replace, empty set, unknown variant id (rejected);
 `variant_usecase_test.go` covers update with `tagIds` omitted (tags untouched), empty (cleared),
-and a list (replaced); deleting a tag removes its `variant_tags` rows; `npx nx run api:test` green.
+and a list (replaced); a repo test shows re-saving an unchanged set keeps every row's
+`created_at`; deleting a tag removes its `variant_tags` rows; `npx nx run api:test` green.
 
 ### Phase 4 — Product tag resolution on reads
 
 `ProductTag` + `ResolveProductTags(variants []Variant) []ProductTag` in `tag_entity.go`, pure,
 with `tag_entity_test.go` table-driving the three cases (Pancong, Salted Caramel, Coffee Latte),
-a deleted variant ignored for coverage, a sold-out variant still counted (D2), and sort order.
+a deleted variant ignored for coverage, a sold-out variant still counted (D2), `taggedAt` taking
+the latest of the tagged variants (D17), and sort order.
 Called from `ProductUsecase.resolveAvailability` (rename to `resolveDerivedFields`) where the
 variants are already loaded; `tags: ProductTag[]` on the `Product` schema for authenticated and
 public endpoints.
@@ -573,16 +633,16 @@ the field sends the existing ids.
 
 ### Phase 9 — Frontend: tags on Product/Variant, `TagBadge`, highlight builder
 
-`tags: ProductTag[]` on `Product`, `tags: Tag[]` on `Variant`, and their transformers.
+`tags: ProductTag[]` on `Product`, `tags: VariantTag[]` on `Variant`, and their transformers.
 `TagBadge` component in `presentation/views/components/tags/` (palette → token map, D5) with
 stories for every colour in both themes. `buildTagHighlights(products, variants)` in
 `libs/ui/src/utils/` → `{ tag, entries: ({ kind: 'product', product } | { kind: 'variant',
-product, variant })[] }[]`, filtering to highlighted tags and sellable entries (D8), ordered by tag
-`sortOrder` then menu order. No screen changes.
+product, variant })[] }[]`, filtering to highlighted tags and sellable entries (D8); sections ordered by tag `sortOrder`,
+entries within a section by `taggedAt` descending, then menu order (D17). No screen changes.
 
 **Acceptance:** `buildTagHighlights.test.ts` covers the three cases, a non-highlighted tag
-(no section), a sold-out variant entry (dropped), an empty section (dropped); `npx nx run ui:test`
-green.
+(no section), a sold-out variant entry (dropped), an empty section (dropped), and a newer tagged
+variant sorting ahead of an older tagged product; `npx nx run ui:test` green.
 
 ### Phase 10 — POS product cards show tag badges
 
@@ -612,15 +672,31 @@ to that variant's option value ids for `SELECT_PRODUCT.preselectedOptionValueIds
 
 **Acceptance:** `menuList.test.ts` covers `SELECT_ITEM` with and without `variantId`;
 `MenuListHandler.test.tsx` covers: sections rendered in `sortOrder` above categories, hidden while
-searching or filtering, and tapping *Pancong · Ice Cream* opens the sheet with Ice Cream
-pre-selected; `MenuListScreen` story with two sections.
+searching or filtering, entries newest-tagged first, and tapping *Pancong · Ice Cream* opens the
+sheet with Ice Cream pre-selected; `MenuListScreen` story with two sections.
 
-### Phase 13 — Docs site page + e2e coverage
+### Phase 13 — Order app highlighted-tag chips
+
+`CategoryChipList` gains an optional `tags` list rendered between **Semua** and the categories,
+each chip in its tag colour, with `selectedTagId` / `onSelectTag` props. `MenuListUsecase` gains
+`selectedTagId` in context and on `CHANGE_PARAMS`; the reducer clears `selectedCategoryId` when a
+tag is selected and vice versa (D16). `MenuListHandler` passes only highlighted tags whose section
+is non-empty, and when a tag is selected renders that tag's `buildTagHighlights` entries as a
+vertical list of full-width `MenuHighlightCard`s instead of the category groups.
+`MenuListScreen`'s `variant` gains a `{ type: 'tagLoaded'; tag; entries }` arm for that view.
+
+**Acceptance:** `menuList.test.ts` covers selecting a tag clears the category, selecting a category
+clears the tag, and **Semua** clears both; `MenuListHandler.test.tsx` asserts the tag chip appears
+only for a non-empty highlighted tag and that tapping it shows exactly that tag's entries, newest
+first; `CategoryChipList` story with tag chips.
+
+### Phase 14 — Docs site page + e2e coverage
 
 A "Tags" page in `docs-site/` (managing tags, assigning to products vs. single variants, how the
 order app shows them). `pos-web-e2e`: create a tag, assign it to a product, see the badge in the
-transaction item picker. `order-web-e2e`: a highlighted tag's section appears above categories and
-a variant card pre-selects its option. Run locally — e2e runs post-merge only.
+transaction item picker. `order-web-e2e`: a highlighted tag's section appears above categories, a
+variant card pre-selects its option, and the tag chip filters to that tag. Run locally — e2e runs
+post-merge only.
 
 **Acceptance:** both e2e specs pass locally; docs site builds.
 
@@ -651,13 +727,6 @@ a variant card pre-selects its option. Run locally — e2e runs post-merge only.
 - **Staff-only tags** (`tags.is_public`) for internal markers like "Seasonal stock".
 - **Auto best seller**: a scheduled job writing `variant_tags` from sales rank — fits D1 unchanged,
   because it only needs to write the same table.
-
-## Open Questions
-
-1. Should highlighted tags also appear as chips in `CategoryChipList`, jumping to their section?
-2. Within a section, is menu order right, or should "New" show the most recently tagged first
-   (`variant_tags.created_at` is already stored)?
-3. Should a card cap exist per section (e.g. first 10), or is the carousel enough?
 
 ## Success Criteria
 
