@@ -44,6 +44,7 @@ type Product struct {
 	AvailableQuantity    *int
 	IsSellable           bool
 	SellableQuantity     *int
+	Tags                 []ProductTag
 }
 
 func ResolveProductAvailability(product Product, variants []Variant) (isSellable bool, sellableQuantity *int) {

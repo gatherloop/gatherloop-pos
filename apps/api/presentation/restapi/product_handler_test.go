@@ -8,6 +8,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 
 	"github.com/gorilla/mux"
@@ -136,6 +137,55 @@ func TestProductHandler_GetProductById(t *testing.T) {
 			w := httptest.NewRecorder()
 			handler.GetProductById(w, req)
 			assert.Equal(t, tt.expectedStatus, w.Code)
+		})
+	}
+}
+
+func TestProductHandler_GetProductById_returnsTags(t *testing.T) {
+	tests := []struct {
+		name         string
+		variants     []domain.Variant
+		expectedTags string
+	}{
+		{
+			name:         "untagged product returns an empty array",
+			variants:     []domain.Variant{{Id: 1, ProductId: 1}},
+			expectedTags: `"tags":[]`,
+		},
+		{
+			name: "tagged variant of a multi-variant product has variant scope",
+			variants: []domain.Variant{
+				{Id: 1, ProductId: 1},
+				{Id: 2, ProductId: 1, Tags: []domain.VariantTag{{Tag: domain.Tag{Id: 1, Name: "New", Color: domain.TagColorGreen}}}},
+			},
+			expectedTags: `"scope":"variant","tag":`,
+		},
+		{
+			name: "tag on the only variant has product scope",
+			variants: []domain.Variant{
+				{Id: 1, ProductId: 1, Tags: []domain.VariantTag{{Tag: domain.Tag{Id: 1, Name: "New", Color: domain.TagColorGreen}}}},
+			},
+			expectedTags: `"scope":"product","tag":`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			handler, mockRepo, mockVariantRepo := newProductHandler(ctrl)
+			mockRepo.EXPECT().GetProductById(gomock.Any(), int64(1)).Return(domain.Product{Id: 1, Name: "Pancong"}, nil)
+			mockVariantRepo.EXPECT().GetVariantList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+				Return(tt.variants, nil)
+			req := httptest.NewRequest(http.MethodGet, "/products/1", nil)
+			req = mux.SetURLVars(req, map[string]string{"productId": "1"})
+			w := httptest.NewRecorder()
+			handler.GetProductById(w, req)
+			assert.Equal(t, http.StatusOK, w.Code)
+			assert.Contains(t, w.Body.String(), tt.expectedTags)
+			if len(tt.variants[len(tt.variants)-1].Tags) > 0 {
+				assert.Contains(t, w.Body.String(), `"variantIds":[`+strconv.FormatInt(tt.variants[len(tt.variants)-1].Id, 10)+`]`)
+			}
 		})
 	}
 }

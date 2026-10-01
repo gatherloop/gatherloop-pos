@@ -13,7 +13,7 @@ func NewProductUsecase(repository ProductRepository, variantRepository VariantRe
 	return ProductUsecase{repository: repository, variantRepository: variantRepository}
 }
 
-func (usecase ProductUsecase) resolveAvailability(ctx context.Context, product Product) (Product, *Error) {
+func (usecase ProductUsecase) resolveDerivedFields(ctx context.Context, product Product) (Product, *Error) {
 	productId := int(product.Id)
 	variants, err := usecase.variantRepository.GetVariantList(ctx, "", CreatedAt, Ascending, 0, 0, &productId, []int{})
 	if err != nil {
@@ -23,6 +23,7 @@ func (usecase ProductUsecase) resolveAvailability(ctx context.Context, product P
 	isSellable, sellableQuantity := ResolveProductAvailability(product, variants)
 	product.IsSellable = isSellable
 	product.SellableQuantity = sellableQuantity
+	product.Tags = ResolveProductTags(variants)
 	return product, nil
 }
 
@@ -33,7 +34,7 @@ func (usecase ProductUsecase) GetProductList(ctx context.Context, query string, 
 	}
 
 	for i, product := range products {
-		resolved, err := usecase.resolveAvailability(ctx, product)
+		resolved, err := usecase.resolveDerivedFields(ctx, product)
 		if err != nil {
 			return []Product{}, 0, err
 		}
@@ -54,7 +55,7 @@ func (usecase ProductUsecase) GetProductById(ctx context.Context, id int64) (Pro
 		return Product{}, err
 	}
 
-	return usecase.resolveAvailability(ctx, product)
+	return usecase.resolveDerivedFields(ctx, product)
 }
 
 func (usecase ProductUsecase) CreateProduct(ctx context.Context, product Product) (Product, *Error) {
@@ -63,7 +64,7 @@ func (usecase ProductUsecase) CreateProduct(ctx context.Context, product Product
 		return Product{}, err
 	}
 
-	return usecase.resolveAvailability(ctx, created)
+	return usecase.resolveDerivedFields(ctx, created)
 }
 
 func (usecase ProductUsecase) UpdateProductById(ctx context.Context, product Product, id int64) (Product, *Error) {
@@ -100,7 +101,7 @@ func (usecase ProductUsecase) UpdateProductById(ctx context.Context, product Pro
 		return Product{}, err
 	}
 
-	return usecase.resolveAvailability(ctx, updateResult)
+	return usecase.resolveDerivedFields(ctx, updateResult)
 }
 
 func (usecase ProductUsecase) DeleteProductById(ctx context.Context, id int64) *Error {
