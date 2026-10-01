@@ -3527,6 +3527,27 @@ components:
         taggedAt:
           type: string
           format: date-time
+    ProductTag:
+      type: object
+      required:
+        - tag
+        - scope
+        - variantIds
+        - taggedAt
+      properties:
+        tag:
+          $ref: '#/components/schemas/Tag'
+        scope:
+          type: string
+          enum: [product, variant]
+        variantIds:
+          type: array
+          items:
+            type: integer
+            format: int64
+        taggedAt:
+          type: string
+          format: date-time
     TagVariantsRequest:
       type: object
       required:
@@ -4107,6 +4128,7 @@ components:
         - isAvailable
         - availabilityTracking
         - isSellable
+        - tags
       properties:
         id:
           type: integer
@@ -4153,6 +4175,10 @@ components:
         sellableQuantity:
           type: integer
           format: int64
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductTag'
     ProductRequest:
       type: object
       required:

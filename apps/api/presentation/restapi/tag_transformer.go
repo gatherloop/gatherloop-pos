@@ -54,6 +54,19 @@ func ToApiVariantTag(variantTag domain.VariantTag) apiContract.VariantTag {
 	}
 }
 
+func ToApiProductTag(productTag domain.ProductTag) apiContract.ProductTag {
+	variantIds := productTag.VariantIds
+	if variantIds == nil {
+		variantIds = []int64{}
+	}
+	return apiContract.ProductTag{
+		Tag:        ToApiTag(productTag.Tag),
+		Scope:      string(productTag.Scope),
+		VariantIds: variantIds,
+		TaggedAt:   productTag.TaggedAt,
+	}
+}
+
 func ToTag(tagRequest apiContract.TagRequest) domain.Tag {
 	return domain.Tag{
 		Name:          tagRequest.Name,

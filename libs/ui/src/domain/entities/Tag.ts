@@ -19,6 +19,7 @@ export type Tag = {
   color: TagColor;
   isHighlighted: boolean;
   sortOrder: number;
+  variantCount: number;
   createdAt: string;
 };
 

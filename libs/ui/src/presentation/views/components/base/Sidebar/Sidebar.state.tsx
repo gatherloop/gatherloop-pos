@@ -39,6 +39,7 @@ const items: MenuItem[] = [
     icon: Box,
     subItems: [
       { title: 'Categories', path: '/categories' },
+      { title: 'Tags', path: '/tags' },
       { title: 'Products', path: '/products' },
       { title: 'Materials', path: '/materials' },
       { title: 'Suppliers', path: '/suppliers' },
