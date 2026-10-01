@@ -100,6 +100,7 @@ describe('TagListUsecase', () => {
         color: 'red' as const,
         isHighlighted: false,
         sortOrder: 0,
+        variantCount: 0,
         createdAt: new Date().toISOString(),
       },
     ];

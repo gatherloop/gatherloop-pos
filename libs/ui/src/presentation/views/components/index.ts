@@ -3,6 +3,7 @@ export * from './kds';
 export * from './base';
 export * from './budgets';
 export * from './categories';
+export * from './tags';
 export * from './coupons';
 export * from './tickets';
 export * from './tables';

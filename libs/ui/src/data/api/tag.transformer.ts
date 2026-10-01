@@ -9,6 +9,7 @@ export function toTag(tag: ApiTag): Tag {
     color: tag.color,
     isHighlighted: tag.isHighlighted,
     sortOrder: tag.sortOrder,
+    variantCount: tag.variantCount ?? 0,
     createdAt: tag.createdAt,
   };
 }
