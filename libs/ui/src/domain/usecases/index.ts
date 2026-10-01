@@ -99,3 +99,4 @@ export * from './tagList';
 export * from './tagDelete';
 export * from './tagUpdate';
 export * from './tagCreate';
+export * from './tagAssignment';

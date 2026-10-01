@@ -6,6 +6,7 @@ import { mockTags } from '../../../../../.storybook/mocks/mockData';
 const defaultArgs = {
   onLogoutPress: fn(),
   onEditMenuPress: fn(),
+  onAssignMenuPress: fn(),
   onDeleteMenuPress: fn(),
   onItemPress: fn(),
   onRetryButtonPress: fn(),

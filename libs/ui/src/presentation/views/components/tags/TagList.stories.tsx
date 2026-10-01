@@ -7,6 +7,7 @@ const defaultArgs = {
   onRetryButtonPress: fn(),
   onDeleteMenuPress: fn(),
   onEditMenuPress: fn(),
+  onAssignMenuPress: fn(),
   onItemPress: fn(),
 };
 

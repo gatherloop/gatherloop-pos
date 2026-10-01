@@ -58,3 +58,4 @@ export * from './StockCheckCreate';
 export * from './StockCheckUpdate';
 export * from './PurchaseList';
 export * from './Availability';
+export * from './TagAssignment';

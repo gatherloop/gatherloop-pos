@@ -60,3 +60,4 @@ export * from './StockCheckCreateHandler';
 export * from './StockCheckUpdateHandler';
 export * from './PurchaseListHandler';
 export * from './AvailabilityHandler';
+export * from './TagAssignmentHandler';

@@ -1,4 +1,4 @@
-import { Pencil, Trash } from '@tamagui/lucide-icons';
+import { ListChecks, Pencil, Trash } from '@tamagui/lucide-icons';
 import { XStackProps } from 'tamagui';
 import { ListItem } from '../base';
 import { TagColor } from '../../../../domain';
@@ -9,6 +9,7 @@ export type TagListItemProps = {
   color: TagColor;
   isHighlighted: boolean;
   variantCount: number;
+  onAssignMenuPress: () => void;
   onEditMenuPress: () => void;
   onDeleteMenuPress: () => void;
 } & XStackProps;
@@ -20,6 +21,7 @@ export const TagListItem = ({
   variantCount,
   onDeleteMenuPress,
   onEditMenuPress,
+  onAssignMenuPress,
   ...xStackProps
 }: TagListItemProps) => {
   return (
@@ -36,6 +38,11 @@ export const TagListItem = ({
         },
       ]}
       menus={[
+        {
+          title: 'Assign products',
+          icon: ListChecks,
+          onPress: onAssignMenuPress,
+        },
         { title: 'Edit', icon: Pencil, onPress: onEditMenuPress },
         { title: 'Delete', icon: Trash, onPress: onDeleteMenuPress },
       ]}

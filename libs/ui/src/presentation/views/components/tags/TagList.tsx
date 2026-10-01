@@ -10,6 +10,7 @@ export type TagListProps = {
   onEmptyActionPress?: () => void;
   onDeleteMenuPress: (tag: Tag) => void;
   onEditMenuPress: (tag: Tag) => void;
+  onAssignMenuPress: (tag: Tag) => void;
   onItemPress: (tag: Tag) => void;
   isRevalidating?: boolean;
   variant:
@@ -24,6 +25,7 @@ export const TagList = ({
   onEmptyActionPress,
   onDeleteMenuPress,
   onEditMenuPress,
+  onAssignMenuPress,
   onItemPress,
   isRevalidating,
   variant,
@@ -53,6 +55,7 @@ export const TagList = ({
                 variantCount={item.variantCount}
                 onDeleteMenuPress={() => onDeleteMenuPress(item)}
                 onEditMenuPress={() => onEditMenuPress(item)}
+                onAssignMenuPress={() => onAssignMenuPress(item)}
                 onPress={() => onItemPress(item)}
               />
             )}
