@@ -587,6 +587,128 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /tags:
+    get:
+      summary: List all tags
+      operationId: tagList
+      tags:
+        - tag
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TagListResponse'
+        '500':
+          description: server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      summary: Create tag
+      operationId: tagCreate
+      tags:
+        - tag
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TagRequest'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TagCreateResponse'
+        '403':
+          description: validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /tags/{tagId}:
+    get:
+      summary: Get tag by id
+      operationId: tagFindById
+      tags:
+        - tag
+      parameters:
+        - $ref: '#/components/parameters/TagId'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TagFindByIdResponse'
+        '404':
+          description: not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      summary: Update tag by id
+      operationId: tagUpdateById
+      tags:
+        - tag
+      parameters:
+        - $ref: '#/components/parameters/TagId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TagRequest'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TagUpdateByIdResponse'
+        '404':
+          description: not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      summary: Delete tag by id
+      operationId: tagDeleteById
+      tags:
+        - tag
+      parameters:
+        - $ref: '#/components/parameters/TagId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          description: not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /materials:
     get:
       summary: List all materials
@@ -3333,6 +3455,75 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/Category'
+    Tag:
+      type: object
+      required:
+        - id
+        - name
+        - color
+        - isHighlighted
+        - sortOrder
+        - createdAt
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        color:
+          type: string
+          enum: [red, orange, yellow, green, blue, purple, pink, gray]
+        isHighlighted:
+          type: boolean
+        sortOrder:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+    TagRequest:
+      required:
+        - name
+        - color
+        - isHighlighted
+        - sortOrder
+      properties:
+        name:
+          type: string
+        color:
+          type: string
+          enum: [red, orange, yellow, green, blue, purple, pink, gray]
+        isHighlighted:
+          type: boolean
+        sortOrder:
+          type: integer
+    TagCreateResponse:
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/Tag'
+    TagUpdateByIdResponse:
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/Tag'
+    TagFindByIdResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/Tag'
+    TagListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tag'
     MaterialSupplier:
       type: object
       required:
@@ -6238,6 +6429,12 @@ components:
   parameters:
     CategoryId:
       name: categoryId
+      in: path
+      schema:
+        type: integer
+      required: true
+    TagId:
+      name: tagId
       in: path
       schema:
         type: integer
