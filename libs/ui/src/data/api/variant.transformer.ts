@@ -2,7 +2,7 @@
 import { Variant as ApiVariant } from '../../../../api-contract/src';
 import { Variant, VariantForm } from '../../domain';
 import { toMaterial } from './material.transformer';
-import { toTag } from './tag.transformer';
+import { toProductTag, toTag } from './tag.transformer';
 
 export function toVariant(variant: ApiVariant): Variant {
   return {
@@ -39,6 +39,7 @@ export function toVariant(variant: ApiVariant): Variant {
       availabilityTracking: variant.product.availabilityTracking,
       availableQuantity: variant.product.availableQuantity,
       isSellable: variant.product.isSellable,
+      tags: variant.product.tags.map(toProductTag),
       sellableQuantity: variant.product.sellableQuantity,
     },
     values: variant.values.map((value) => ({

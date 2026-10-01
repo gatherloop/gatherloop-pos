@@ -25,12 +25,14 @@ const mockVariant = {
     isAvailable: true,
     availabilityTracking: 'none' as const,
     isSellable: true,
+    tags: [],
   },
   createdAt: '2024-01-20T10:00:00.000Z',
   values: [],
   pricingTiers: [],
   isAvailable: true,
   isSellable: true,
+  tags: [],
 };
 
 const mockTransaction: Transaction = {

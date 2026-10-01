@@ -37,6 +37,7 @@ const esKopiSusu = {
   isAvailable: true,
   availabilityTracking: 'none' as const,
   isSellable: true,
+  tags: [],
 };
 
 const esKopiSusuDenganEs = {
@@ -67,6 +68,7 @@ const nasiGoreng = {
   isAvailable: true,
   availabilityTracking: 'none' as const,
   isSellable: true,
+  tags: [],
 };
 
 const softCookies = {
@@ -91,6 +93,7 @@ const softCookies = {
   isAvailable: true,
   availabilityTracking: 'variant' as const,
   isSellable: true,
+  tags: [],
 };
 
 const meta: Meta<typeof MenuItemDetailScreen> = {

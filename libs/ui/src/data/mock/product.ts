@@ -23,6 +23,7 @@ const initialProducts: Product[] = [
     isAvailable: true,
     availabilityTracking: 'none',
     isSellable: true,
+    tags: [],
   },
   {
     id: 2,
@@ -45,6 +46,7 @@ const initialProducts: Product[] = [
     isAvailable: true,
     availabilityTracking: 'none',
     isSellable: true,
+    tags: [],
   },
 ];
 
@@ -114,6 +116,7 @@ export class MockProductRepository implements ProductRepository {
       isAvailable: true,
       availabilityTracking: formValues.availabilityTracking,
       isSellable: true,
+      tags: [],
     });
   }
 

@@ -36,6 +36,7 @@ function addSingleOptionProduct(repository: MockMenuRepository): {
     isAvailable: true,
     availabilityTracking: 'none',
     isSellable: true,
+    tags: [],
   };
   const variant: Variant = {
     id: 4,
@@ -55,6 +56,7 @@ function addSingleOptionProduct(repository: MockMenuRepository): {
     pricingTiers: [],
     isAvailable: true,
     isSellable: true,
+    tags: [],
   };
   repository.products = [...repository.products, product];
   repository.variants = [...repository.variants, variant];

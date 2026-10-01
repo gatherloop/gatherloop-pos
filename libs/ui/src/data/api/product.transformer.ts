@@ -2,6 +2,7 @@
 import { Product as ApiProduct } from '../../../../api-contract/src';
 import { Product, ProductForm } from '../../domain';
 import { toCategory } from './category.transformer';
+import { toProductTag } from './tag.transformer';
 
 export function toProduct(product: ApiProduct): Product {
   return {
@@ -20,6 +21,7 @@ export function toProduct(product: ApiProduct): Product {
     availableQuantity: product.availableQuantity,
     isSellable: product.isSellable,
     sellableQuantity: product.sellableQuantity,
+    tags: product.tags.map(toProductTag),
   };
 }
 

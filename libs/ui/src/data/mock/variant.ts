@@ -19,6 +19,7 @@ const mockProduct = {
   isAvailable: true,
   availabilityTracking: 'none' as const,
   isSellable: true,
+  tags: [],
 };
 
 type MenuProductSeed = {
@@ -94,6 +95,7 @@ const initialVariants: Variant[] = [
     pricingTiers: [],
     isAvailable: true,
     isSellable: true,
+    tags: [],
   },
   {
     id: 2,
@@ -106,6 +108,7 @@ const initialVariants: Variant[] = [
     pricingTiers: [],
     isAvailable: true,
     isSellable: true,
+    tags: [],
   },
 ];
 

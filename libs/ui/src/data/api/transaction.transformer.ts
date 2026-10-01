@@ -10,6 +10,7 @@ import {
   TransactionStatistic,
   TransactionVerification,
 } from '../../domain';
+import { toProductTag, toTag } from './tag.transformer';
 import { toWallet } from './wallet.transformer';
 
 export function toTransactionStatistic(
@@ -85,6 +86,7 @@ export function toTransaction(transaction: ApiTransaction): Transaction {
           availableQuantity: item.variant.product.availableQuantity,
           isSellable: item.variant.product.isSellable,
           sellableQuantity: item.variant.product.sellableQuantity,
+          tags: item.variant.product.tags.map(toProductTag),
         },
         values: item.variant.values.map((value) => ({
           id: value.id,
@@ -105,6 +107,10 @@ export function toTransaction(transaction: ApiTransaction): Transaction {
         availableQuantity: item.variant.availableQuantity,
         isSellable: item.variant.isSellable,
         sellableQuantity: item.variant.sellableQuantity,
+        tags: item.variant.tags.map(({ tag, taggedAt }) => ({
+          tag: toTag(tag),
+          taggedAt,
+        })),
       },
     })),
     transactionCoupons: transaction.transactionCoupons.map((item) => ({

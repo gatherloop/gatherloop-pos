@@ -21,6 +21,7 @@ const esKopiSusu = {
   isAvailable: true,
   availabilityTracking: 'none' as const,
   isSellable: true,
+  tags: [],
 };
 
 const variant = {
@@ -41,6 +42,7 @@ const variant = {
   pricingTiers: [],
   isAvailable: true,
   isSellable: true,
+  tags: [],
 };
 
 const cart = {

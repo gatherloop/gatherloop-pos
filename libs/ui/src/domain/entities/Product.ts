@@ -24,7 +24,7 @@ export type Product = {
   availableQuantity?: number;
   isSellable: boolean;
   sellableQuantity?: number;
-  tags?: ProductTag[];
+  tags: ProductTag[];
 };
 
 export type Option = {
