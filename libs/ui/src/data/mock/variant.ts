@@ -14,6 +14,7 @@ const mockProduct = {
   isAvailable: true,
   availabilityTracking: 'none' as const,
   isSellable: true,
+  tags: [],
 };
 
 const initialVariants: Variant[] = [
@@ -28,6 +29,7 @@ const initialVariants: Variant[] = [
     pricingTiers: [],
     isAvailable: true,
     isSellable: true,
+    tags: [],
   },
   {
     id: 2,
@@ -40,6 +42,7 @@ const initialVariants: Variant[] = [
     pricingTiers: [],
     isAvailable: true,
     isSellable: true,
+    tags: [],
   },
 ];
 

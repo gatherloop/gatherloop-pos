@@ -29,7 +29,7 @@ export type Variant = {
   availableQuantity?: number;
   isSellable: boolean;
   sellableQuantity?: number;
-  tags?: VariantTag[];
+  tags: VariantTag[];
 };
 
 export type VariantValue = {

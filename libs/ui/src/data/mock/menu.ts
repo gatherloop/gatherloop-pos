@@ -40,6 +40,7 @@ const initialProducts: Product[] = [
     isAvailable: true,
     availabilityTracking: 'none',
     isSellable: true,
+    tags: [],
   },
   {
     id: 2,
@@ -54,6 +55,7 @@ const initialProducts: Product[] = [
     isAvailable: true,
     availabilityTracking: 'none',
     isSellable: true,
+    tags: [],
   },
 ];
 
@@ -76,6 +78,7 @@ const initialVariants: Variant[] = [
     pricingTiers: [],
     isAvailable: true,
     isSellable: true,
+    tags: [],
   },
   {
     id: 2,
@@ -95,6 +98,7 @@ const initialVariants: Variant[] = [
     pricingTiers: [],
     isAvailable: true,
     isSellable: true,
+    tags: [],
   },
   {
     id: 3,
@@ -107,6 +111,7 @@ const initialVariants: Variant[] = [
     pricingTiers: [],
     isAvailable: true,
     isSellable: true,
+    tags: [],
   },
 ];
 

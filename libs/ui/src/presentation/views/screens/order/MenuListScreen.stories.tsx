@@ -28,6 +28,7 @@ const esKopiSusu = {
   isAvailable: true,
   availabilityTracking: 'none' as const,
   isSellable: true,
+  tags: [],
 };
 
 const nasiGoreng = {
@@ -43,6 +44,7 @@ const nasiGoreng = {
   isAvailable: true,
   availabilityTracking: 'none' as const,
   isSellable: true,
+  tags: [],
 };
 
 const meta: Meta<typeof MenuListScreen> = {

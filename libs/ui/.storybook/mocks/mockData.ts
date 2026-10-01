@@ -143,6 +143,7 @@ export const mockProduct: Product = {
   isAvailable: true,
   availabilityTracking: 'none',
   isSellable: true,
+  tags: [],
 };
 
 export const mockProducts: Product[] = [
@@ -160,6 +161,7 @@ export const mockProducts: Product[] = [
     isAvailable: true,
     availabilityTracking: 'none',
     isSellable: true,
+    tags: [],
   },
   {
     id: 3,
@@ -174,6 +176,7 @@ export const mockProducts: Product[] = [
     isAvailable: true,
     availabilityTracking: 'none',
     isSellable: true,
+    tags: [],
   },
 ];
 
@@ -208,6 +211,7 @@ export const mockVariant: Variant = {
   pricingTiers: [],
   isAvailable: true,
   isSellable: true,
+  tags: [],
 };
 
 export const mockVariants: Variant[] = [
@@ -227,6 +231,7 @@ export const mockVariants: Variant[] = [
     pricingTiers: [],
     isAvailable: true,
     isSellable: true,
+    tags: [],
   },
 ];
 
@@ -527,6 +532,7 @@ const mockRentalVariant: Variant = {
   ],
   isAvailable: true,
   isSellable: true,
+  tags: [],
 };
 
 export const mockRental: Rental = {

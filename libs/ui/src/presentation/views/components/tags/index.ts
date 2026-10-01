@@ -1,3 +1,4 @@
+export * from './TagBadge';
 export * from './TagColorPicker';
 export * from './TagColorPill';
 export * from './TagDeleteAlert';
