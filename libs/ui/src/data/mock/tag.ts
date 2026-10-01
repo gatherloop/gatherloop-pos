@@ -8,6 +8,7 @@ const initialTags: Tag[] = [
     color: 'green',
     isHighlighted: true,
     sortOrder: 1,
+    variantCount: 3,
     createdAt: '2024-03-20T00:00:00.000Z',
   },
   {
@@ -16,6 +17,7 @@ const initialTags: Tag[] = [
     color: 'orange',
     isHighlighted: true,
     sortOrder: 2,
+    variantCount: 5,
     createdAt: '2024-03-21T00:00:00.000Z',
   },
 ];
@@ -60,6 +62,7 @@ export class MockTagRepository implements TagRepository {
     this.tags.push({
       id: this.nextId++,
       ...formValues,
+      variantCount: 0,
       createdAt: new Date().toISOString(),
     });
   }

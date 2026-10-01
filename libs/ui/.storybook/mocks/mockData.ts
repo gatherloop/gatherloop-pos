@@ -16,6 +16,7 @@ import type {
   Supplier,
   OptionValue,
   Table,
+  Tag,
 } from '../../src/domain';
 
 export const mockCategory: Category = {
@@ -573,5 +574,35 @@ export const mockSuppliers: Supplier[] = [
     address: 'Jl. Peternakan No. 5, Bandung',
     mapsLink: 'https://maps.google.com/?q=-6.9,107.6',
     createdAt: '2024-01-16T08:00:00.000Z',
+  },
+];
+
+export const mockTags: Tag[] = [
+  {
+    id: 1,
+    name: 'New',
+    color: 'green',
+    isHighlighted: true,
+    sortOrder: 1,
+    variantCount: 3,
+    createdAt: '2024-03-20T00:00:00.000Z',
+  },
+  {
+    id: 2,
+    name: 'Best Seller',
+    color: 'orange',
+    isHighlighted: true,
+    sortOrder: 2,
+    variantCount: 5,
+    createdAt: '2024-03-21T00:00:00.000Z',
+  },
+  {
+    id: 3,
+    name: 'Vegan',
+    color: 'blue',
+    isHighlighted: false,
+    sortOrder: 3,
+    variantCount: 1,
+    createdAt: '2024-03-22T00:00:00.000Z',
   },
 ];
