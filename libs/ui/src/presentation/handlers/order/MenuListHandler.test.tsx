@@ -12,6 +12,7 @@ import {
   MockSessionRepository,
 } from '../../../data/mock';
 import {
+  Tag,
   CartUsecase,
   MenuItemDetailUsecase,
   MenuListParams,
@@ -39,6 +40,83 @@ const pendingQrisPayment: PendingPayment = {
   amount: 45000,
   expiredAt: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
   canCancel: true,
+};
+
+const tagNew: Tag = {
+  id: 1,
+  name: 'New',
+  color: 'green',
+  isHighlighted: true,
+  sortOrder: 1,
+  variantCount: 1,
+  createdAt: '2024-03-20T00:00:00.000Z',
+};
+
+const tagBestSeller: Tag = {
+  id: 2,
+  name: 'Best Seller',
+  color: 'orange',
+  isHighlighted: true,
+  sortOrder: 2,
+  variantCount: 3,
+  createdAt: '2024-03-20T00:00:00.000Z',
+};
+
+const tagRegular: Tag = {
+  id: 3,
+  name: 'Regular Pick',
+  color: 'gray',
+  isHighlighted: false,
+  sortOrder: 3,
+  variantCount: 1,
+  createdAt: '2024-03-20T00:00:00.000Z',
+};
+
+const createTaggedMenuRepository = () => {
+  const menuRepository = new MockMenuRepository();
+  menuRepository.products = menuRepository.products.map((product) => ({
+    ...product,
+  }));
+  menuRepository.variants = menuRepository.variants.map((variant) => ({
+    ...variant,
+    product:
+      menuRepository.products.find(({ id }) => id === variant.product.id) ??
+      variant.product,
+  }));
+  const [esKopiSusu, nasiGoreng] = menuRepository.products;
+  const [regular, large, friedRice] = menuRepository.variants;
+
+  esKopiSusu.tags = [
+    {
+      tag: tagNew,
+      scope: 'variant',
+      variantIds: [large.id],
+      taggedAt: '2024-06-01T00:00:00.000Z',
+    },
+    {
+      tag: tagBestSeller,
+      scope: 'product',
+      variantIds: [regular.id, large.id],
+      taggedAt: '2024-06-01T00:00:00.000Z',
+    },
+    {
+      tag: tagRegular,
+      scope: 'product',
+      variantIds: [regular.id, large.id],
+      taggedAt: '2024-06-01T00:00:00.000Z',
+    },
+  ];
+  large.tags = [{ tag: tagNew, taggedAt: '2024-06-01T00:00:00.000Z' }];
+  nasiGoreng.tags = [
+    {
+      tag: tagBestSeller,
+      scope: 'product',
+      variantIds: [friedRice.id],
+      taggedAt: '2024-07-01T00:00:00.000Z',
+    },
+  ];
+
+  return menuRepository;
 };
 
 const renderHandler = ({
@@ -333,6 +411,150 @@ describe('MenuListHandler', () => {
     await settle();
 
     expect(screen.queryByText('0')).toBeNull();
+  });
+
+  describe('highlight sections', () => {
+    const sectionTitle = (name: string) => screen.getByText(name);
+
+    it('renders one section per highlighted tag above the category groups, in tag sortOrder', async () => {
+      renderHandler({ menuRepository: createTaggedMenuRepository() });
+      await settle();
+
+      const newTitle = sectionTitle('New');
+      const bestSellerTitle = sectionTitle('Best Seller');
+      const firstCategoryTitle = screen.getAllByText('Minuman')[1];
+
+      expect(
+        newTitle.compareDocumentPosition(bestSellerTitle) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBeTruthy();
+      expect(
+        bestSellerTitle.compareDocumentPosition(firstCategoryTitle) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBeTruthy();
+    });
+
+    it('does not render a section for a tag that is not highlighted', async () => {
+      renderHandler({ menuRepository: createTaggedMenuRepository() });
+      await settle();
+
+      expect(screen.queryByText('Regular Pick')).toBeNull();
+    });
+
+    it('renders no sections when nothing is tagged', async () => {
+      renderHandler();
+      await settle();
+
+      expect(screen.queryByText('New')).toBeNull();
+      expect(screen.queryByText('Best Seller')).toBeNull();
+    });
+
+    it('lists the most recently tagged entry first within a section', async () => {
+      renderHandler({ menuRepository: createTaggedMenuRepository() });
+      await settle();
+
+      const nasiGorengCard = screen.getAllByRole('button', {
+        name: 'Nasi Goreng',
+      })[0];
+      const esKopiSusuCard = screen.getAllByRole('button', {
+        name: 'Es Kopi Susu',
+      })[0];
+
+      expect(
+        nasiGorengCard.compareDocumentPosition(esKopiSusuCard) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBeTruthy();
+    });
+
+    it('shows a variant entry with the product and variant name and its own price', async () => {
+      renderHandler({ menuRepository: createTaggedMenuRepository() });
+      await settle();
+
+      expect(
+        screen.getByRole('button', { name: 'Es Kopi Susu · Es Kopi Susu - Large' })
+      ).toBeTruthy();
+      expect(screen.getAllByText('Rp 22.000').length).toBeGreaterThan(0);
+    });
+
+    it('hides the sections while a category chip is selected', async () => {
+      const user = userEvent.setup();
+      renderHandler({ menuRepository: createTaggedMenuRepository() });
+      await settle();
+
+      await user.click(screen.getByRole('button', { name: 'Makanan' }));
+      await settle();
+
+      expect(screen.queryByText('New')).toBeNull();
+      expect(screen.queryByText('Best Seller')).toBeNull();
+    });
+
+    it('hides the sections while the search box has text', async () => {
+      const user = userEvent.setup();
+      renderHandler({ menuRepository: createTaggedMenuRepository() });
+      await settle();
+
+      await user.type(
+        screen.getByPlaceholderText('Cari menu atau varian'),
+        'kopi'
+      );
+
+      expect(screen.queryByText('New')).toBeNull();
+      expect(screen.queryByText('Best Seller')).toBeNull();
+    });
+
+    it('brings the sections back once the category filter is cleared', async () => {
+      const user = userEvent.setup();
+      renderHandler({ menuRepository: createTaggedMenuRepository() });
+      await settle();
+
+      await user.click(screen.getByRole('button', { name: 'Makanan' }));
+      await settle();
+      await user.click(screen.getByRole('button', { name: 'Semua' }));
+      await settle();
+
+      expect(screen.getByText('New')).toBeTruthy();
+    });
+
+    it('omits entries that are sold out, and the whole section when none remain', async () => {
+      const menuRepository = createTaggedMenuRepository();
+      menuRepository.variants[1].isSellable = false;
+      renderHandler({ menuRepository });
+      await settle();
+
+      expect(screen.queryByText('New')).toBeNull();
+    });
+
+    it('opens the item sheet for a product entry with nothing preselected', async () => {
+      const user = userEvent.setup();
+      renderHandler({ menuRepository: createTaggedMenuRepository() });
+      await settle();
+
+      await user.click(
+        screen.getAllByRole('button', { name: 'Es Kopi Susu' })[0]
+      );
+      await settle();
+
+      expect(
+        screen.getByRole('button', { name: 'Tambah ke Keranjang' })
+      ).toBeTruthy();
+    });
+
+    it('opens the item sheet with the tagged variant preselected, skipping straight to its price', async () => {
+      const user = userEvent.setup();
+      renderHandler({ menuRepository: createTaggedMenuRepository() });
+      await settle();
+
+      await user.click(
+        screen.getByRole('button', { name: 'Es Kopi Susu · Es Kopi Susu - Large' })
+      );
+      await settle();
+
+      expect(
+        screen.getByRole('button', {
+          name: 'Tambah ke Keranjang · Rp 22.000',
+        })
+      ).toBeTruthy();
+    });
   });
 
   describe('the item sheet', () => {

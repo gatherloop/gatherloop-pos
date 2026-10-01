@@ -33,6 +33,7 @@ describe('MenuListUsecase', () => {
         query: '',
         selectedCategoryId: null,
         selectedProductId: null,
+        selectedVariantId: null,
         errorMessage: null,
         fetchDebounceDelay: 0,
       });
@@ -46,6 +47,7 @@ describe('MenuListUsecase', () => {
         query: '',
         selectedCategoryId: null,
         selectedProductId: null,
+        selectedVariantId: null,
         errorMessage: null,
         fetchDebounceDelay: 0,
       });
@@ -62,6 +64,7 @@ describe('MenuListUsecase', () => {
         query: '',
         selectedCategoryId: null,
         selectedProductId: null,
+        selectedVariantId: null,
         errorMessage: null,
         fetchDebounceDelay: 0,
       });
@@ -75,6 +78,7 @@ describe('MenuListUsecase', () => {
         query: '',
         selectedCategoryId: 2,
         selectedProductId: null,
+        selectedVariantId: null,
         errorMessage: null,
         fetchDebounceDelay: 0,
       });
@@ -118,6 +122,7 @@ describe('MenuListUsecase', () => {
         query: '',
         selectedCategoryId: null,
         selectedProductId: null,
+        selectedVariantId: null,
         errorMessage: 'Failed to fetch menu',
         fetchDebounceDelay: 0,
       });
@@ -173,6 +178,28 @@ describe('MenuListUsecase', () => {
       expect(menuList.state.selectedProductId).toBe(1);
     });
 
+    it('keeps the variant id alongside the selected product', async () => {
+      const repository = new MockMenuRepository();
+      const menuList = createTester(repository);
+      await flushPromises();
+
+      menuList.dispatch({ type: 'SELECT_ITEM', productId: 1, variantId: 2 });
+
+      expect(menuList.state.selectedProductId).toBe(1);
+      expect(menuList.state.selectedVariantId).toBe(2);
+    });
+
+    it('selects a product without a variant when none is given, dropping a previous one', async () => {
+      const repository = new MockMenuRepository();
+      const menuList = createTester(repository);
+      await flushPromises();
+
+      menuList.dispatch({ type: 'SELECT_ITEM', productId: 1, variantId: 2 });
+      menuList.dispatch({ type: 'SELECT_ITEM', productId: 2 });
+
+      expect(menuList.state.selectedVariantId).toBeNull();
+    });
+
     it('clears the selected product id', async () => {
       const repository = new MockMenuRepository();
       const menuList = createTester(repository);
@@ -182,6 +209,7 @@ describe('MenuListUsecase', () => {
       menuList.dispatch({ type: 'CLEAR_ITEM' });
 
       expect(menuList.state.selectedProductId).toBeNull();
+      expect(menuList.state.selectedVariantId).toBeNull();
     });
 
     it('reads the initial selection from the query repository when the params do not seed one', () => {
