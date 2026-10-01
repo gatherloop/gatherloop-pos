@@ -25,6 +25,8 @@ export const mockTags: Tag[] = [
 export class MockTagRepository implements TagRepository {
   tags: Tag[] = [...mockTags];
 
+  lastSubmittedVariantIds: number[] | null = null;
+
   private nextId = 3;
   private shouldFail = false;
 
@@ -76,8 +78,19 @@ export class MockTagRepository implements TagRepository {
     this.tags[idx] = { ...this.tags[idx], ...formValues };
   }
 
+  async setTagVariants(tagId: number, variantIds: number[]): Promise<void> {
+    if (this.shouldFail) {
+      throw new Error('Failed to set tag variants');
+    }
+    const idx = this.tags.findIndex((t) => t.id === tagId);
+    if (idx === -1) throw new Error('Tag not found');
+    this.lastSubmittedVariantIds = variantIds;
+    this.tags[idx] = { ...this.tags[idx], variantCount: variantIds.length };
+  }
+
   reset() {
     this.tags = [...mockTags];
+    this.lastSubmittedVariantIds = null;
     this.nextId = 3;
     this.shouldFail = false;
   }

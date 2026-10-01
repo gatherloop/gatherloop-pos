@@ -60,3 +60,4 @@ export * from './StockCheckCreateScreen';
 export * from './StockCheckUpdateScreen';
 export * from './PurchaseListScreen';
 export * from './AvailabilityScreen';
+export * from './TagAssignmentScreen';

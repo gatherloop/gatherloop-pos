@@ -10,4 +10,6 @@ export interface TagRepository {
   createTag: (formValues: TagForm) => Promise<void>;
 
   updateTag: (formValues: TagForm, tagId: number) => Promise<void>;
+
+  setTagVariants: (tagId: number, variantIds: number[]) => Promise<void>;
 }

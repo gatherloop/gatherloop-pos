@@ -5,7 +5,12 @@ import { mockTags } from './tag';
 const mockProduct = {
   id: 1,
   name: 'Product 1',
-  category: { id: 1, name: 'Category 1', station: 'NONE' as const, createdAt: '2024-03-20T00:00:00.000Z' },
+  category: {
+    id: 1,
+    name: 'Category 1',
+    station: 'NONE' as const,
+    createdAt: '2024-03-20T00:00:00.000Z',
+  },
   imageUrl: 'https://example.com/1.jpg',
   saleType: 'purchase' as const,
   status: 'published' as const,
@@ -15,6 +20,67 @@ const mockProduct = {
   availabilityTracking: 'none' as const,
   isSellable: true,
 };
+
+type MenuProductSeed = {
+  id: number;
+  name: string;
+  category: string;
+  variants: [number, string][];
+};
+
+const menuProductSeeds: MenuProductSeed[] = [
+  {
+    id: 11,
+    name: 'Pancong',
+    category: 'Snacks',
+    variants: [
+      [101, 'Choco'],
+      [102, 'Matcha'],
+      [103, 'Vanilla'],
+      [104, 'Ice Cream'],
+    ],
+  },
+  {
+    id: 12,
+    name: 'Salted Caramel Macchiato',
+    category: 'Drinks',
+    variants: [[105, 'Original']],
+  },
+  {
+    id: 13,
+    name: 'Coffee Latte',
+    category: 'Drinks',
+    variants: [
+      [106, 'Hot'],
+      [107, 'Iced'],
+    ],
+  },
+];
+
+export const createMenuVariants = (): Variant[] =>
+  menuProductSeeds.flatMap((seed) =>
+    seed.variants.map(([id, name]) => ({
+      id,
+      name,
+      price: 20000,
+      materials: [],
+      product: {
+        ...mockProduct,
+        id: seed.id,
+        name: seed.name,
+        category: {
+          ...mockProduct.category,
+          id: seed.category === 'Snacks' ? 11 : 12,
+          name: seed.category,
+        },
+      },
+      createdAt: '2024-03-20T00:00:00.000Z',
+      values: [],
+      pricingTiers: [],
+      isAvailable: true,
+      isSellable: true,
+    }))
+  );
 
 const initialVariants: Variant[] = [
   {

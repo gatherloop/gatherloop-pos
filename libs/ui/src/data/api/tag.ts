@@ -7,6 +7,7 @@ import {
   tagFindByIdQueryKey,
   tagList,
   tagListQueryKey,
+  tagSetVariants,
   tagUpdateById,
 } from '../../../../api-contract/src';
 import { Tag, TagRepository } from '../../domain';
@@ -35,6 +36,10 @@ export class ApiTagRepository implements TagRepository {
 
   updateTag: TagRepository['updateTag'] = (formValues, tagId) => {
     return tagUpdateById(tagId, toApiTag(formValues)).then();
+  };
+
+  setTagVariants: TagRepository['setTagVariants'] = (tagId, variantIds) => {
+    return tagSetVariants(tagId, { variantIds }).then();
   };
 
   deleteTagById: TagRepository['deleteTagById'] = (tagId) => {

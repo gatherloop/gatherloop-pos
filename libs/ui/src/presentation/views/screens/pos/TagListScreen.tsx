@@ -12,6 +12,7 @@ import { Tag } from '../../../../domain';
 export type TagListScreenProps = {
   onLogoutPress: () => void;
   onEditMenuPress: (tag: Tag) => void;
+  onAssignMenuPress: (tag: Tag) => void;
   onDeleteMenuPress: (tag: Tag) => void;
   onItemPress: (tag: Tag) => void;
   onRetryButtonPress: () => void;
@@ -28,6 +29,7 @@ export type TagListScreenProps = {
 export const TagListScreen = ({
   onLogoutPress,
   onEditMenuPress,
+  onAssignMenuPress,
   onDeleteMenuPress,
   onItemPress,
   onRetryButtonPress,
@@ -55,6 +57,7 @@ export const TagListScreen = ({
         variant={variant}
         isRevalidating={isRevalidating}
         onEditMenuPress={onEditMenuPress}
+        onAssignMenuPress={onAssignMenuPress}
         onDeleteMenuPress={onDeleteMenuPress}
         onItemPress={onItemPress}
         onEmptyActionPress={onEmptyActionPress}

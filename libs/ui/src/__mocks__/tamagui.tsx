@@ -236,10 +236,21 @@ export const Dialog = Object.assign(DialogBase, {
   Close: DialogClose,
 });
 
-const CheckboxBase = ({ children, onCheckedChange, checked }: AnyProps) =>
+const CheckboxBase = ({
+  children,
+  onCheckedChange,
+  checked,
+  accessibilityLabel,
+}: AnyProps) =>
   React.createElement(
     'div',
-    { 'data-component': 'Checkbox', onClick: () => onCheckedChange?.(!checked) },
+    {
+      'data-component': 'Checkbox',
+      role: 'checkbox',
+      'aria-checked': checked === 'indeterminate' ? 'mixed' : Boolean(checked),
+      ...(accessibilityLabel ? { 'aria-label': accessibilityLabel } : {}),
+      onClick: () => onCheckedChange?.(!checked),
+    },
     children
   );
 const CheckboxIndicator = ({ children }: AnyProps) =>

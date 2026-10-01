@@ -55,6 +55,9 @@ export const TagListHandler = ({
       onEditMenuPress={(tag: Tag) =>
         router.push(`/tags/${tag.id}`)
       }
+      onAssignMenuPress={(tag: Tag) =>
+        router.push(`/tags/${tag.id}/assign`)
+      }
       onItemPress={(tag: Tag) =>
         router.push(`/tags/${tag.id}`)
       }

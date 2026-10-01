@@ -11,6 +11,7 @@ const meta: Meta<typeof TagListItem> = {
     isHighlighted: true,
     variantCount: 5,
     onEditMenuPress: fn(),
+    onAssignMenuPress: fn(),
     onDeleteMenuPress: fn(),
   },
 };

@@ -287,6 +287,22 @@ describe('TagListHandler', () => {
       expect(mockRouterPush).toHaveBeenCalledWith('/tags/1');
     });
 
+    it('should navigate to tag assignment page when assign menu is pressed', async () => {
+      const user = userEvent.setup();
+      render(<TagListHandler {...createProps()} />);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      const assignMenuItems = screen.getAllByRole('button', {
+        name: 'Assign products',
+      });
+      await user.click(assignMenuItems[0]);
+
+      expect(mockRouterPush).toHaveBeenCalledWith('/tags/1/assign');
+    });
+
     it('should navigate to tag page when item is pressed', async () => {
       const user = userEvent.setup();
       render(<TagListHandler {...createProps()} />);
