@@ -6,6 +6,7 @@ import { useUsecase, useAuthLogout, useMaterialList } from '../hooks';
 import {
   AuthLogoutUsecase,
   MaterialListUsecase,
+  TagListUsecase,
   VariantCreateUsecase,
 } from '../../../domain';
 import {
@@ -16,17 +17,20 @@ import {
 export type VariantCreateHandlerProps = {
   variantCreateUsecase: VariantCreateUsecase;
   materialListUsecase: MaterialListUsecase;
+  tagListUsecase: TagListUsecase;
   authLogoutUsecase: AuthLogoutUsecase;
 };
 
 export const VariantCreateHandler = ({
   variantCreateUsecase,
   materialListUsecase,
+  tagListUsecase,
   authLogoutUsecase,
 }: VariantCreateHandlerProps) => {
   const router = useRouter();
   const variantCreate = useUsecase(variantCreateUsecase);
   const materialList = useMaterialList(materialListUsecase);
+  const tagList = useUsecase(tagListUsecase);
   const authLogout = useAuthLogout(authLogoutUsecase);
   const toast = useToastController();
 
@@ -83,6 +87,7 @@ export const VariantCreateHandler = ({
         }))
         .exhaustive()}
       product={variantCreate.state.product}
+      tags={tagList.state.tags}
       materialList={{
         currentPage: materialList.state.page,
         itemPerPage: materialList.state.itemPerPage,

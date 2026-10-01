@@ -1,5 +1,6 @@
 import { Variant, VariantForm } from '../../domain/entities';
 import { VariantRepository } from '../../domain/repositories/variant';
+import { mockTags } from './tag';
 
 const mockProduct = {
   id: 1,
@@ -45,8 +46,16 @@ const initialVariants: Variant[] = [
 export class MockVariantRepository implements VariantRepository {
   variants: Variant[] = [...initialVariants];
 
+  lastSubmittedValues: VariantForm | null = null;
+
   private nextId = 3;
   private shouldFail = false;
+
+  private resolveTags(tagIds: number[]) {
+    return mockTags
+      .filter((tag) => tagIds.includes(tag.id))
+      .map((tag) => ({ tag, taggedAt: new Date().toISOString() }));
+  }
 
   setShouldFail(value: boolean) {
     this.shouldFail = value;
@@ -94,6 +103,7 @@ export class MockVariantRepository implements VariantRepository {
 
   async createVariant(formValues: VariantForm): Promise<void> {
     if (this.shouldFail) throw new Error('Failed to create variant');
+    this.lastSubmittedValues = formValues;
     this.variants.push({
       id: this.nextId++,
       name: formValues.name,
@@ -108,6 +118,7 @@ export class MockVariantRepository implements VariantRepository {
       pricingTiers: formValues.pricingTiers,
       isAvailable: true,
       isSellable: true,
+      tags: this.resolveTags(formValues.tagIds),
     });
   }
 
@@ -116,6 +127,7 @@ export class MockVariantRepository implements VariantRepository {
     variantId: number
   ): Promise<void> {
     if (this.shouldFail) throw new Error('Failed to update variant');
+    this.lastSubmittedValues = formValues;
     const idx = this.variants.findIndex((v) => v.id === variantId);
     if (idx === -1) throw new Error('Variant not found');
     this.variants[idx] = {
@@ -125,11 +137,13 @@ export class MockVariantRepository implements VariantRepository {
       description: formValues.description,
       recipe: formValues.recipe,
       imageUrl: formValues.imageUrl || undefined,
+      tags: this.resolveTags(formValues.tagIds),
     };
   }
 
   reset() {
     this.variants = [...initialVariants];
+    this.lastSubmittedValues = null;
     this.nextId = 3;
     this.shouldFail = false;
   }

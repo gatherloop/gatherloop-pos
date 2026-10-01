@@ -3,6 +3,7 @@ import type {
   Product,
   Material,
   Variant,
+  Tag,
   Wallet,
   Budget,
   Coupon,
@@ -16,7 +17,6 @@ import type {
   Supplier,
   OptionValue,
   Table,
-  Tag,
 } from '../../src/domain';
 
 export const mockCategory: Category = {

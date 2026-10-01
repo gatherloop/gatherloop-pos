@@ -3,7 +3,11 @@ import { fn } from '@storybook/test';
 import { YStack, Text } from 'tamagui';
 import { VariantFormView } from './VariantFormView';
 import type { VariantForm } from '../../../../domain';
-import { mockProduct, mockMaterial } from '../../../../../.storybook/mocks/mockData';
+import {
+  mockProduct,
+  mockMaterial,
+  mockTags,
+} from '../../../../../.storybook/mocks/mockData';
 
 const defaultValues: VariantForm = {
   name: '',
@@ -15,6 +19,7 @@ const defaultValues: VariantForm = {
   productId: 1,
   values: [],
   pricingTiers: [],
+  tagIds: [],
 };
 
 const meta: Meta<typeof VariantFormView> = {
@@ -31,6 +36,7 @@ export const Loaded: Story = {
     defaultValues,
     onSubmit: fn(),
     product: mockProduct,
+    tags: mockTags,
     isSubmitDisabled: false,
     isSubmitting: false,
     MaterialList: () => (
@@ -55,6 +61,7 @@ export const Populated: Story = {
       productId: 1,
       values: [{ optionValueId: 1 }],
       pricingTiers: [],
+      tagIds: [2],
     },
   },
 };
@@ -64,6 +71,7 @@ export const Loading: Story = {
     ...Loaded.args,
     variant: { type: 'loading' },
     product: null,
+    tags: [],
     isSubmitDisabled: true,
     MaterialList: () => null,
   },
@@ -74,6 +82,7 @@ export const Error: Story = {
     ...Loaded.args,
     variant: { type: 'error', onRetryButtonPress: fn() },
     product: null,
+    tags: [],
     isSubmitDisabled: true,
     MaterialList: () => null,
   },

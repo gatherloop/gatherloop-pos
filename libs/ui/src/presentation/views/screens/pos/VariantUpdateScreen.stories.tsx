@@ -5,6 +5,7 @@ import type { VariantForm } from '../../../../domain';
 import {
   mockProduct,
   mockMaterials,
+  mockTags,
   mockVariant,
 } from '../../../../../.storybook/mocks/mockData';
 
@@ -21,6 +22,7 @@ const defaultValues: VariantForm = {
     optionValueId: value.optionValueId,
   })),
   pricingTiers: mockVariant.pricingTiers,
+  tagIds: [2],
 };
 
 const meta: Meta<typeof VariantUpdateScreen> = {
@@ -41,6 +43,7 @@ export const Default: Story = {
     onLogoutPress: fn(),
     variant: { type: 'loaded' },
     product: mockProduct,
+    tags: mockTags,
     materialList: {
       currentPage: 1,
       itemPerPage: 10,
@@ -66,10 +69,12 @@ export const Loading: Story = {
       productId: 1,
       values: [],
       pricingTiers: [],
+      tagIds: [],
     },
     isSubmitDisabled: true,
     variant: { type: 'loading' },
     product: null,
+    tags: [],
     materialList: {
       ...Default.args.materialList,
       totalItem: 0,

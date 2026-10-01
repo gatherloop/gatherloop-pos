@@ -6,12 +6,14 @@ import {
   MockAuthRepository,
   MockMaterialRepository,
   MockMaterialListQueryRepository,
+  MockTagRepository,
   MockProductRepository,
   MockVariantRepository,
 } from '../../../data/mock';
 import {
   AuthLogoutUsecase,
   MaterialListUsecase,
+  TagListUsecase,
   VariantCreateUsecase,
 } from '../../../domain';
 import { flushPromises } from '../../../utils/testUtils';
@@ -52,6 +54,7 @@ const createProps = (
       productId,
       product: preloadedProduct,
     }),
+    tagListUsecase: new TagListUsecase(new MockTagRepository(), { tags: [] }),
     materialListUsecase: new MaterialListUsecase(
       materialRepo,
       new MockMaterialListQueryRepository(),
@@ -161,6 +164,7 @@ describe('VariantCreateHandler', () => {
         <VariantCreateHandler
           authLogoutUsecase={new AuthLogoutUsecase(new MockAuthRepository())}
           variantCreateUsecase={variantCreateUsecase}
+          tagListUsecase={new TagListUsecase(new MockTagRepository(), { tags: [] })}
           materialListUsecase={new MaterialListUsecase(
             materialRepo,
             new MockMaterialListQueryRepository(),
@@ -205,6 +209,7 @@ describe('VariantCreateHandler', () => {
         <VariantCreateHandler
           authLogoutUsecase={new AuthLogoutUsecase(new MockAuthRepository())}
           variantCreateUsecase={variantCreateUsecase}
+          tagListUsecase={new TagListUsecase(new MockTagRepository(), { tags: [] })}
           materialListUsecase={new MaterialListUsecase(
             materialRepo,
             new MockMaterialListQueryRepository(),
@@ -251,6 +256,7 @@ describe('VariantCreateHandler', () => {
             productRepo,
             { productId: 1, product: null }
           )}
+          tagListUsecase={new TagListUsecase(new MockTagRepository(), { tags: [] })}
           materialListUsecase={new MaterialListUsecase(
             new MockMaterialRepository(),
             new MockMaterialListQueryRepository(),
@@ -274,6 +280,127 @@ describe('VariantCreateHandler', () => {
       });
 
       expect(screen.getByRole('button', { name: 'Submit' })).toBeTruthy();
+    });
+  });
+
+  describe('tags', () => {
+    const taggedAt = '2024-03-20T00:00:00.000Z';
+
+    const renderWithTags = (productScopeTagIds: number[]) => {
+      const variantRepo = new MockVariantRepository();
+      const productRepo = new MockProductRepository();
+      const tagRepo = new MockTagRepository();
+      const product = {
+        ...productRepo.products[0],
+        options: [],
+        tags: tagRepo.tags
+          .filter(({ id }) => productScopeTagIds.includes(id))
+          .map((tag) => ({
+            tag,
+            scope: 'product' as const,
+            variantIds: [1, 2],
+            taggedAt,
+          })),
+      };
+
+      render(
+        <VariantCreateHandler
+          authLogoutUsecase={new AuthLogoutUsecase(new MockAuthRepository())}
+          variantCreateUsecase={new VariantCreateUsecase(variantRepo, productRepo, {
+            productId: product.id,
+            product,
+          })}
+          tagListUsecase={new TagListUsecase(tagRepo, { tags: tagRepo.tags })}
+          materialListUsecase={new MaterialListUsecase(
+            new MockMaterialRepository(),
+            new MockMaterialListQueryRepository(),
+            { materials: [], totalItem: 0 }
+          )}
+        />
+      );
+
+      return variantRepo;
+    };
+
+    const submitVariant = async (user: ReturnType<typeof userEvent.setup>) => {
+      await user.type(screen.getByRole('textbox', { name: 'Name' }), 'Oat Milk');
+      await user.type(screen.getByRole('textbox', { name: 'Price' }), '100');
+      await user.click(screen.getByRole('button', { name: 'Submit' }));
+      await act(async () => {
+        await flushPromises();
+      });
+    };
+
+    it('should render every tag as an unchecked option when the product has no tags', async () => {
+      renderWithTags([]);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getByRole('checkbox', { name: 'New' }).getAttribute('aria-checked')).toBe('false');
+      expect(screen.getByRole('checkbox', { name: 'Best Seller' }).getAttribute('aria-checked')).toBe('false');
+    });
+
+    it('should pre-tick the product-scope tags of the parent product', async () => {
+      renderWithTags([2]);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getByRole('checkbox', { name: 'Best Seller' }).getAttribute('aria-checked')).toBe('true');
+      expect(screen.getByRole('checkbox', { name: 'New' }).getAttribute('aria-checked')).toBe('false');
+    });
+
+    it('should submit the pre-ticked tag ids when left untouched', async () => {
+      const user = userEvent.setup();
+      const variantRepo = renderWithTags([2]);
+
+      await act(async () => {
+        await flushPromises();
+      });
+      await submitVariant(user);
+
+      expect(variantRepo.lastSubmittedValues?.tagIds).toEqual([2]);
+    });
+
+    it('should submit an empty tagIds when the pre-ticked tag is unticked', async () => {
+      const user = userEvent.setup();
+      const variantRepo = renderWithTags([2]);
+
+      await act(async () => {
+        await flushPromises();
+      });
+      await user.click(screen.getByRole('checkbox', { name: 'Best Seller' }));
+      await submitVariant(user);
+
+      expect(variantRepo.lastSubmittedValues?.tagIds).toEqual([]);
+    });
+
+    it('should submit a tag that was ticked by the user', async () => {
+      const user = userEvent.setup();
+      const variantRepo = renderWithTags([]);
+
+      await act(async () => {
+        await flushPromises();
+      });
+      await user.click(screen.getByRole('checkbox', { name: 'New' }));
+      expect(screen.getByRole('checkbox', { name: 'New' }).getAttribute('aria-checked')).toBe('true');
+      await submitVariant(user);
+
+      expect(variantRepo.lastSubmittedValues?.tagIds).toEqual([1]);
+    });
+
+    it('should fetch the tag options when none are preloaded', async () => {
+      render(<VariantCreateHandler {...createProps({ preloaded: true })} />);
+      expect(screen.queryByRole('checkbox', { name: 'New' })).toBeNull();
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getByRole('checkbox', { name: 'New' })).toBeTruthy();
     });
   });
 });

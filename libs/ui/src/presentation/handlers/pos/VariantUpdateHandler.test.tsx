@@ -6,12 +6,14 @@ import {
   MockAuthRepository,
   MockMaterialRepository,
   MockMaterialListQueryRepository,
+  MockTagRepository,
   MockProductRepository,
   MockVariantRepository,
 } from '../../../data/mock';
 import {
   AuthLogoutUsecase,
   MaterialListUsecase,
+  TagListUsecase,
   VariantUpdateUsecase,
 } from '../../../domain';
 import { flushPromises } from '../../../utils/testUtils';
@@ -59,6 +61,7 @@ const createProps = (
       variant: preloadedVariant,
       product: preloadedProduct,
     }),
+    tagListUsecase: new TagListUsecase(new MockTagRepository(), { tags: [] }),
     materialListUsecase: new MaterialListUsecase(
       materialRepo,
       new MockMaterialListQueryRepository(),
@@ -175,6 +178,7 @@ describe('VariantUpdateHandler', () => {
         <VariantUpdateHandler
           authLogoutUsecase={new AuthLogoutUsecase(new MockAuthRepository())}
           variantUpdateUsecase={variantUpdateUsecase}
+          tagListUsecase={new TagListUsecase(new MockTagRepository(), { tags: [] })}
           materialListUsecase={new MaterialListUsecase(
             materialRepo,
             new MockMaterialListQueryRepository(),
@@ -226,6 +230,7 @@ describe('VariantUpdateHandler', () => {
         <VariantUpdateHandler
           authLogoutUsecase={new AuthLogoutUsecase(new MockAuthRepository())}
           variantUpdateUsecase={variantUpdateUsecase}
+          tagListUsecase={new TagListUsecase(new MockTagRepository(), { tags: [] })}
           materialListUsecase={new MaterialListUsecase(
             materialRepo,
             new MockMaterialListQueryRepository(),
@@ -270,6 +275,7 @@ describe('VariantUpdateHandler', () => {
             new MockProductRepository(),
             { variantId: 1, productId: 1, variant: null, product: null }
           )}
+          tagListUsecase={new TagListUsecase(new MockTagRepository(), { tags: [] })}
           materialListUsecase={new MaterialListUsecase(
             new MockMaterialRepository(),
             new MockMaterialListQueryRepository(),
@@ -293,6 +299,83 @@ describe('VariantUpdateHandler', () => {
       });
 
       expect(screen.getByRole('button', { name: 'Submit' })).toBeTruthy();
+    });
+  });
+
+  describe('tags', () => {
+    const renderWithTaggedVariant = (taggedTagIds: number[]) => {
+      const variantRepo = new MockVariantRepository();
+      const productRepo = new MockProductRepository();
+      const tagRepo = new MockTagRepository();
+      const variant = {
+        ...variantRepo.variants[0],
+        tags: tagRepo.tags
+          .filter(({ id }) => taggedTagIds.includes(id))
+          .map((tag) => ({ tag, taggedAt: '2024-03-20T00:00:00.000Z' })),
+      };
+      const product = { ...productRepo.products[0], options: [] };
+
+      render(
+        <VariantUpdateHandler
+          authLogoutUsecase={new AuthLogoutUsecase(new MockAuthRepository())}
+          variantUpdateUsecase={new VariantUpdateUsecase(variantRepo, productRepo, {
+            variantId: variant.id,
+            productId: product.id,
+            variant,
+            product,
+          })}
+          tagListUsecase={new TagListUsecase(tagRepo, { tags: tagRepo.tags })}
+          materialListUsecase={new MaterialListUsecase(
+            new MockMaterialRepository(),
+            new MockMaterialListQueryRepository(),
+            { materials: [], totalItem: 0 }
+          )}
+        />
+      );
+
+      return variantRepo;
+    };
+
+    it('should tick the tags the variant already carries', async () => {
+      renderWithTaggedVariant([1]);
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getByRole('checkbox', { name: 'New' }).getAttribute('aria-checked')).toBe('true');
+      expect(screen.getByRole('checkbox', { name: 'Best Seller' }).getAttribute('aria-checked')).toBe('false');
+    });
+
+    it('should submit the existing tag ids when the field is left untouched', async () => {
+      const user = userEvent.setup();
+      const variantRepo = renderWithTaggedVariant([1, 2]);
+
+      await act(async () => {
+        await flushPromises();
+      });
+      await user.click(screen.getByRole('button', { name: 'Submit' }));
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(variantRepo.lastSubmittedValues?.tagIds).toEqual([1, 2]);
+    });
+
+    it('should submit the remaining tag ids after one is unticked', async () => {
+      const user = userEvent.setup();
+      const variantRepo = renderWithTaggedVariant([1, 2]);
+
+      await act(async () => {
+        await flushPromises();
+      });
+      await user.click(screen.getByRole('checkbox', { name: 'New' }));
+      await user.click(screen.getByRole('button', { name: 'Submit' }));
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(variantRepo.lastSubmittedValues?.tagIds).toEqual([2]);
     });
   });
 });

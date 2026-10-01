@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { Category } from './Category';
+import { ProductTag } from './Tag';
 
 export type ProductSaleType = 'purchase' | 'rental';
 
@@ -23,6 +24,7 @@ export type Product = {
   availableQuantity?: number;
   isSellable: boolean;
   sellableQuantity?: number;
+  tags?: ProductTag[];
 };
 
 export type Option = {

@@ -6,7 +6,7 @@ import {
   MaterialListProps,
   MaterialList,
 } from '../../components';
-import { Product, VariantForm } from '../../../../domain';
+import { Product, Tag, VariantForm } from '../../../../domain';
 
 export type VariantUpdateScreenProps = {
   defaultValues: VariantForm;
@@ -16,6 +16,7 @@ export type VariantUpdateScreenProps = {
   onLogoutPress: () => void;
   variant: VariantFormViewProps['variant'];
   product: Product | null;
+  tags: Tag[];
   materialList: {
     currentPage: number;
     itemPerPage: number;
@@ -44,6 +45,7 @@ export const VariantUpdateScreen = (props: VariantUpdateScreenProps) => {
           isSubmitting={props.isSubmitting}
           variant={props.variant}
           product={props.product}
+          tags={props.tags}
           serverError={props.serverError}
           MaterialList={(fieldArray, onAddMaterial) => (
             <MaterialList
