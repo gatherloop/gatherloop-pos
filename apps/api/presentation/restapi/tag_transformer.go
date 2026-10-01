@@ -34,6 +34,26 @@ func ToApiTag(tag domain.Tag) apiContract.Tag {
 	}
 }
 
+func ToApiTagWithVariantCount(tag domain.Tag) apiContract.Tag {
+	apiTag := ToApiTag(tag)
+	variantCount := tag.VariantCount
+	apiTag.VariantCount = &variantCount
+	return apiTag
+}
+
+func GetTagVariantsRequest(r *http.Request) (apiContract.TagVariantsRequest, error) {
+	var request apiContract.TagVariantsRequest
+	err := json.NewDecoder(r.Body).Decode(&request)
+	return request, err
+}
+
+func ToApiVariantTag(variantTag domain.VariantTag) apiContract.VariantTag {
+	return apiContract.VariantTag{
+		Tag:      ToApiTag(variantTag.Tag),
+		TaggedAt: variantTag.TaggedAt,
+	}
+}
+
 func ToTag(tagRequest apiContract.TagRequest) domain.Tag {
 	return domain.Tag{
 		Name:          tagRequest.Name,

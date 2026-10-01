@@ -144,7 +144,7 @@ func main() {
 	availabilityReservation := domain.NewAvailabilityReservation(availabilityReservationRepository)
 	walletUsecase := domain.NewWalletUsecase(walletRepository)
 	transactionUsecase := domain.NewTransactionUsecase(transactionRepository, variantRepository, couponRepository, walletRepository, availabilityReservation, kdsNotificationRepository, kdsNotificationUsecase, paymentRepository, guestNotificationRepository, guestNotificationUsecase, cartRepository, paymentVerificationRepository)
-	variantUsecase := domain.NewVariantUsecase(variantRepository, productRepository)
+	variantUsecase := domain.NewVariantUsecase(variantRepository, productRepository, tagRepository)
 	productUsecase := domain.NewProductUsecase(productRepository, variantRepository)
 	materialUsecase := domain.NewMaterialUsecase(materialRepository, supplierRepository)
 	supplierUsecase := domain.NewSupplierUsecase(supplierRepository)

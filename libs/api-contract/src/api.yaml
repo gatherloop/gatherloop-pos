@@ -709,6 +709,39 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /tags/{tagId}/variants:
+    put:
+      summary: Replace the variants a tag is applied to
+      operationId: tagSetVariants
+      tags:
+        - tag
+      parameters:
+        - $ref: '#/components/parameters/TagId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TagVariantsRequest'
+      responses:
+        '200':
+          description: success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TagSetVariantsResponse'
+        '404':
+          description: not found error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /materials:
     get:
       summary: List all materials
@@ -3477,9 +3510,40 @@ components:
           type: boolean
         sortOrder:
           type: integer
+        variantCount:
+          type: integer
+          format: int64
         createdAt:
           type: string
           format: date-time
+    VariantTag:
+      type: object
+      required:
+        - tag
+        - taggedAt
+      properties:
+        tag:
+          $ref: '#/components/schemas/Tag'
+        taggedAt:
+          type: string
+          format: date-time
+    TagVariantsRequest:
+      type: object
+      required:
+        - variantIds
+      properties:
+        variantIds:
+          type: array
+          items:
+            type: integer
+            format: int64
+    TagSetVariantsResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/Tag'
     TagRequest:
       required:
         - name
@@ -4200,6 +4264,7 @@ components:
         - pricingTiers
         - isAvailable
         - isSellable
+        - tags
       properties:
         id:
           type: integer
@@ -4219,6 +4284,10 @@ components:
           type: string
         imageUrl:
           type: string
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/VariantTag'
         materials:
           type: array
           items:
@@ -4281,6 +4350,11 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/PricingTier'
+        tagIds:
+          type: array
+          items:
+            type: integer
+            format: int64
     VariantMaterial:
       type: object
       required:

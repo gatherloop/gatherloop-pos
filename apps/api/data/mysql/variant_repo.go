@@ -17,6 +17,10 @@ func preloadVariantPricingTiers(db *gorm.DB) *gorm.DB {
 	return db.Order("pricing_tiers.up_to_minutes ASC")
 }
 
+func preloadVariantTags(db *gorm.DB) *gorm.DB {
+	return db.Order("variant_tags.created_at ASC")
+}
+
 func (repo Repository) GetVariantList(ctx context.Context, query string, sortBy domain.SortBy, order domain.Order, skip int, limit int, productId *int, optionValueIds []int) ([]domain.Variant, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 
@@ -29,6 +33,8 @@ func (repo Repository) GetVariantList(ctx context.Context, query string, sortBy 
 		Preload("VariantValues").
 		Preload("VariantValues.OptionValue").
 		Preload("PricingTiers", preloadVariantPricingTiers).
+		Preload("Tags", preloadVariantTags).
+		Preload("Tags.Tag").
 		Where("variants.deleted_at", nil).
 		Order(fmt.Sprintf("%s %s", ToSortByColumn(sortBy), ToOrderColumn(order)))
 
@@ -83,6 +89,8 @@ func (repo Repository) GetVariantById(ctx context.Context, id int64) (domain.Var
 		Preload("VariantValues").
 		Preload("VariantValues.OptionValue").
 		Preload("PricingTiers", preloadVariantPricingTiers).
+		Preload("Tags", preloadVariantTags).
+		Preload("Tags.Tag").
 		Where("id = ?", id).
 		First(&variant)
 	return ToVariantDomain(variant), ToErrorCtx(ctx, result.Error, "GetVariantById")
@@ -118,6 +126,8 @@ func (repo Repository) CreateVariant(ctx context.Context, variant domain.Variant
 		Preload("VariantValues").
 		Preload("VariantValues.OptionValue").
 		Preload("PricingTiers", preloadVariantPricingTiers).
+		Preload("Tags", preloadVariantTags).
+		Preload("Tags.Tag").
 		Where("id = ?", payload.Id).
 		First(&createdVariant)
 	return ToVariantDomain(createdVariant), ToErrorCtx(ctx, fetchResult.Error, "CreateVariant")
@@ -186,6 +196,8 @@ func (repo Repository) UpdateVariantById(ctx context.Context, variant domain.Var
 		Preload("VariantValues").
 		Preload("VariantValues.OptionValue").
 		Preload("PricingTiers", preloadVariantPricingTiers).
+		Preload("Tags", preloadVariantTags).
+		Preload("Tags.Tag").
 		Where("id = ?", id).
 		First(&updatedVariant)
 	return ToVariantDomain(updatedVariant), ToErrorCtx(ctx, fetchResult.Error, "UpdateVariantById")

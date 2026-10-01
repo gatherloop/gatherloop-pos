@@ -41,6 +41,8 @@ type Variant struct {
 	CreatedAt         time.Time
 	VariantValues     []VariantValue
 	PricingTiers      []PricingTier
+	Tags              []VariantTag
+	TagIds            []int64
 	IsAvailable       bool
 	AvailableQuantity *int
 	IsSellable        bool

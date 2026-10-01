@@ -298,3 +298,119 @@ func TestTagUsecase_DeleteTagById(t *testing.T) {
 		})
 	}
 }
+
+func runTransactionCallback(r *mock.MockTagRepository) {
+	r.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+		func(ctx context.Context, callback func(context.Context) *domain.Error) *domain.Error {
+			return callback(ctx)
+		})
+}
+
+func TestTagUsecase_SetTagVariants(t *testing.T) {
+	pair := func(variantId int64) domain.VariantTagPair {
+		return domain.VariantTagPair{VariantId: variantId, TagId: 1}
+	}
+
+	tests := []struct {
+		name          string
+		variantIds    []int64
+		setupMock     func(r *mock.MockTagRepository)
+		expectedError *domain.Error
+	}{
+		{
+			name:       "replace diffs the set and only touches changed pairs",
+			variantIds: []int64{2, 3},
+			setupMock: func(r *mock.MockTagRepository) {
+				runTransactionCallback(r)
+				r.EXPECT().GetTagById(gomock.Any(), int64(1)).Return(existingTags[0], nil).Times(2)
+				r.EXPECT().GetLiveVariantIds(gomock.Any(), []int64{2, 3}).Return([]int64{2, 3}, nil)
+				r.EXPECT().GetTagVariantIds(gomock.Any(), int64(1)).Return([]int64{1, 2}, nil)
+				r.EXPECT().DeleteVariantTags(gomock.Any(), []domain.VariantTagPair{pair(1)}).Return(nil)
+				r.EXPECT().InsertVariantTags(gomock.Any(), []domain.VariantTagPair{pair(3)}).Return(nil)
+			},
+		},
+		{
+			name:       "empty set clears every assignment",
+			variantIds: []int64{},
+			setupMock: func(r *mock.MockTagRepository) {
+				runTransactionCallback(r)
+				r.EXPECT().GetTagById(gomock.Any(), int64(1)).Return(existingTags[0], nil).Times(2)
+				r.EXPECT().GetLiveVariantIds(gomock.Any(), []int64{}).Return([]int64{}, nil)
+				r.EXPECT().GetTagVariantIds(gomock.Any(), int64(1)).Return([]int64{1, 2}, nil)
+				r.EXPECT().DeleteVariantTags(gomock.Any(), []domain.VariantTagPair{pair(1), pair(2)}).Return(nil)
+			},
+		},
+		{
+			name:       "unchanged set writes nothing",
+			variantIds: []int64{1, 2},
+			setupMock: func(r *mock.MockTagRepository) {
+				runTransactionCallback(r)
+				r.EXPECT().GetTagById(gomock.Any(), int64(1)).Return(existingTags[0], nil).Times(2)
+				r.EXPECT().GetLiveVariantIds(gomock.Any(), []int64{1, 2}).Return([]int64{1, 2}, nil)
+				r.EXPECT().GetTagVariantIds(gomock.Any(), int64(1)).Return([]int64{1, 2}, nil)
+			},
+		},
+		{
+			name:       "duplicate ids are collapsed",
+			variantIds: []int64{2, 2},
+			setupMock: func(r *mock.MockTagRepository) {
+				runTransactionCallback(r)
+				r.EXPECT().GetTagById(gomock.Any(), int64(1)).Return(existingTags[0], nil).Times(2)
+				r.EXPECT().GetLiveVariantIds(gomock.Any(), []int64{2}).Return([]int64{2}, nil)
+				r.EXPECT().GetTagVariantIds(gomock.Any(), int64(1)).Return([]int64{}, nil)
+				r.EXPECT().InsertVariantTags(gomock.Any(), []domain.VariantTagPair{pair(2)}).Return(nil)
+			},
+		},
+		{
+			name:       "unknown or deleted variant id is rejected without writes",
+			variantIds: []int64{2, 99},
+			setupMock: func(r *mock.MockTagRepository) {
+				runTransactionCallback(r)
+				r.EXPECT().GetTagById(gomock.Any(), int64(1)).Return(existingTags[0], nil)
+				r.EXPECT().GetLiveVariantIds(gomock.Any(), []int64{2, 99}).Return([]int64{2}, nil)
+			},
+			expectedError: &domain.Error{Type: domain.BadRequest},
+		},
+		{
+			name:       "tag not found",
+			variantIds: []int64{2},
+			setupMock: func(r *mock.MockTagRepository) {
+				runTransactionCallback(r)
+				r.EXPECT().GetTagById(gomock.Any(), int64(1)).Return(domain.Tag{}, &domain.Error{Type: domain.NotFound})
+			},
+			expectedError: &domain.Error{Type: domain.NotFound},
+		},
+		{
+			name:       "repository error while inserting",
+			variantIds: []int64{2},
+			setupMock: func(r *mock.MockTagRepository) {
+				runTransactionCallback(r)
+				r.EXPECT().GetTagById(gomock.Any(), int64(1)).Return(existingTags[0], nil)
+				r.EXPECT().GetLiveVariantIds(gomock.Any(), []int64{2}).Return([]int64{2}, nil)
+				r.EXPECT().GetTagVariantIds(gomock.Any(), int64(1)).Return([]int64{}, nil)
+				r.EXPECT().InsertVariantTags(gomock.Any(), gomock.Any()).Return(&domain.Error{Type: domain.InternalServerError})
+			},
+			expectedError: &domain.Error{Type: domain.InternalServerError},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			mockRepo := mock.NewMockTagRepository(ctrl)
+			tt.setupMock(mockRepo)
+
+			tag, err := domain.NewTagUsecase(mockRepo).SetTagVariants(context.Background(), 1, tt.variantIds)
+
+			if tt.expectedError != nil {
+				assert.NotNil(t, err)
+				assert.Equal(t, tt.expectedError.Type, err.Type)
+			} else {
+				assert.Nil(t, err)
+				assert.Equal(t, int64(1), tag.Id)
+			}
+		})
+	}
+}

@@ -36,7 +36,7 @@ func TestTagRepository_Update_WritesFalseAndZeroValues(t *testing.T) {
 		WithArgs("New", "green", false, 0, int64(1)).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mock.ExpectCommit()
-	mock.ExpectQuery("SELECT \\* FROM `tags` WHERE id = \\? ORDER BY `tags`.`id` LIMIT \\?").
+	mock.ExpectQuery("SELECT tags.\\*, \\(SELECT COUNT\\(\\*\\) FROM variant_tags .+ AS variant_count FROM `tags` WHERE tags.id = \\? ORDER BY `tags`.`id` LIMIT \\?").
 		WithArgs(int64(1), 1).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "color", "is_highlighted", "sort_order"}).
 			AddRow(1, "New", "green", false, 0))
@@ -66,10 +66,10 @@ func TestTagRepository_Delete_RemovesTheRow(t *testing.T) {
 func TestTagRepository_GetList_OrdersBySortOrderThenName(t *testing.T) {
 	repo, mock := newMockTagRepository(t)
 
-	mock.ExpectQuery("SELECT \\* FROM `tags` ORDER BY sort_order ASC, name ASC").
-		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "color", "is_highlighted", "sort_order"}).
-			AddRow(2, "Best Seller", "orange", true, 1).
-			AddRow(1, "New", "green", true, 2))
+	mock.ExpectQuery("SELECT tags.\\*, \\(SELECT COUNT\\(\\*\\) FROM variant_tags .+ AS variant_count FROM `tags` ORDER BY sort_order ASC, name ASC").
+		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "color", "is_highlighted", "sort_order", "variant_count"}).
+			AddRow(2, "Best Seller", "orange", true, 1, 4).
+			AddRow(1, "New", "green", true, 2, 0))
 
 	tags, err := repo.GetTagList(context.Background())
 
@@ -77,5 +77,66 @@ func TestTagRepository_GetList_OrdersBySortOrderThenName(t *testing.T) {
 	require.Len(t, tags, 2)
 	require.Equal(t, "Best Seller", tags[0].Name)
 	require.True(t, tags[0].IsHighlighted)
+	require.Equal(t, int64(4), tags[0].VariantCount)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestTagRepository_InsertVariantTags_IgnoresPairsThatAlreadyExist(t *testing.T) {
+	repo, mock := newMockTagRepository(t)
+
+	mock.ExpectBegin()
+	mock.ExpectExec("INSERT INTO `variant_tags` \\(`variant_id`,`tag_id`,`created_at`\\) VALUES \\(\\?,\\?,\\?\\),\\(\\?,\\?,\\?\\) ON DUPLICATE KEY UPDATE `variant_id`=`variant_id`").
+		WithArgs(int64(1), int64(5), sqlmock.AnyArg(), int64(2), int64(5), sqlmock.AnyArg()).
+		WillReturnResult(sqlmock.NewResult(0, 2))
+	mock.ExpectCommit()
+
+	err := repo.InsertVariantTags(context.Background(), []domain.VariantTagPair{
+		{VariantId: 1, TagId: 5},
+		{VariantId: 2, TagId: 5},
+	})
+
+	require.Nil(t, err)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestTagRepository_DeleteVariantTags_RemovesOnlyTheGivenPairs(t *testing.T) {
+	repo, mock := newMockTagRepository(t)
+
+	mock.ExpectBegin()
+	mock.ExpectExec("DELETE FROM `variant_tags` WHERE \\(variant_id, tag_id\\) IN \\(\\(\\?,\\?\\),\\(\\?,\\?\\)\\)").
+		WithArgs(int64(1), int64(5), int64(2), int64(5)).
+		WillReturnResult(sqlmock.NewResult(0, 2))
+	mock.ExpectCommit()
+
+	err := repo.DeleteVariantTags(context.Background(), []domain.VariantTagPair{
+		{VariantId: 1, TagId: 5},
+		{VariantId: 2, TagId: 5},
+	})
+
+	require.Nil(t, err)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestTagRepository_GetLiveVariantIds_SkipsDeletedAndUnknownVariants(t *testing.T) {
+	repo, mock := newMockTagRepository(t)
+
+	mock.ExpectQuery("SELECT `id` FROM `variants` WHERE id IN \\(\\?,\\?,\\?\\) AND deleted_at IS NULL").
+		WithArgs(int64(1), int64(2), int64(3)).
+		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1).AddRow(3))
+
+	liveIds, err := repo.GetLiveVariantIds(context.Background(), []int64{1, 2, 3})
+
+	require.Nil(t, err)
+	require.Equal(t, []int64{1, 3}, liveIds)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestTagRepository_GetLiveVariantIds_EmptyInputSkipsTheQuery(t *testing.T) {
+	repo, mock := newMockTagRepository(t)
+
+	liveIds, err := repo.GetLiveVariantIds(context.Background(), []int64{})
+
+	require.Nil(t, err)
+	require.Empty(t, liveIds)
 	require.NoError(t, mock.ExpectationsWereMet())
 }

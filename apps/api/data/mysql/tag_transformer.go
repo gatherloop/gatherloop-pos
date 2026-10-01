@@ -20,6 +20,7 @@ func ToTagDomain(dbTag Tag) domain.Tag {
 		Color:         domain.TagColor(dbTag.Color),
 		IsHighlighted: dbTag.IsHighlighted,
 		SortOrder:     dbTag.SortOrder,
+		VariantCount:  dbTag.VariantCount,
 		CreatedAt:     dbTag.CreatedAt,
 	}
 }
@@ -30,4 +31,23 @@ func ToTagListDomain(dbTags []Tag) []domain.Tag {
 		domainTags = append(domainTags, ToTagDomain(dbTag))
 	}
 	return domainTags
+}
+
+func ToVariantTagListDomain(dbVariantTags []VariantTag) []domain.VariantTag {
+	var domainVariantTags []domain.VariantTag
+	for _, dbVariantTag := range dbVariantTags {
+		domainVariantTags = append(domainVariantTags, domain.VariantTag{
+			Tag:      ToTagDomain(dbVariantTag.Tag),
+			TaggedAt: dbVariantTag.CreatedAt,
+		})
+	}
+	return domainVariantTags
+}
+
+func ToVariantTagPairsDB(pairs []domain.VariantTagPair) []VariantTag {
+	var dbVariantTags []VariantTag
+	for _, pair := range pairs {
+		dbVariantTags = append(dbVariantTags, VariantTag{VariantId: pair.VariantId, TagId: pair.TagId})
+	}
+	return dbVariantTags
 }
