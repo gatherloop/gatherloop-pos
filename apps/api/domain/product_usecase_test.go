@@ -5,6 +5,7 @@ import (
 	"apps/api/domain"
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
@@ -113,6 +114,30 @@ func TestProductUsecase_GetProductList_resolvesAvailability(t *testing.T) {
 	assert.Nil(t, err)
 	assert.True(t, products[0].IsSellable)
 	assert.Nil(t, products[0].SellableQuantity)
+}
+
+func TestProductUsecase_GetProductById_resolvesTags(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	usecase, mockRepo, mockVariantRepo := newProductUsecase(ctrl)
+
+	newTag := domain.Tag{Id: 1, Name: "New"}
+	taggedAt := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+
+	mockRepo.EXPECT().GetProductById(gomock.Any(), int64(1)).Return(domain.Product{Id: 1, Name: "Pancong"}, nil)
+	mockVariantRepo.EXPECT().GetVariantList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+		Return([]domain.Variant{
+			{Id: 1, ProductId: 1},
+			{Id: 2, ProductId: 1, Tags: []domain.VariantTag{{Tag: newTag, TaggedAt: taggedAt}}},
+		}, nil)
+
+	product, err := usecase.GetProductById(context.Background(), 1)
+
+	assert.Nil(t, err)
+	assert.Equal(t, []domain.ProductTag{
+		{Tag: newTag, Scope: domain.ProductTagScopeVariant, VariantIds: []int64{2}, TaggedAt: taggedAt},
+	}, product.Tags)
 }
 
 func TestProductUsecase_GetProductById(t *testing.T) {
