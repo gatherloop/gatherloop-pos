@@ -4217,6 +4217,8 @@ components:
           type: string
         recipe:
           type: string
+        imageUrl:
+          type: string
         materials:
           type: array
           items:
@@ -4264,6 +4266,8 @@ components:
         description:
           type: string
         recipe:
+          type: string
+        imageUrl:
           type: string
         materials:
           type: array

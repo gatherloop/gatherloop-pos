@@ -35,6 +35,7 @@ type Variant struct {
 	Price             float32
 	Description       *string
 	Recipe            *string
+	ImageUrl          *string
 	Materials         []VariantMaterial
 	DeletedAt         *time.Time
 	CreatedAt         time.Time

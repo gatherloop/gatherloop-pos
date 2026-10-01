@@ -6,6 +6,7 @@ import (
 	"apps/api/presentation/restapi"
 	"bytes"
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -219,6 +220,61 @@ func TestVariantHandler_UpdateVariantById(t *testing.T) {
 			w := httptest.NewRecorder()
 			handler.UpdateVariantById(w, req)
 			assert.Equal(t, tt.expectedStatus, w.Code)
+		})
+	}
+}
+
+func TestVariantHandler_UpdateVariantById_ImageUrl(t *testing.T) {
+	imageUrl := "https://example.com/ice-cream.jpg"
+
+	tests := []struct {
+		name             string
+		body             string
+		expectedImageUrl *string
+	}{
+		{
+			name:             "with imageUrl",
+			body:             `{"productId": 1, "name": "Ice Cream", "price": 20000, "imageUrl": "https://example.com/ice-cream.jpg", "materials": [], "values": []}`,
+			expectedImageUrl: &imageUrl,
+		},
+		{
+			name:             "without imageUrl",
+			body:             `{"productId": 1, "name": "Ice Cream", "price": 20000, "materials": [], "values": []}`,
+			expectedImageUrl: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			variantRepo := mock.NewMockVariantRepository(ctrl)
+			productRepo := mock.NewMockProductRepository(ctrl)
+			variantRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+				func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
+			variantRepo.EXPECT().GetVariantById(gomock.Any(), int64(1)).Return(domain.Variant{Id: 1, ProductId: 1}, nil)
+			productRepo.EXPECT().GetProductById(gomock.Any(), int64(1)).Return(domain.Product{Id: 1, SaleType: domain.SaleTypePurchase}, nil)
+			variantRepo.EXPECT().UpdateVariantById(gomock.Any(), gomock.Any(), int64(1)).DoAndReturn(
+				func(ctx context.Context, variant domain.Variant, id int64) (domain.Variant, *domain.Error) {
+					assert.Equal(t, tt.expectedImageUrl, variant.ImageUrl)
+					return variant, nil
+				})
+
+			handler := newTestVariantHandler(ctrl, variantRepo, productRepo)
+			req := httptest.NewRequest(http.MethodPut, "/variants/1", bytes.NewBufferString(tt.body))
+			req.Header.Set("Content-Type", "application/json")
+			req = mux.SetURLVars(req, map[string]string{"variantId": "1"})
+			w := httptest.NewRecorder()
+			handler.UpdateVariantById(w, req)
+
+			assert.Equal(t, http.StatusOK, w.Code)
+			var response struct {
+				Data struct {
+					ImageUrl *string `json:"imageUrl"`
+				} `json:"data"`
+			}
+			assert.NoError(t, json.Unmarshal(w.Body.Bytes(), &response))
+			assert.Equal(t, tt.expectedImageUrl, response.Data.ImageUrl)
 		})
 	}
 }

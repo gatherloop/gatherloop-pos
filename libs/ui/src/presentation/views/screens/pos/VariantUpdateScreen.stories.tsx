@@ -13,6 +13,7 @@ const defaultValues: VariantForm = {
   price: mockVariant.price,
   description: mockVariant.description,
   recipe: mockVariant.recipe,
+  imageUrl: mockVariant.imageUrl ?? '',
   materials: mockVariant.materials,
   productId: mockProduct.id,
   values: mockVariant.values.map((value) => ({

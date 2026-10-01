@@ -10,6 +10,7 @@ const defaultValues: VariantForm = {
   price: 0,
   description: '',
   recipe: '',
+  imageUrl: '',
   materials: [],
   productId: 1,
   values: [],
@@ -49,6 +50,7 @@ export const Populated: Story = {
       description: 'Iced version, regular size',
       recipe:
         '- Use regular ice, not crushed.\n- Standard 250ml cup.\n- No extra syrup unless requested.',
+      imageUrl: 'https://example.com/iced-regular.jpg',
       materials: [{ materialId: 1, amount: 0.015, material: mockMaterial }],
       productId: 1,
       values: [{ optionValueId: 1 }],

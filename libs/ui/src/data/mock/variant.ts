@@ -100,6 +100,7 @@ export class MockVariantRepository implements VariantRepository {
       price: formValues.price,
       description: formValues.description,
       recipe: formValues.recipe,
+      imageUrl: formValues.imageUrl || undefined,
       materials: [],
       product: mockProduct,
       createdAt: new Date().toISOString(),
@@ -123,6 +124,7 @@ export class MockVariantRepository implements VariantRepository {
       price: formValues.price,
       description: formValues.description,
       recipe: formValues.recipe,
+      imageUrl: formValues.imageUrl || undefined,
     };
   }
 

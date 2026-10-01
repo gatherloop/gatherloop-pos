@@ -99,6 +99,7 @@ func ToApiVariant(variant domain.Variant) apiContract.Variant {
 		CreatedAt:         variant.CreatedAt,
 		Description:       variant.Description,
 		Recipe:            variant.Recipe,
+		ImageUrl:          variant.ImageUrl,
 		Values:            apiVariantValues,
 		PricingTiers:      apiPricingTiers,
 		IsAvailable:       variant.IsAvailable,
@@ -149,6 +150,7 @@ func ToVariant(variantRequest apiContract.VariantRequest) domain.Variant {
 		Materials:     variantMaterials,
 		Description:   variantRequest.Description,
 		Recipe:        variantRequest.Recipe,
+		ImageUrl:      variantRequest.ImageUrl,
 		VariantValues: variantValues,
 		PricingTiers:  pricingTiers,
 	}
