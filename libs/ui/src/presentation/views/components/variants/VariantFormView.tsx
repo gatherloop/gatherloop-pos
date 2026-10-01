@@ -119,6 +119,12 @@ export const VariantFormView = (props: VariantFormViewProps) => {
                       One short line shown to customers in the order app.
                     </SizableText>
                   </Field>
+                  <Field name="imageUrl" label="Image URL" flex={1}>
+                    <InputText />
+                    <SizableText size="$2" color="$gray10">
+                      Optional. Leave empty to use the product image.
+                    </SizableText>
+                  </Field>
                 </XStack>
               </Card.Header>
             </Card>

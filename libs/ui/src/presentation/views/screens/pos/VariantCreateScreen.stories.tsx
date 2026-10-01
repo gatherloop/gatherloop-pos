@@ -9,6 +9,7 @@ const defaultValues: VariantForm = {
   price: 0,
   description: '',
   recipe: '',
+  imageUrl: '',
   materials: [],
   productId: mockProduct.id,
   values: [],

@@ -13,6 +13,7 @@ export type Variant = {
   price: number;
   description?: string;
   recipe?: string;
+  imageUrl?: string;
   materials: {
     id: number;
     materialId: number;
@@ -44,6 +45,7 @@ export type VariantForm = {
   price: number;
   description?: string;
   recipe?: string;
+  imageUrl?: string;
   materials: {
     id?: number;
     materialId: number;
@@ -63,6 +65,7 @@ export const variantFormSchema = z.object({
   name: z.string().min(1),
   description: z.string(),
   recipe: z.string(),
+  imageUrl: z.string().optional(),
   materials: z.array(
     z.lazy(() => z.object({ materialId: z.number(), amount: z.number() }))
   ),

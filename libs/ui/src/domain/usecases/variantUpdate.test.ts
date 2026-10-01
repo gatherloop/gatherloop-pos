@@ -147,4 +147,60 @@ describe('VariantUpdateUsecase', () => {
     expect(tester.state.type).toBe('submitSuccess');
     expect(variantRepository.variants.find((v) => v.id === existing.id)?.recipe).toBe('Shake well before serving');
   });
+
+  it('pre-fills imageUrl from the fetched variant, empty when absent', () => {
+    const variantRepository = new MockVariantRepository();
+    const productRepository = new MockProductRepository();
+    const buildTester = (variant: (typeof variantRepository.variants)[number]) =>
+      new UsecaseTester<VariantUpdateUsecase, VariantUpdateState, VariantUpdateAction, VariantUpdateParams>(
+        new VariantUpdateUsecase(variantRepository, productRepository, {
+          variantId: 1,
+          variant,
+          productId: 1,
+          product: productRepository.products[0],
+        })
+      );
+
+    const withImage = buildTester({ ...variantRepository.variants[0], imageUrl: 'https://example.com/ice-cream.jpg' });
+    const withoutImage = buildTester({ ...variantRepository.variants[0], imageUrl: undefined });
+
+    expect(withImage.state.values.imageUrl).toBe('https://example.com/ice-cream.jpg');
+    expect(withoutImage.state.values.imageUrl).toBe('');
+  });
+
+  it.each([
+    ['persists an updated imageUrl', undefined, 'https://example.com/ice-cream.jpg', 'https://example.com/ice-cream.jpg'],
+    ['clears the imageUrl when emptied', 'https://example.com/ice-cream.jpg', '', undefined],
+  ])('%s', async (_name, initialImageUrl, submittedImageUrl, expectedImageUrl) => {
+    const variantRepository = new MockVariantRepository();
+    const productRepository = new MockProductRepository();
+    const existing = { ...variantRepository.variants[0], imageUrl: initialImageUrl };
+    variantRepository.variants[0] = existing;
+    const usecase = new VariantUpdateUsecase(variantRepository, productRepository, {
+      variantId: existing.id,
+      variant: existing,
+      productId: 1,
+      product: productRepository.products[0],
+    });
+    const tester = new UsecaseTester<VariantUpdateUsecase, VariantUpdateState, VariantUpdateAction, VariantUpdateParams>(usecase);
+
+    tester.dispatch({
+      type: 'SUBMIT',
+      values: {
+        productId: 1,
+        name: existing.name,
+        price: existing.price,
+        description: '',
+        recipe: '',
+        imageUrl: submittedImageUrl,
+        materials: [],
+        values: [],
+        pricingTiers: [],
+      },
+    });
+
+    await flushPromises();
+    expect(tester.state.type).toBe('submitSuccess');
+    expect(variantRepository.variants.find((v) => v.id === existing.id)?.imageUrl).toBe(expectedImageUrl);
+  });
 });

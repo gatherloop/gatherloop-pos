@@ -62,6 +62,7 @@ export class VariantCreateUsecase extends Usecase<
       price: 0,
       description: '',
       recipe: '',
+      imageUrl: '',
       values: [],
       pricingTiers: [],
     };

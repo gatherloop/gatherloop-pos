@@ -115,4 +115,34 @@ describe('VariantCreateUsecase', () => {
     expect(tester.state.type).toBe('submitSuccess');
     expect(variantRepository.variants.at(-1)?.recipe).toBe('Shake well before serving');
   });
+
+  it('starts with an empty imageUrl and persists one when submitting', async () => {
+    const variantRepository = new MockVariantRepository();
+    const productRepository = new MockProductRepository();
+    const usecase = new VariantCreateUsecase(variantRepository, productRepository, {
+      productId: 1,
+      product: productRepository.products[0],
+    });
+    const tester = new UsecaseTester<VariantCreateUsecase, VariantCreateState, VariantCreateAction, VariantCreateParams>(usecase);
+    expect(tester.state.values.imageUrl).toBe('');
+
+    tester.dispatch({
+      type: 'SUBMIT',
+      values: {
+        productId: 1,
+        name: 'Ice Cream',
+        price: 50000,
+        description: '',
+        recipe: '',
+        imageUrl: 'https://example.com/ice-cream.jpg',
+        materials: [],
+        values: [],
+        pricingTiers: [],
+      },
+    });
+
+    await flushPromises();
+    expect(tester.state.type).toBe('submitSuccess');
+    expect(variantRepository.variants.at(-1)?.imageUrl).toBe('https://example.com/ice-cream.jpg');
+  });
 });
