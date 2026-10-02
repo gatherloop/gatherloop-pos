@@ -11,6 +11,7 @@ type Context = {
   query: string;
   selectedCategoryId: number | null;
   selectedProductId: number | null;
+  selectedVariantId: number | null;
   errorMessage: string | null;
   fetchDebounceDelay: number;
 };
@@ -46,7 +47,7 @@ export type MenuListAction =
       categories: Category[];
       variants: Variant[];
     }
-  | { type: 'SELECT_ITEM'; productId: number }
+  | { type: 'SELECT_ITEM'; productId: number; variantId?: number }
   | { type: 'CLEAR_ITEM' };
 
 export type MenuListParams = {
@@ -89,6 +90,7 @@ export class MenuListUsecase extends Usecase<
       selectedProductId:
         this.params.selectedProductId ??
         this.menuListQueryRepository.getSelectedProductId(),
+      selectedVariantId: null,
       errorMessage: null,
       fetchDebounceDelay: 0,
     };
@@ -160,14 +162,16 @@ export class MenuListUsecase extends Usecase<
       // it.
       .with(
         [P._, { type: 'SELECT_ITEM' }],
-        ([state, { productId }]) => ({
+        ([state, { productId, variantId }]) => ({
           ...state,
           selectedProductId: productId,
+          selectedVariantId: variantId ?? null,
         })
       )
       .with([P._, { type: 'CLEAR_ITEM' }], ([state]) => ({
         ...state,
         selectedProductId: null,
+        selectedVariantId: null,
       }))
       .otherwise(() => state);
   }

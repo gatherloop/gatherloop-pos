@@ -3,6 +3,10 @@ import { Input, ScrollView, Spinner, Text, XStack, YStack } from 'tamagui';
 import { match } from 'ts-pattern';
 import { Category } from '../../../../domain/entities/Category';
 import { Product } from '../../../../domain/entities/Product';
+import {
+  TagHighlight,
+  TagHighlightEntry,
+} from '../../../../utils/buildTagHighlights';
 import { EmptyView } from '../../components/base/EmptyView';
 import { ErrorView } from '../../components/base/ErrorView';
 import { Focusable } from '../../components/base/Focusable';
@@ -12,6 +16,7 @@ import {
   PaymentCancelAlertProps,
 } from '../../components/checkout/PaymentCancelAlert';
 import { CategoryChipList } from '../../components/menu/CategoryChipList';
+import { MenuHighlightSection } from '../../components/menu/MenuHighlightSection';
 import { MenuProductCard } from '../../components/menu/MenuProductCard';
 import {
   MenuItemDetailScreen,
@@ -45,6 +50,8 @@ export type MenuListScreenProps = {
   variant: MenuListScreenVariant;
   onRetryButtonPress: () => void;
   onItemPress: (product: Product) => void;
+  highlightSections: TagHighlight[];
+  onHighlightEntryPress: (entry: TagHighlightEntry) => void;
   startingPriceByProductId: Record<number, number>;
   matchedLabelsByProductId: Record<number, string[]>;
   variantNameById: Record<number, string>;
@@ -67,6 +74,8 @@ export const MenuListScreen = ({
   variant,
   onRetryButtonPress,
   onItemPress,
+  highlightSections,
+  onHighlightEntryPress,
   startingPriceByProductId,
   matchedLabelsByProductId,
   variantNameById,
@@ -130,6 +139,15 @@ export const MenuListScreen = ({
           .with({ type: 'loaded' }, ({ groups }) => (
             <ScrollView flex={1}>
               <YStack gap="$5">
+                {highlightSections.map(({ tag, entries }) => (
+                  <MenuHighlightSection
+                    key={`highlight-${tag.id}`}
+                    tag={tag}
+                    entries={entries}
+                    startingPriceByProductId={startingPriceByProductId}
+                    onEntryPress={onHighlightEntryPress}
+                  />
+                ))}
                 {groups.map(({ category, products }) => (
                   <YStack key={category.id} gap="$3">
                     <Text fontSize="$6" fontWeight="bold">
