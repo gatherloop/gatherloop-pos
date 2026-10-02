@@ -4,7 +4,10 @@ import {
   MenuListState,
   MenuListParams,
 } from './menuList';
-import { MockMenuListQueryRepository, MockMenuRepository } from '../../data/mock';
+import {
+  MockMenuListQueryRepository,
+  MockMenuRepository,
+} from '../../data/mock';
 import { UsecaseTester, flushPromises } from '../../utils/usecase';
 
 const createTester = (
@@ -32,6 +35,7 @@ describe('MenuListUsecase', () => {
         variants: [],
         query: '',
         selectedCategoryId: null,
+        selectedTagId: null,
         selectedProductId: null,
         selectedVariantId: null,
         errorMessage: null,
@@ -46,6 +50,7 @@ describe('MenuListUsecase', () => {
         variants: repository.variants,
         query: '',
         selectedCategoryId: null,
+        selectedTagId: null,
         selectedProductId: null,
         selectedVariantId: null,
         errorMessage: null,
@@ -63,6 +68,7 @@ describe('MenuListUsecase', () => {
         variants: repository.variants,
         query: '',
         selectedCategoryId: null,
+        selectedTagId: null,
         selectedProductId: null,
         selectedVariantId: null,
         errorMessage: null,
@@ -77,6 +83,7 @@ describe('MenuListUsecase', () => {
         variants: repository.variants,
         query: '',
         selectedCategoryId: 2,
+        selectedTagId: null,
         selectedProductId: null,
         selectedVariantId: null,
         errorMessage: null,
@@ -121,6 +128,7 @@ describe('MenuListUsecase', () => {
         variants: [],
         query: '',
         selectedCategoryId: null,
+        selectedTagId: null,
         selectedProductId: null,
         selectedVariantId: null,
         errorMessage: 'Failed to fetch menu',
@@ -164,6 +172,55 @@ describe('MenuListUsecase', () => {
     expect(menuList.state.type).toBe('loaded');
     expect(menuList.state.products).toEqual(products);
     expect(menuList.state.categories).toEqual(categories);
+  });
+
+  describe('tag selection', () => {
+    it('clears the selected category when a tag is selected', async () => {
+      const menuList = createTester(new MockMenuRepository());
+      await flushPromises();
+
+      menuList.dispatch({ type: 'CHANGE_PARAMS', selectedCategoryId: 2 });
+      menuList.dispatch({ type: 'CHANGE_PARAMS', selectedTagId: 1 });
+
+      expect(menuList.state.selectedTagId).toBe(1);
+      expect(menuList.state.selectedCategoryId).toBeNull();
+    });
+
+    it('clears the selected tag when a category is selected', async () => {
+      const menuList = createTester(new MockMenuRepository());
+      await flushPromises();
+
+      menuList.dispatch({ type: 'CHANGE_PARAMS', selectedTagId: 1 });
+      menuList.dispatch({ type: 'CHANGE_PARAMS', selectedCategoryId: 2 });
+
+      expect(menuList.state.selectedCategoryId).toBe(2);
+      expect(menuList.state.selectedTagId).toBeNull();
+    });
+
+    it('clears both when null is given for both', async () => {
+      const menuList = createTester(new MockMenuRepository());
+      await flushPromises();
+
+      menuList.dispatch({ type: 'CHANGE_PARAMS', selectedTagId: 1 });
+      menuList.dispatch({
+        type: 'CHANGE_PARAMS',
+        selectedCategoryId: null,
+        selectedTagId: null,
+      });
+
+      expect(menuList.state.selectedCategoryId).toBeNull();
+      expect(menuList.state.selectedTagId).toBeNull();
+    });
+
+    it('keeps the selected tag when only the query changes', async () => {
+      const menuList = createTester(new MockMenuRepository());
+      await flushPromises();
+
+      menuList.dispatch({ type: 'CHANGE_PARAMS', selectedTagId: 1 });
+      menuList.dispatch({ type: 'CHANGE_PARAMS', query: 'kopi' });
+
+      expect(menuList.state.selectedTagId).toBe(1);
+    });
   });
 
   describe('item selection', () => {

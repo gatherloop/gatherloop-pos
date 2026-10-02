@@ -216,9 +216,8 @@ export const MenuListHandler = ({
       method: pendingPayment.method,
     }
   );
-  const handledCancelResultRef = useRef<
-    typeof paymentCancel.state.result
-  >(null);
+  const handledCancelResultRef =
+    useRef<typeof paymentCancel.state.result>(null);
   const isAddAfterCancelPendingRef = useRef(false);
 
   useEffect(() => {
@@ -294,12 +293,22 @@ export const MenuListHandler = ({
           (group) => group.category.id === menuList.state.selectedCategoryId
         );
 
-  const shouldShowHighlightSections =
-    menuList.state.query === '' && menuList.state.selectedCategoryId === null;
+  const allHighlights = buildTagHighlights(
+    menuList.state.products,
+    menuList.state.variants
+  );
 
-  const highlightSections = shouldShowHighlightSections
-    ? buildTagHighlights(menuList.state.products, menuList.state.variants)
-    : [];
+  const selectedTagHighlight =
+    allHighlights.find(
+      (highlight) => highlight.tag.id === menuList.state.selectedTagId
+    ) ?? null;
+
+  const shouldShowHighlightSections =
+    menuList.state.query === '' &&
+    menuList.state.selectedCategoryId === null &&
+    menuList.state.selectedTagId === null;
+
+  const highlightSections = shouldShowHighlightSections ? allHighlights : [];
 
   const startingPriceByProductId = computeStartingPriceByProductId(
     menuList.state.variants
@@ -324,9 +333,7 @@ export const MenuListHandler = ({
   ) : currentCart && currentCart.itemCount > 0 ? (
     <CartBar
       itemCount={currentCart.itemCount}
-      onPress={() =>
-        router.push(`/t/${tableResolveUsecase.params.code}/cart`)
-      }
+      onPress={() => router.push(`/t/${tableResolveUsecase.params.code}/cart`)}
     />
   ) : null;
 
@@ -451,6 +458,16 @@ export const MenuListHandler = ({
         menuList.dispatch({
           type: 'CHANGE_PARAMS',
           selectedCategoryId: categoryId,
+          selectedTagId: null,
+          fetchDebounceDelay: 0,
+        })
+      }
+      chipTags={allHighlights.map((highlight) => highlight.tag)}
+      selectedTagId={menuList.state.selectedTagId}
+      onSelectTag={(tagId: number) =>
+        menuList.dispatch({
+          type: 'CHANGE_PARAMS',
+          selectedTagId: tagId,
           fetchDebounceDelay: 0,
         })
       }
@@ -483,10 +500,19 @@ export const MenuListHandler = ({
         }))
         .with(
           { type: P.union('changingParams', 'loaded', 'revalidating') },
-          () => ({
-            type: visibleGroups.length > 0 ? 'loaded' : 'empty',
-            groups: visibleGroups,
-          })
+          () =>
+            menuList.state.selectedTagId !== null
+              ? selectedTagHighlight
+                ? {
+                    type: 'tagLoaded',
+                    tag: selectedTagHighlight.tag,
+                    entries: selectedTagHighlight.entries,
+                  }
+                : { type: 'empty' }
+              : {
+                  type: visibleGroups.length > 0 ? 'loaded' : 'empty',
+                  groups: visibleGroups,
+                }
         )
         .with({ type: 'error' }, () => ({ type: 'error' }))
         .exhaustive()}

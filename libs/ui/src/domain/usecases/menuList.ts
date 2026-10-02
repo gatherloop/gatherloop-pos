@@ -10,6 +10,7 @@ type Context = {
   variants: Variant[];
   query: string;
   selectedCategoryId: number | null;
+  selectedTagId: number | null;
   selectedProductId: number | null;
   selectedVariantId: number | null;
   errorMessage: string | null;
@@ -39,6 +40,7 @@ export type MenuListAction =
       type: 'CHANGE_PARAMS';
       query?: string;
       selectedCategoryId?: number | null;
+      selectedTagId?: number | null;
       fetchDebounceDelay?: number;
     }
   | {
@@ -87,6 +89,7 @@ export class MenuListUsecase extends Usecase<
       variants: this.params.variants ?? [],
       query: '',
       selectedCategoryId: null,
+      selectedTagId: null,
       selectedProductId:
         this.params.selectedProductId ??
         this.menuListQueryRepository.getSelectedProductId(),
@@ -141,6 +144,12 @@ export class MenuListUsecase extends Usecase<
         ([state, { type: _type, fetchDebounceDelay = 0, ...params }]) => ({
           ...state,
           ...params,
+          ...(typeof params.selectedTagId === 'number' && {
+            selectedCategoryId: null,
+          }),
+          ...(typeof params.selectedCategoryId === 'number' && {
+            selectedTagId: null,
+          }),
           fetchDebounceDelay,
           type: 'changingParams',
         })
