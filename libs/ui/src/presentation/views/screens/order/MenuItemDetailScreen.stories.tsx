@@ -295,3 +295,31 @@ export const LockedByPendingPayment: Story = {
     },
   },
 };
+
+export const ReadyWithVariantTags: Story = {
+  args: {
+    variant: {
+      type: 'ready',
+      product: esKopiSusu,
+      price: 18000,
+      variantErrorMessage: null,
+      isVariantSellable: true,
+      variantTags: [
+        {
+          tag: {
+            id: 1,
+            name: 'New',
+            color: 'green',
+            isHighlighted: true,
+            sortOrder: 1,
+            variantCount: 1,
+            createdAt: '2024-03-20T00:00:00.000Z',
+          },
+          taggedAt: '2024-03-20T00:00:00.000Z',
+        },
+      ],
+    },
+    ctaState: 'ready',
+    selectedOptionValueIds: [1],
+  },
+};

@@ -47,6 +47,7 @@ export type MenuListScreenProps = {
   onItemPress: (product: Product) => void;
   startingPriceByProductId: Record<number, number>;
   matchedLabelsByProductId: Record<number, string[]>;
+  variantNameById: Record<number, string>;
   itemDetail: (MenuItemDetailScreenProps & { isOpen: true }) | null;
   cancelConfirmation: PaymentCancelAlertProps;
 };
@@ -68,6 +69,7 @@ export const MenuListScreen = ({
   onItemPress,
   startingPriceByProductId,
   matchedLabelsByProductId,
+  variantNameById,
   itemDetail,
   cancelConfirmation,
 }: MenuListScreenProps) => {
@@ -147,6 +149,7 @@ export const MenuListScreen = ({
                             matchedLabels={
                               matchedLabelsByProductId[product.id]
                             }
+                            variantNameById={variantNameById}
                             onPress={() => onItemPress(product)}
                           />
                         </Focusable>

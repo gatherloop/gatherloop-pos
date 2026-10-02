@@ -193,6 +193,39 @@ describe('MenuListHandler', () => {
     expect(screen.getByText('Es Kopi Susu')).toBeTruthy();
   });
 
+  it('shows tag badges on a tagged product card, naming the variant for variant-scope tags', async () => {
+    const menuRepository = new MockMenuRepository();
+    const tag = {
+      id: 1,
+      name: 'New',
+      color: 'green' as const,
+      isHighlighted: true,
+      sortOrder: 1,
+      variantCount: 1,
+      createdAt: '2024-03-20T00:00:00.000Z',
+    };
+    menuRepository.products = [
+      {
+        ...menuRepository.products[0],
+        tags: [
+          {
+            tag,
+            scope: 'variant',
+            variantIds: [2],
+            taggedAt: '2024-03-20T00:00:00.000Z',
+          },
+        ],
+      },
+      menuRepository.products[1],
+    ];
+    renderHandler({ menuRepository });
+
+    await settle();
+
+    expect(screen.getByText('New · Es Kopi Susu - Large')).toBeTruthy();
+    expect(screen.queryByText('New')).toBeNull();
+  });
+
   it('filters to a single category when its chip is pressed', async () => {
     const user = userEvent.setup();
     renderHandler();

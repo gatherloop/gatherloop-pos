@@ -70,6 +70,12 @@ function computeStartingPriceByProductId(
   }, {});
 }
 
+function computeVariantNameById(variants: Variant[]): Record<number, string> {
+  return Object.fromEntries(
+    variants.map((variant) => [variant.id, variant.name])
+  );
+}
+
 function computeMatchedLabels(
   query: string,
   product: Product,
@@ -123,6 +129,7 @@ function toItemDetailScreenVariant(
     price: state.variant?.price ?? null,
     variantErrorMessage: state.type === 'error' ? state.errorMessage : null,
     isVariantSellable: state.variant?.isSellable ?? null,
+    variantTags: state.variant?.tags ?? [],
     remainingQuantity: state.variant?.isSellable
       ? state.variant.sellableQuantity
       : undefined,
@@ -435,6 +442,7 @@ export const MenuListHandler = ({
       }
       startingPriceByProductId={startingPriceByProductId}
       matchedLabelsByProductId={matchedLabelsByProductId}
+      variantNameById={computeVariantNameById(menuList.state.variants)}
       onHistoryPress={() => router.push('/orders')}
       preparingCount={preparingCount}
       cartErrorMessage={
