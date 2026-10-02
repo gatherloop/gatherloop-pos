@@ -1,46 +1,47 @@
 import { ProductTag, TagColor } from '../domain/entities';
 
-export const MAX_VISIBLE_TAG_BADGES = 2;
+export const MAX_TAG_BADGES = 2;
 
-export type ProductTagBadge = {
-  key: number;
+export type TagBadgeItem = {
+  key: string;
   label: string;
   color: TagColor;
 };
 
-export type ProductTagBadges = {
-  badges: ProductTagBadge[];
+export type TagBadges = {
+  badges: TagBadgeItem[];
   overflowCount: number;
 };
 
-function buildLabel(
+const buildLabel = (
   productTag: ProductTag,
   variantNameById: Record<number, string>
-): string {
+) => {
   if (productTag.scope === 'product') return productTag.tag.name;
+
   if (productTag.variantIds.length === 1) {
     const variantName = variantNameById[productTag.variantIds[0]];
-    return variantName
-      ? `${productTag.tag.name} · ${variantName}`
-      : productTag.tag.name;
+    if (variantName) return `${productTag.tag.name} · ${variantName}`;
   }
-  return `${productTag.tag.name} · ${productTag.variantIds.length} varian`;
-}
 
-export function buildProductTagBadges(
+  return `${productTag.tag.name} · ${productTag.variantIds.length} varian`;
+};
+
+export function buildTagBadges(
   tags: ProductTag[],
   variantNameById: Record<number, string> = {}
-): ProductTagBadges {
-  const sorted = [...tags].sort(
-    (a, b) => a.tag.sortOrder - b.tag.sortOrder || a.tag.id - b.tag.id
+): TagBadges {
+  const sortedTags = [...tags].sort(
+    (a, b) =>
+      a.tag.sortOrder - b.tag.sortOrder || a.tag.name.localeCompare(b.tag.name)
   );
 
   return {
-    badges: sorted.slice(0, MAX_VISIBLE_TAG_BADGES).map((productTag) => ({
-      key: productTag.tag.id,
+    badges: sortedTags.slice(0, MAX_TAG_BADGES).map((productTag) => ({
+      key: String(productTag.tag.id),
       label: buildLabel(productTag, variantNameById),
       color: productTag.tag.color,
     })),
-    overflowCount: Math.max(sorted.length - MAX_VISIBLE_TAG_BADGES, 0),
+    overflowCount: Math.max(sortedTags.length - MAX_TAG_BADGES, 0),
   };
 }

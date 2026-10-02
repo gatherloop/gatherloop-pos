@@ -1,6 +1,6 @@
 import { SizableText, XStack } from 'tamagui';
 import { ProductTag } from '../../../../domain';
-import { buildProductTagBadges } from '../../../../utils/buildProductTagBadges';
+import { buildTagBadges } from '../../../../utils/buildTagBadges';
 import { TagBadge } from './TagBadge';
 
 export type ProductTagBadgesProps = {
@@ -12,10 +12,7 @@ export const ProductTagBadges = ({
   tags,
   variantNameById,
 }: ProductTagBadgesProps) => {
-  const { badges, overflowCount } = buildProductTagBadges(
-    tags,
-    variantNameById
-  );
+  const { badges, overflowCount } = buildTagBadges(tags, variantNameById);
 
   if (badges.length === 0) return null;
 

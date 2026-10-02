@@ -228,3 +228,33 @@ export const SelectingOptionsWithCappedStepper: Story = {
     amount: 3,
   },
 };
+
+const taggedProducts: Product[] = [
+  {
+    ...mockProducts[0],
+    tags: [
+      {
+        tag: {
+          id: 1,
+          name: 'Best Seller',
+          color: 'orange',
+          isHighlighted: true,
+          sortOrder: 1,
+          variantCount: 2,
+          createdAt: '2024-01-01T00:00:00.000Z',
+        },
+        scope: 'product',
+        variantIds: [1, 2],
+        taggedAt: '2024-01-01T00:00:00.000Z',
+      },
+    ],
+  },
+  ...mockProducts.slice(1),
+];
+
+export const WithTagBadges: Story = {
+  args: {
+    variant: { type: 'loaded' },
+    products: taggedProducts,
+  },
+};
