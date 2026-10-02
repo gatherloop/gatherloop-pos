@@ -33,6 +33,9 @@ func TestNormalizeWhatsappNumber(t *testing.T) {
 		{name: "non-62 number at the 15 digit ceiling is accepted", raw: "+123456789012345", expected: "123456789012345"},
 		{name: "non-62 number over 15 digits is rejected", raw: "+1234567890123456", expectsErr: true},
 		{name: "bare plus sign is rejected", raw: "+", expectsErr: true},
+		{name: "number without 0 or 62 prefix is rejected", raw: "85335473895", expectsErr: true},
+		{name: "number without prefix and with separators is rejected", raw: "853-3547-3895", expectsErr: true},
+		{name: "non-62 number without a plus is rejected", raw: "6591234567", expectsErr: true},
 	}
 
 	for _, tt := range tests {
