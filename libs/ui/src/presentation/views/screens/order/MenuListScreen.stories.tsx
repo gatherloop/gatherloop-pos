@@ -67,6 +67,11 @@ const meta: Meta<typeof MenuListScreen> = {
     onSelectCategory: () => {
       // Storybook action stand-in
     },
+    chipTags: [],
+    selectedTagId: null,
+    onSelectTag: () => {
+      // Storybook action stand-in
+    },
     onRetryButtonPress: () => {
       // Storybook action stand-in
     },
@@ -162,7 +167,9 @@ export const WithHighlightSections: Story = {
     highlightSections: [
       {
         tag: newTag,
-        entries: [{ kind: 'variant', product: pancong, variant: pancongIceCream }],
+        entries: [
+          { kind: 'variant', product: pancong, variant: pancongIceCream },
+        ],
       },
       {
         tag: bestSellerTag,
@@ -172,6 +179,30 @@ export const WithHighlightSections: Story = {
         ],
       },
     ],
+  },
+};
+
+export const WithTagChips: Story = {
+  args: {
+    ...WithHighlightSections.args,
+    chipTags: [newTag, bestSellerTag],
+  },
+};
+
+export const TagSelected: Story = {
+  args: {
+    ...Loaded.args,
+    chipTags: [newTag, bestSellerTag],
+    selectedTagId: bestSellerTag.id,
+    variant: {
+      type: 'tagLoaded',
+      tag: bestSellerTag,
+      entries: [
+        { kind: 'product', product: esKopiSusu },
+        { kind: 'product', product: nasiGoreng },
+        { kind: 'variant', product: pancong, variant: pancongIceCream },
+      ],
+    },
   },
 };
 

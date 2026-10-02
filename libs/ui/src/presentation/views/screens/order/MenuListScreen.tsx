@@ -3,6 +3,7 @@ import { Input, ScrollView, Spinner, Text, XStack, YStack } from 'tamagui';
 import { match } from 'ts-pattern';
 import { Category } from '../../../../domain/entities/Category';
 import { Product } from '../../../../domain/entities/Product';
+import { Tag } from '../../../../domain/entities/Tag';
 import {
   TagHighlight,
   TagHighlightEntry,
@@ -16,6 +17,7 @@ import {
   PaymentCancelAlertProps,
 } from '../../components/checkout/PaymentCancelAlert';
 import { CategoryChipList } from '../../components/menu/CategoryChipList';
+import { MenuHighlightEntryCard } from '../../components/menu/MenuHighlightEntryCard';
 import { MenuHighlightSection } from '../../components/menu/MenuHighlightSection';
 import { MenuProductCard } from '../../components/menu/MenuProductCard';
 import {
@@ -33,7 +35,8 @@ export type MenuListScreenVariant =
   | { type: 'loading' }
   | { type: 'error' }
   | { type: 'empty' }
-  | { type: 'loaded'; groups: MenuListScreenGroup[] };
+  | { type: 'loaded'; groups: MenuListScreenGroup[] }
+  | { type: 'tagLoaded'; tag: Tag; entries: TagHighlightEntry[] };
 
 export type MenuListScreenProps = {
   tableVariant: TableResolveScreenProps['variant'];
@@ -47,6 +50,9 @@ export type MenuListScreenProps = {
   chipCategories: Category[];
   selectedCategoryId: number | null;
   onSelectCategory: (categoryId: number | null) => void;
+  chipTags: Tag[];
+  selectedTagId: number | null;
+  onSelectTag: (tagId: number) => void;
   variant: MenuListScreenVariant;
   onRetryButtonPress: () => void;
   onItemPress: (product: Product) => void;
@@ -71,6 +77,9 @@ export const MenuListScreen = ({
   chipCategories,
   selectedCategoryId,
   onSelectCategory,
+  chipTags,
+  selectedTagId,
+  onSelectTag,
   variant,
   onRetryButtonPress,
   onItemPress,
@@ -108,11 +117,14 @@ export const MenuListScreen = ({
             {isSearching && <Spinner size="small" testID="search-spinner" />}
           </XStack>
 
-          {chipCategories.length > 0 && (
+          {(chipCategories.length > 0 || chipTags.length > 0) && (
             <CategoryChipList
               categories={chipCategories}
               selectedCategoryId={selectedCategoryId}
               onSelectCategory={onSelectCategory}
+              tags={chipTags}
+              selectedTagId={selectedTagId}
+              onSelectTag={onSelectTag}
             />
           )}
         </YStack>
@@ -164,9 +176,7 @@ export const MenuListScreen = ({
                             startingPrice={
                               startingPriceByProductId[product.id] ?? null
                             }
-                            matchedLabels={
-                              matchedLabelsByProductId[product.id]
-                            }
+                            matchedLabels={matchedLabelsByProductId[product.id]}
                             variantNameById={variantNameById}
                             onPress={() => onItemPress(product)}
                           />
@@ -174,6 +184,25 @@ export const MenuListScreen = ({
                       ))}
                     </YStack>
                   </YStack>
+                ))}
+              </YStack>
+            </ScrollView>
+          ))
+          .with({ type: 'tagLoaded' }, ({ entries }) => (
+            <ScrollView flex={1}>
+              <YStack gap="$3">
+                {entries.map((entry) => (
+                  <MenuHighlightEntryCard
+                    key={
+                      entry.kind === 'variant'
+                        ? `variant-${entry.variant.id}`
+                        : `product-${entry.product.id}`
+                    }
+                    entry={entry}
+                    startingPriceByProductId={startingPriceByProductId}
+                    fullWidth
+                    onPress={onHighlightEntryPress}
+                  />
                 ))}
               </YStack>
             </ScrollView>

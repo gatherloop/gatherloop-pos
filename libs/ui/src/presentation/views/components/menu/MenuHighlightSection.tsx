@@ -1,7 +1,7 @@
 import { ScrollView, Text, XStack, YStack } from 'tamagui';
 import { Tag } from '../../../../domain/entities/Tag';
 import { TagHighlightEntry } from '../../../../utils/buildTagHighlights';
-import { MenuHighlightCard } from './MenuHighlightCard';
+import { MenuHighlightEntryCard } from './MenuHighlightEntryCard';
 
 export type MenuHighlightSectionProps = {
   tag: Tag;
@@ -22,28 +22,18 @@ export const MenuHighlightSection = ({
     </Text>
     <ScrollView horizontal showsHorizontalScrollIndicator={false}>
       <XStack gap="$3">
-        {entries.map((entry) =>
-          entry.kind === 'variant' ? (
-            <MenuHighlightCard
-              key={`variant-${entry.variant.id}`}
-              name={entry.product.name}
-              variantName={entry.variant.name}
-              imageUrl={entry.variant.imageUrl || entry.product.imageUrl}
-              station={entry.product.category.station}
-              price={entry.variant.price}
-              onPress={() => onEntryPress(entry)}
-            />
-          ) : (
-            <MenuHighlightCard
-              key={`product-${entry.product.id}`}
-              name={entry.product.name}
-              imageUrl={entry.product.imageUrl}
-              station={entry.product.category.station}
-              price={startingPriceByProductId[entry.product.id] ?? null}
-              onPress={() => onEntryPress(entry)}
-            />
-          )
-        )}
+        {entries.map((entry) => (
+          <MenuHighlightEntryCard
+            key={
+              entry.kind === 'variant'
+                ? `variant-${entry.variant.id}`
+                : `product-${entry.product.id}`
+            }
+            entry={entry}
+            startingPriceByProductId={startingPriceByProductId}
+            onPress={onEntryPress}
+          />
+        ))}
       </XStack>
     </ScrollView>
   </YStack>

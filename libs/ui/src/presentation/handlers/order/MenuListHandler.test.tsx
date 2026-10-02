@@ -301,7 +301,6 @@ describe('MenuListHandler', () => {
     await settle();
 
     expect(screen.getByText('New · Es Kopi Susu - Large')).toBeTruthy();
-    expect(screen.queryByText('New')).toBeNull();
   });
 
   it('filters to a single category when its chip is pressed', async () => {
@@ -447,7 +446,11 @@ describe('MenuListHandler', () => {
   });
 
   describe('highlight sections', () => {
-    const sectionTitle = (name: string) => screen.getByText(name);
+    const sectionTitle = (name: string) => screen.getAllByText(name)[1];
+    const largeVariantCard = () =>
+      screen.queryByRole('button', {
+        name: 'Es Kopi Susu · Es Kopi Susu - Large',
+      });
 
     it('renders one section per highlighted tag above the category groups, in tag sortOrder', async () => {
       renderHandler({ menuRepository: createTaggedMenuRepository() });
@@ -504,7 +507,9 @@ describe('MenuListHandler', () => {
       await settle();
 
       expect(
-        screen.getByRole('button', { name: 'Es Kopi Susu · Es Kopi Susu - Large' })
+        screen.getByRole('button', {
+          name: 'Es Kopi Susu · Es Kopi Susu - Large',
+        })
       ).toBeTruthy();
       expect(screen.getAllByText('Rp 22.000').length).toBeGreaterThan(0);
     });
@@ -517,8 +522,7 @@ describe('MenuListHandler', () => {
       await user.click(screen.getByRole('button', { name: 'Makanan' }));
       await settle();
 
-      expect(screen.queryByText('New')).toBeNull();
-      expect(screen.queryByText('Best Seller')).toBeNull();
+      expect(largeVariantCard()).toBeNull();
     });
 
     it('hides the sections while the search box has text', async () => {
@@ -531,8 +535,7 @@ describe('MenuListHandler', () => {
         'kopi'
       );
 
-      expect(screen.queryByText('New')).toBeNull();
-      expect(screen.queryByText('Best Seller')).toBeNull();
+      expect(largeVariantCard()).toBeNull();
     });
 
     it('brings the sections back once the category filter is cleared', async () => {
@@ -545,7 +548,7 @@ describe('MenuListHandler', () => {
       await user.click(screen.getByRole('button', { name: 'Semua' }));
       await settle();
 
-      expect(screen.getByText('New')).toBeTruthy();
+      expect(largeVariantCard()).toBeTruthy();
     });
 
     it('omits entries that are sold out, and the whole section when none remain', async () => {
@@ -578,7 +581,9 @@ describe('MenuListHandler', () => {
       await settle();
 
       await user.click(
-        screen.getByRole('button', { name: 'Es Kopi Susu · Es Kopi Susu - Large' })
+        screen.getByRole('button', {
+          name: 'Es Kopi Susu · Es Kopi Susu - Large',
+        })
       );
       await settle();
 
@@ -587,6 +592,158 @@ describe('MenuListHandler', () => {
           name: 'Tambah ke Keranjang · Rp 22.000',
         })
       ).toBeTruthy();
+    });
+  });
+
+  describe('highlighted-tag chips', () => {
+    const chipNames = () =>
+      screen
+        .getAllByRole('button')
+        .map((button) => button.textContent)
+        .filter((text) =>
+          [
+            'Semua',
+            'New',
+            'Best Seller',
+            'Regular Pick',
+            'Minuman',
+            'Makanan',
+          ].includes(text ?? '')
+        );
+
+    it('renders a chip per non-empty highlighted tag between Semua and the categories', async () => {
+      renderHandler({ menuRepository: createTaggedMenuRepository() });
+      await settle();
+
+      expect(chipNames().slice(0, 5)).toEqual([
+        'Semua',
+        'New',
+        'Best Seller',
+        'Minuman',
+        'Makanan',
+      ]);
+    });
+
+    it('renders no tag chip for a tag that is not highlighted', async () => {
+      renderHandler({ menuRepository: createTaggedMenuRepository() });
+      await settle();
+
+      expect(screen.queryByRole('button', { name: 'Regular Pick' })).toBeNull();
+    });
+
+    it('renders no tag chip for a tag whose entries are all sold out', async () => {
+      const menuRepository = createTaggedMenuRepository();
+      menuRepository.variants[1].isSellable = false;
+      renderHandler({ menuRepository });
+      await settle();
+
+      expect(screen.queryByRole('button', { name: 'New' })).toBeNull();
+      expect(screen.getByRole('button', { name: 'Best Seller' })).toBeTruthy();
+    });
+
+    it('renders no tag chip when nothing is tagged', async () => {
+      renderHandler();
+      await settle();
+
+      expect(screen.queryByRole('button', { name: 'New' })).toBeNull();
+    });
+
+    it('shows only that tag’s entries as a list, newest first, replacing sections and category groups', async () => {
+      const user = userEvent.setup();
+      renderHandler({ menuRepository: createTaggedMenuRepository() });
+      await settle();
+
+      await user.click(screen.getByRole('button', { name: 'Best Seller' }));
+      await settle();
+
+      const nasiGorengCard = screen.getByRole('button', {
+        name: 'Nasi Goreng',
+      });
+      const esKopiSusuCard = screen.getByRole('button', {
+        name: 'Es Kopi Susu',
+      });
+      expect(
+        nasiGorengCard.compareDocumentPosition(esKopiSusuCard) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBeTruthy();
+      expect(
+        screen.queryByRole('button', {
+          name: 'Es Kopi Susu · Es Kopi Susu - Large',
+        })
+      ).toBeNull();
+      expect(screen.getAllByText('Minuman')).toHaveLength(1);
+    });
+
+    it('opens the item sheet with the variant preselected from a tag list entry', async () => {
+      const user = userEvent.setup();
+      renderHandler({ menuRepository: createTaggedMenuRepository() });
+      await settle();
+
+      await user.click(screen.getByRole('button', { name: 'New' }));
+      await settle();
+      await user.click(
+        screen.getByRole('button', {
+          name: 'Es Kopi Susu · Es Kopi Susu - Large',
+        })
+      );
+      await settle();
+
+      expect(
+        screen.getByRole('button', {
+          name: 'Tambah ke Keranjang · Rp 22.000',
+        })
+      ).toBeTruthy();
+    });
+
+    it('replaces the tag list with a category when a category chip is pressed', async () => {
+      const user = userEvent.setup();
+      renderHandler({ menuRepository: createTaggedMenuRepository() });
+      await settle();
+
+      await user.click(screen.getByRole('button', { name: 'New' }));
+      await settle();
+      await user.click(screen.getByRole('button', { name: 'Makanan' }));
+      await settle();
+
+      expect(screen.getAllByText('Makanan')).toHaveLength(2);
+      expect(screen.getByText('Nasi Goreng')).toBeTruthy();
+      expect(screen.queryByText('Es Kopi Susu')).toBeNull();
+    });
+
+    it('replaces the category with the tag list when a tag chip is pressed', async () => {
+      const user = userEvent.setup();
+      renderHandler({ menuRepository: createTaggedMenuRepository() });
+      await settle();
+
+      await user.click(screen.getByRole('button', { name: 'Makanan' }));
+      await settle();
+      await user.click(screen.getByRole('button', { name: 'New' }));
+      await settle();
+
+      expect(screen.queryByText('Nasi Goreng')).toBeNull();
+      expect(
+        screen.getByRole('button', {
+          name: 'Es Kopi Susu · Es Kopi Susu - Large',
+        })
+      ).toBeTruthy();
+    });
+
+    it('brings back the sections and category groups when Semua is pressed', async () => {
+      const user = userEvent.setup();
+      renderHandler({ menuRepository: createTaggedMenuRepository() });
+      await settle();
+
+      await user.click(screen.getByRole('button', { name: 'New' }));
+      await settle();
+      await user.click(screen.getByRole('button', { name: 'Semua' }));
+      await settle();
+
+      expect(
+        screen.getByRole('button', {
+          name: 'Es Kopi Susu · Es Kopi Susu - Large',
+        })
+      ).toBeTruthy();
+      expect(screen.getAllByText('Makanan')).toHaveLength(2);
     });
   });
 
@@ -826,9 +983,7 @@ describe('MenuListHandler', () => {
       await user.click(screen.getByText('Es Kopi Susu'));
       await settle();
 
-      expect(
-        screen.getByText(/pembayaran yang belum selesai/)
-      ).toBeTruthy();
+      expect(screen.getByText(/pembayaran yang belum selesai/)).toBeTruthy();
       expect(
         screen.queryByRole('button', { name: /Tambah ke Keranjang/ })
       ).toBeNull();
@@ -972,9 +1127,7 @@ describe('MenuListHandler', () => {
 
         expect(cancelSpy).not.toHaveBeenCalled();
         expect(screen.getByLabelText('Tutup')).toBeTruthy();
-        expect(
-          screen.getByText(/pembayaran yang belum selesai/)
-        ).toBeTruthy();
+        expect(screen.getByText(/pembayaran yang belum selesai/)).toBeTruthy();
       });
     });
   });
