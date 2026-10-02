@@ -356,6 +356,7 @@ export const TransactionItemSelect = ({
                                 style={{ flex: 1 }}
                                 name={item.name}
                                 imageUrl={item.imageUrl}
+                                tags={item.tags}
                                 onPress={
                                   isSoldOut
                                     ? undefined

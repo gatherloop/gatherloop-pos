@@ -1,7 +1,9 @@
 import { FileText, Pencil, Tag, Trash } from '@tamagui/lucide-icons';
 import { ListItem } from '../base';
 import { Paragraph, XStack, XStackProps, YStack } from 'tamagui';
-import { ProductStatus } from '../../../../domain';
+import { ProductStatus, ProductTag } from '../../../../domain';
+import { buildTagBadges } from '../../../../utils';
+import { TagBadge } from '../tags';
 
 export type ProductListItemProps = {
   name: string;
@@ -11,6 +13,8 @@ export type ProductListItemProps = {
   imageUrl?: string;
   isSoldOut?: boolean;
   remainingQuantity?: number;
+  tags?: ProductTag[];
+  variantNameById?: Record<number, string>;
   onEditMenuPress?: () => void;
   onDeleteMenuPress?: () => void;
 } & XStackProps;
@@ -51,10 +55,14 @@ export const ProductListItem = ({
   imageUrl,
   isSoldOut,
   remainingQuantity,
+  tags = [],
+  variantNameById,
   onEditMenuPress,
   onDeleteMenuPress,
   ...xStackProps
 }: ProductListItemProps) => {
+  const { badges, overflowCount } = buildTagBadges(tags, variantNameById);
+
   return (
     <ListItem
       title={name}
@@ -63,12 +71,26 @@ export const ProductListItem = ({
           <Paragraph textTransform="none" ellipse size="$6">
             {categoryName}
           </Paragraph>
-          {isSoldOut ? (
-            <SoldOutBadge />
-          ) : (
-            remainingQuantity !== undefined && (
-              <RemainingQuantityBadge value={remainingQuantity} />
-            )
+          {(isSoldOut ||
+            remainingQuantity !== undefined ||
+            badges.length > 0) && (
+            <XStack gap="$1.5" flexWrap="wrap" alignItems="center">
+              {isSoldOut ? (
+                <SoldOutBadge />
+              ) : (
+                remainingQuantity !== undefined && (
+                  <RemainingQuantityBadge value={remainingQuantity} />
+                )
+              )}
+              {badges.map(({ key, label, color }) => (
+                <TagBadge key={key} label={label} color={color} />
+              ))}
+              {overflowCount > 0 && (
+                <Paragraph size="$1" color="$gray10">
+                  +{overflowCount}
+                </Paragraph>
+              )}
+            </XStack>
           )}
         </YStack>
       }
