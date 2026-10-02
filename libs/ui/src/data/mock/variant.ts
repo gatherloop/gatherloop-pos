@@ -1,10 +1,16 @@
 import { Variant, VariantForm } from '../../domain/entities';
 import { VariantRepository } from '../../domain/repositories/variant';
+import { mockTags } from './tag';
 
 const mockProduct = {
   id: 1,
   name: 'Product 1',
-  category: { id: 1, name: 'Category 1', station: 'NONE' as const, createdAt: '2024-03-20T00:00:00.000Z' },
+  category: {
+    id: 1,
+    name: 'Category 1',
+    station: 'NONE' as const,
+    createdAt: '2024-03-20T00:00:00.000Z',
+  },
   imageUrl: 'https://example.com/1.jpg',
   saleType: 'purchase' as const,
   status: 'published' as const,
@@ -13,7 +19,70 @@ const mockProduct = {
   isAvailable: true,
   availabilityTracking: 'none' as const,
   isSellable: true,
+  tags: [],
 };
+
+type MenuProductSeed = {
+  id: number;
+  name: string;
+  category: string;
+  variants: [number, string][];
+};
+
+const menuProductSeeds: MenuProductSeed[] = [
+  {
+    id: 11,
+    name: 'Pancong',
+    category: 'Snacks',
+    variants: [
+      [101, 'Choco'],
+      [102, 'Matcha'],
+      [103, 'Vanilla'],
+      [104, 'Ice Cream'],
+    ],
+  },
+  {
+    id: 12,
+    name: 'Salted Caramel Macchiato',
+    category: 'Drinks',
+    variants: [[105, 'Original']],
+  },
+  {
+    id: 13,
+    name: 'Coffee Latte',
+    category: 'Drinks',
+    variants: [
+      [106, 'Hot'],
+      [107, 'Iced'],
+    ],
+  },
+];
+
+export const createMenuVariants = (): Variant[] =>
+  menuProductSeeds.flatMap((seed) =>
+    seed.variants.map(([id, name]) => ({
+      id,
+      name,
+      price: 20000,
+      materials: [],
+      product: {
+        ...mockProduct,
+        id: seed.id,
+        name: seed.name,
+        category: {
+          ...mockProduct.category,
+          id: seed.category === 'Snacks' ? 11 : 12,
+          name: seed.category,
+        },
+      },
+      createdAt: '2024-03-20T00:00:00.000Z',
+      values: [],
+      pricingTiers: [],
+      isAvailable: true,
+      isSellable: true,
+      tags: [],
+    }))
+  );
 
 const initialVariants: Variant[] = [
   {
@@ -27,6 +96,7 @@ const initialVariants: Variant[] = [
     pricingTiers: [],
     isAvailable: true,
     isSellable: true,
+    tags: [],
   },
   {
     id: 2,
@@ -39,14 +109,23 @@ const initialVariants: Variant[] = [
     pricingTiers: [],
     isAvailable: true,
     isSellable: true,
+    tags: [],
   },
 ];
 
 export class MockVariantRepository implements VariantRepository {
   variants: Variant[] = [...initialVariants];
 
+  lastSubmittedValues: VariantForm | null = null;
+
   private nextId = 3;
   private shouldFail = false;
+
+  private resolveTags(tagIds: number[]) {
+    return mockTags
+      .filter((tag) => tagIds.includes(tag.id))
+      .map((tag) => ({ tag, taggedAt: new Date().toISOString() }));
+  }
 
   setShouldFail(value: boolean) {
     this.shouldFail = value;
@@ -94,12 +173,14 @@ export class MockVariantRepository implements VariantRepository {
 
   async createVariant(formValues: VariantForm): Promise<void> {
     if (this.shouldFail) throw new Error('Failed to create variant');
+    this.lastSubmittedValues = formValues;
     this.variants.push({
       id: this.nextId++,
       name: formValues.name,
       price: formValues.price,
       description: formValues.description,
       recipe: formValues.recipe,
+      imageUrl: formValues.imageUrl || undefined,
       materials: [],
       product: mockProduct,
       createdAt: new Date().toISOString(),
@@ -107,6 +188,7 @@ export class MockVariantRepository implements VariantRepository {
       pricingTiers: formValues.pricingTiers,
       isAvailable: true,
       isSellable: true,
+      tags: this.resolveTags(formValues.tagIds),
     });
   }
 
@@ -115,6 +197,7 @@ export class MockVariantRepository implements VariantRepository {
     variantId: number
   ): Promise<void> {
     if (this.shouldFail) throw new Error('Failed to update variant');
+    this.lastSubmittedValues = formValues;
     const idx = this.variants.findIndex((v) => v.id === variantId);
     if (idx === -1) throw new Error('Variant not found');
     this.variants[idx] = {
@@ -123,11 +206,14 @@ export class MockVariantRepository implements VariantRepository {
       price: formValues.price,
       description: formValues.description,
       recipe: formValues.recipe,
+      imageUrl: formValues.imageUrl || undefined,
+      tags: this.resolveTags(formValues.tagIds),
     };
   }
 
   reset() {
     this.variants = [...initialVariants];
+    this.lastSubmittedValues = null;
     this.nextId = 3;
     this.shouldFail = false;
   }

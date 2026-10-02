@@ -1,12 +1,14 @@
 import { Paragraph, Text, XStack, YStack } from 'tamagui';
 import { Product } from '../../../../domain/entities/Product';
 import { formatRupiah } from '../../../../utils/currency';
+import { ProductTagBadges } from '../tags/ProductTagBadges';
 import { MenuItemThumbnail } from './MenuItemThumbnail';
 
 export type MenuProductCardProps = {
   product: Product;
   startingPrice: number | null;
   matchedLabels?: string[];
+  variantNameById?: Record<number, string>;
   onPress: () => void;
 };
 
@@ -42,6 +44,7 @@ export const MenuProductCard = ({
   product,
   startingPrice,
   matchedLabels,
+  variantNameById,
   onPress,
 }: MenuProductCardProps) => {
   const isSellable = product.isSellable;
@@ -76,6 +79,11 @@ export const MenuProductCard = ({
           </Text>
           {!isSellable && <SoldOutBadge />}
         </XStack>
+
+        <ProductTagBadges
+          tags={product.tags}
+          variantNameById={variantNameById}
+        />
 
         {matchedLabels && matchedLabels.length > 0 && (
           <XStack gap="$1" flexWrap="wrap">

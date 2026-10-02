@@ -2,17 +2,23 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { fn } from '@storybook/test';
 import { VariantCreateScreen } from './VariantCreateScreen';
 import type { VariantForm } from '../../../../domain';
-import { mockProduct, mockMaterials } from '../../../../../.storybook/mocks/mockData';
+import {
+  mockProduct,
+  mockMaterials,
+  mockTags,
+} from '../../../../../.storybook/mocks/mockData';
 
 const defaultValues: VariantForm = {
   name: '',
   price: 0,
   description: '',
   recipe: '',
+  imageUrl: '',
   materials: [],
   productId: mockProduct.id,
   values: [],
   pricingTiers: [],
+  tagIds: [],
 };
 
 const meta: Meta<typeof VariantCreateScreen> = {
@@ -33,6 +39,7 @@ export const Default: Story = {
     onLogoutPress: fn(),
     variant: { type: 'loaded' },
     product: mockProduct,
+    tags: mockTags,
     materialList: {
       currentPage: 1,
       itemPerPage: 10,
@@ -52,6 +59,7 @@ export const Loading: Story = {
     isSubmitDisabled: true,
     variant: { type: 'loading' },
     product: null,
+    tags: [],
     materialList: {
       ...Default.args.materialList,
       totalItem: 0,

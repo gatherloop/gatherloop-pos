@@ -28,6 +28,7 @@ const esKopiSusu = {
   isAvailable: true,
   availabilityTracking: 'none' as const,
   isSellable: true,
+  tags: [],
 };
 
 const nasiGoreng = {
@@ -43,6 +44,7 @@ const nasiGoreng = {
   isAvailable: true,
   availabilityTracking: 'none' as const,
   isSellable: true,
+  tags: [],
 };
 
 const meta: Meta<typeof MenuListScreen> = {
@@ -65,14 +67,24 @@ const meta: Meta<typeof MenuListScreen> = {
     onSelectCategory: () => {
       // Storybook action stand-in
     },
+    chipTags: [],
+    selectedTagId: null,
+    onSelectTag: () => {
+      // Storybook action stand-in
+    },
     onRetryButtonPress: () => {
       // Storybook action stand-in
     },
     onItemPress: () => {
       // Storybook action stand-in
     },
+    highlightSections: [],
+    onHighlightEntryPress: () => {
+      // Storybook action stand-in
+    },
     startingPriceByProductId: { 1: 18000, 2: 25000 },
     matchedLabelsByProductId: {},
+    variantNameById: {},
     itemDetail: null,
     cancelConfirmation: {
       isOpen: false,
@@ -102,6 +114,93 @@ export const Loaded: Story = {
       groups: [
         { category: minuman, products: [esKopiSusu] },
         { category: makanan, products: [nasiGoreng] },
+      ],
+    },
+  },
+};
+
+const newTag = {
+  id: 1,
+  name: 'New',
+  color: 'green' as const,
+  isHighlighted: true,
+  sortOrder: 1,
+  variantCount: 1,
+  createdAt: '2024-03-20T00:00:00.000Z',
+};
+
+const bestSellerTag = {
+  id: 2,
+  name: 'Best Seller',
+  color: 'orange' as const,
+  isHighlighted: true,
+  sortOrder: 2,
+  variantCount: 2,
+  createdAt: '2024-03-20T00:00:00.000Z',
+};
+
+const pancong = {
+  ...nasiGoreng,
+  id: 3,
+  name: 'Pancong',
+  imageUrl: 'https://picsum.photos/200/200',
+};
+
+const pancongIceCream = {
+  id: 4,
+  name: 'Ice Cream',
+  price: 15000,
+  imageUrl: 'https://picsum.photos/200/201',
+  materials: [],
+  product: pancong,
+  createdAt: '2024-03-20T00:00:00.000Z',
+  values: [],
+  pricingTiers: [],
+  isAvailable: true,
+  isSellable: true,
+  tags: [],
+};
+
+export const WithHighlightSections: Story = {
+  args: {
+    ...Loaded.args,
+    highlightSections: [
+      {
+        tag: newTag,
+        entries: [
+          { kind: 'variant', product: pancong, variant: pancongIceCream },
+        ],
+      },
+      {
+        tag: bestSellerTag,
+        entries: [
+          { kind: 'product', product: esKopiSusu },
+          { kind: 'product', product: nasiGoreng },
+        ],
+      },
+    ],
+  },
+};
+
+export const WithTagChips: Story = {
+  args: {
+    ...WithHighlightSections.args,
+    chipTags: [newTag, bestSellerTag],
+  },
+};
+
+export const TagSelected: Story = {
+  args: {
+    ...Loaded.args,
+    chipTags: [newTag, bestSellerTag],
+    selectedTagId: bestSellerTag.id,
+    variant: {
+      type: 'tagLoaded',
+      tag: bestSellerTag,
+      entries: [
+        { kind: 'product', product: esKopiSusu },
+        { kind: 'product', product: nasiGoreng },
+        { kind: 'variant', product: pancong, variant: pancongIceCream },
       ],
     },
   },

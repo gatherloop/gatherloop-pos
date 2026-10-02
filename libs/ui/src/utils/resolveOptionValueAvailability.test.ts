@@ -30,6 +30,7 @@ const esKopiSusu: Product = {
   isAvailable: true,
   availabilityTracking: 'none',
   isSellable: true,
+  tags: [],
 };
 
 function variant(
@@ -55,6 +56,7 @@ function variant(
     pricingTiers: [],
     isAvailable: isSellable,
     isSellable,
+    tags: [],
   };
 }
 

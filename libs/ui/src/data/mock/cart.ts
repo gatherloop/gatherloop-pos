@@ -35,6 +35,7 @@ const product: Product = {
   isAvailable: true,
   availabilityTracking: 'none',
   isSellable: true,
+  tags: [],
 };
 
 const variants: Record<number, Variant> = {
@@ -56,6 +57,7 @@ const variants: Record<number, Variant> = {
     pricingTiers: [],
     isAvailable: true,
     isSellable: true,
+    tags: [],
   },
   2: {
     id: 2,
@@ -75,6 +77,7 @@ const variants: Record<number, Variant> = {
     pricingTiers: [],
     isAvailable: true,
     isSellable: true,
+    tags: [],
   },
 };
 

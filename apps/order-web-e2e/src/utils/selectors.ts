@@ -20,6 +20,15 @@ export const menuList = {
   startingPrice: (page: Page, formattedPrice: string) =>
     page.getByText(`mulai ${formattedPrice}`),
   emptyView: (page: Page) => page.getByText('Menu tidak ditemukan'),
+  tagChip: (page: Page, name: string) =>
+    page.getByRole('button', { name, exact: true }),
+  tagSectionHeading: (page: Page, name: string) =>
+    page.getByText(name, { exact: true }),
+  highlightCard: (page: Page, productName: string, variantName?: string) =>
+    page.getByRole('button', {
+      name: variantName ? `${productName} · ${variantName}` : productName,
+      exact: true,
+    }),
 };
 
 export const itemDetail = {

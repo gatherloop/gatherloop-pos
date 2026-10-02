@@ -35,11 +35,13 @@ type Variant struct {
 	Price             float32
 	Description       *string
 	Recipe            *string
+	ImageUrl          *string
 	Materials         []VariantMaterial
 	DeletedAt         *time.Time
 	CreatedAt         time.Time
 	VariantValues     []VariantValue
 	PricingTiers      []PricingTier
+	Tags              []VariantTag
 	IsAvailable       bool `gorm:"default:1"`
 	AvailableQuantity *int
 }

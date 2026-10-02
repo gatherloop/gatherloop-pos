@@ -46,6 +46,7 @@ const teh: Product = {
   isAvailable: true,
   availabilityTracking: 'none',
   isSellable: true,
+  tags: [],
 };
 
 const nasiGoreng: Product = {
@@ -61,6 +62,7 @@ const nasiGoreng: Product = {
   isAvailable: true,
   availabilityTracking: 'none',
   isSellable: true,
+  tags: [],
 };
 
 const kopi: Product = {
@@ -76,6 +78,7 @@ const kopi: Product = {
   isAvailable: true,
   availabilityTracking: 'none',
   isSellable: true,
+  tags: [],
 };
 
 describe('matchMenuSearch', () => {

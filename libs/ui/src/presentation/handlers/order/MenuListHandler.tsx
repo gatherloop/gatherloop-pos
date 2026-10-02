@@ -13,8 +13,10 @@ import { MenuListUsecase } from '../../../domain/usecases/menuList';
 import { PaymentCancelUsecase } from '../../../domain/usecases/paymentCancel';
 import { TableResolveUsecase } from '../../../domain/usecases/tableResolve';
 import {
+  buildTagHighlights,
   matchMenuSearch,
   resolveOptionValueAvailability,
+  TagHighlightEntry,
 } from '../../../utils';
 import { CartBar } from '../../views/components/cart/CartBar';
 import { PendingPaymentBar } from '../../views/components/cart/PendingPaymentBar';
@@ -51,8 +53,10 @@ function groupByCategory(products: Product[], categories: Category[]) {
 
 function computePreselectedOptionValueIds(
   query: string,
-  product: Product
+  product: Product,
+  variant: Variant | undefined
 ): number[] {
+  if (variant) return variant.values.map((value) => value.optionValueId);
   return matchMenuSearch(query, product).matchedOptionValues.map(
     (value) => value.id
   );
@@ -68,6 +72,12 @@ function computeStartingPriceByProductId(
     }
     return acc;
   }, {});
+}
+
+function computeVariantNameById(variants: Variant[]): Record<number, string> {
+  return Object.fromEntries(
+    variants.map((variant) => [variant.id, variant.name])
+  );
 }
 
 function computeMatchedLabels(
@@ -123,6 +133,7 @@ function toItemDetailScreenVariant(
     price: state.variant?.price ?? null,
     variantErrorMessage: state.type === 'error' ? state.errorMessage : null,
     isVariantSellable: state.variant?.isSellable ?? null,
+    variantTags: state.variant?.tags ?? [],
     remainingQuantity: state.variant?.isSellable
       ? state.variant.sellableQuantity
       : undefined,
@@ -205,9 +216,8 @@ export const MenuListHandler = ({
       method: pendingPayment.method,
     }
   );
-  const handledCancelResultRef = useRef<
-    typeof paymentCancel.state.result
-  >(null);
+  const handledCancelResultRef =
+    useRef<typeof paymentCancel.state.result>(null);
   const isAddAfterCancelPendingRef = useRef(false);
 
   useEffect(() => {
@@ -242,17 +252,20 @@ export const MenuListHandler = ({
   }, [cart.state.type, cart.dispatch, menuItemDetail.state, menuList.dispatch]);
 
   useEffect(() => {
-    const { selectedProductId, query } = menuList.state;
+    const { selectedProductId, selectedVariantId, query } = menuList.state;
     if (selectedProductId !== null) {
       const product = menuList.state.products.find(
         (candidate) => candidate.id === selectedProductId
+      );
+      const variant = menuList.state.variants.find(
+        (candidate) => candidate.id === selectedVariantId
       );
       menuItemDetail.dispatch({
         type: 'SELECT_PRODUCT',
         productId: selectedProductId,
         product,
         preselectedOptionValueIds: product
-          ? computePreselectedOptionValueIds(query, product)
+          ? computePreselectedOptionValueIds(query, product, variant)
           : [],
       });
     }
@@ -262,7 +275,11 @@ export const MenuListHandler = ({
     // (and reset the draft's amount/note) whenever a background
     // revalidation resolves while the sheet is open.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [menuList.state.selectedProductId, menuItemDetail.dispatch]);
+  }, [
+    menuList.state.selectedProductId,
+    menuList.state.selectedVariantId,
+    menuItemDetail.dispatch,
+  ]);
 
   const groups = groupByCategory(
     menuList.state.products,
@@ -275,6 +292,23 @@ export const MenuListHandler = ({
       : groups.filter(
           (group) => group.category.id === menuList.state.selectedCategoryId
         );
+
+  const allHighlights = buildTagHighlights(
+    menuList.state.products,
+    menuList.state.variants
+  );
+
+  const selectedTagHighlight =
+    allHighlights.find(
+      (highlight) => highlight.tag.id === menuList.state.selectedTagId
+    ) ?? null;
+
+  const shouldShowHighlightSections =
+    menuList.state.query === '' &&
+    menuList.state.selectedCategoryId === null &&
+    menuList.state.selectedTagId === null;
+
+  const highlightSections = shouldShowHighlightSections ? allHighlights : [];
 
   const startingPriceByProductId = computeStartingPriceByProductId(
     menuList.state.variants
@@ -299,9 +333,7 @@ export const MenuListHandler = ({
   ) : currentCart && currentCart.itemCount > 0 ? (
     <CartBar
       itemCount={currentCart.itemCount}
-      onPress={() =>
-        router.push(`/t/${tableResolveUsecase.params.code}/cart`)
-      }
+      onPress={() => router.push(`/t/${tableResolveUsecase.params.code}/cart`)}
     />
   ) : null;
 
@@ -426,6 +458,16 @@ export const MenuListHandler = ({
         menuList.dispatch({
           type: 'CHANGE_PARAMS',
           selectedCategoryId: categoryId,
+          selectedTagId: null,
+          fetchDebounceDelay: 0,
+        })
+      }
+      chipTags={allHighlights.map((highlight) => highlight.tag)}
+      selectedTagId={menuList.state.selectedTagId}
+      onSelectTag={(tagId: number) =>
+        menuList.dispatch({
+          type: 'CHANGE_PARAMS',
+          selectedTagId: tagId,
           fetchDebounceDelay: 0,
         })
       }
@@ -433,8 +475,17 @@ export const MenuListHandler = ({
       onItemPress={(product: Product) =>
         menuList.dispatch({ type: 'SELECT_ITEM', productId: product.id })
       }
+      highlightSections={highlightSections}
+      onHighlightEntryPress={(entry: TagHighlightEntry) =>
+        menuList.dispatch({
+          type: 'SELECT_ITEM',
+          productId: entry.product.id,
+          variantId: entry.kind === 'variant' ? entry.variant.id : undefined,
+        })
+      }
       startingPriceByProductId={startingPriceByProductId}
       matchedLabelsByProductId={matchedLabelsByProductId}
+      variantNameById={computeVariantNameById(menuList.state.variants)}
       onHistoryPress={() => router.push('/orders')}
       preparingCount={preparingCount}
       cartErrorMessage={
@@ -449,10 +500,19 @@ export const MenuListHandler = ({
         }))
         .with(
           { type: P.union('changingParams', 'loaded', 'revalidating') },
-          () => ({
-            type: visibleGroups.length > 0 ? 'loaded' : 'empty',
-            groups: visibleGroups,
-          })
+          () =>
+            menuList.state.selectedTagId !== null
+              ? selectedTagHighlight
+                ? {
+                    type: 'tagLoaded',
+                    tag: selectedTagHighlight.tag,
+                    entries: selectedTagHighlight.entries,
+                  }
+                : { type: 'empty' }
+              : {
+                  type: visibleGroups.length > 0 ? 'loaded' : 'empty',
+                  groups: visibleGroups,
+                }
         )
         .with({ type: 'error' }, () => ({ type: 'error' }))
         .exhaustive()}

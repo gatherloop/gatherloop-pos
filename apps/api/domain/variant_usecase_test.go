@@ -11,7 +11,7 @@ import (
 )
 
 func newVariantUsecase(ctrl *gomock.Controller, variantRepo *mock.MockVariantRepository, productRepo *mock.MockProductRepository) domain.VariantUsecase {
-	return domain.NewVariantUsecase(variantRepo, productRepo)
+	return domain.NewVariantUsecase(variantRepo, productRepo, mock.NewMockTagRepository(ctrl))
 }
 
 func TestVariantUsecase_GetVariantList(t *testing.T) {
@@ -389,4 +389,163 @@ func TestVariantUsecase_DeleteVariantById(t *testing.T) {
 			}
 		})
 	}
+}
+
+func runVariantTransactionCallback(vr *mock.MockVariantRepository) {
+	vr.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
+		func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error {
+			return cb(ctx)
+		})
+}
+
+func tagPairs(variantId int64, tagIds ...int64) []domain.VariantTagPair {
+	pairs := []domain.VariantTagPair{}
+	for _, tagId := range tagIds {
+		pairs = append(pairs, domain.VariantTagPair{VariantId: variantId, TagId: tagId})
+	}
+	return pairs
+}
+
+var knownTags = []domain.Tag{{Id: 1, Name: "New"}, {Id: 2, Name: "Best Seller"}, {Id: 3, Name: "Spicy"}}
+
+func TestVariantUsecase_UpdateVariantById_Tags(t *testing.T) {
+	tests := []struct {
+		name          string
+		tagIds        []int64
+		setupMock     func(vr *mock.MockVariantRepository, tr *mock.MockTagRepository)
+		expectedError *domain.Error
+	}{
+		{
+			name:   "omitted tagIds leave assignments untouched",
+			tagIds: nil,
+			setupMock: func(vr *mock.MockVariantRepository, tr *mock.MockTagRepository) {
+				vr.EXPECT().UpdateVariantById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Variant{Id: 1, Name: "Hot"}, nil)
+			},
+		},
+		{
+			name:   "empty tagIds clear every assignment",
+			tagIds: []int64{},
+			setupMock: func(vr *mock.MockVariantRepository, tr *mock.MockTagRepository) {
+				tr.EXPECT().GetTagList(gomock.Any()).Return(knownTags, nil)
+				tr.EXPECT().GetVariantTagIds(gomock.Any(), int64(1)).Return([]int64{1, 2}, nil)
+				tr.EXPECT().DeleteVariantTags(gomock.Any(), tagPairs(1, 1, 2)).Return(nil)
+				vr.EXPECT().UpdateVariantById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Variant{Id: 1, Name: "Hot"}, nil)
+			},
+		},
+		{
+			name:   "a list replaces the set by diffing",
+			tagIds: []int64{2, 3},
+			setupMock: func(vr *mock.MockVariantRepository, tr *mock.MockTagRepository) {
+				tr.EXPECT().GetTagList(gomock.Any()).Return(knownTags, nil)
+				tr.EXPECT().GetVariantTagIds(gomock.Any(), int64(1)).Return([]int64{1, 2}, nil)
+				tr.EXPECT().DeleteVariantTags(gomock.Any(), tagPairs(1, 1)).Return(nil)
+				tr.EXPECT().InsertVariantTags(gomock.Any(), tagPairs(1, 3)).Return(nil)
+				vr.EXPECT().UpdateVariantById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Variant{Id: 1, Name: "Hot"}, nil)
+			},
+		},
+		{
+			name:   "an unchanged list writes nothing",
+			tagIds: []int64{1, 2},
+			setupMock: func(vr *mock.MockVariantRepository, tr *mock.MockTagRepository) {
+				tr.EXPECT().GetTagList(gomock.Any()).Return(knownTags, nil)
+				tr.EXPECT().GetVariantTagIds(gomock.Any(), int64(1)).Return([]int64{1, 2}, nil)
+				vr.EXPECT().UpdateVariantById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Variant{Id: 1, Name: "Hot"}, nil)
+			},
+		},
+		{
+			name:   "unknown tag id is rejected before anything is written",
+			tagIds: []int64{99},
+			setupMock: func(vr *mock.MockVariantRepository, tr *mock.MockTagRepository) {
+				tr.EXPECT().GetTagList(gomock.Any()).Return(knownTags, nil)
+			},
+			expectedError: &domain.Error{Type: domain.BadRequest},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			variantRepo := mock.NewMockVariantRepository(ctrl)
+			productRepo := mock.NewMockProductRepository(ctrl)
+			tagRepo := mock.NewMockTagRepository(ctrl)
+			runVariantTransactionCallback(variantRepo)
+			variantRepo.EXPECT().GetVariantById(gomock.Any(), int64(1)).Return(domain.Variant{Id: 1, ProductId: 10}, nil)
+			productRepo.EXPECT().GetProductById(gomock.Any(), int64(10)).Return(domain.Product{Id: 10, SaleType: domain.SaleTypePurchase}, nil)
+			tt.setupMock(variantRepo, tagRepo)
+
+			usecase := domain.NewVariantUsecase(variantRepo, productRepo, tagRepo)
+			_, err := usecase.UpdateVariantById(context.Background(), domain.Variant{Name: "Hot", Price: 8000, TagIds: tt.tagIds}, 1)
+
+			if tt.expectedError != nil {
+				assert.NotNil(t, err)
+				assert.Equal(t, tt.expectedError.Type, err.Type)
+			} else {
+				assert.Nil(t, err)
+			}
+		})
+	}
+}
+
+func TestVariantUsecase_CreateVariant_Tags(t *testing.T) {
+	product := domain.Product{Id: 10, SaleType: domain.SaleTypePurchase}
+	input := domain.Variant{ProductId: 10, Name: "Hot", Price: 8000}
+
+	t.Run("tagIds are applied to the created variant and returned", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+		variantRepo := mock.NewMockVariantRepository(ctrl)
+		productRepo := mock.NewMockProductRepository(ctrl)
+		tagRepo := mock.NewMockTagRepository(ctrl)
+
+		withTags := input
+		withTags.TagIds = []int64{2}
+		productRepo.EXPECT().GetProductById(gomock.Any(), int64(10)).Return(product, nil)
+		runVariantTransactionCallback(variantRepo)
+		tagRepo.EXPECT().GetTagList(gomock.Any()).Return(knownTags, nil)
+		variantRepo.EXPECT().CreateVariant(gomock.Any(), withTags).Return(domain.Variant{Id: 5, ProductId: 10, Name: "Hot"}, nil)
+		tagRepo.EXPECT().GetVariantTagIds(gomock.Any(), int64(5)).Return([]int64{}, nil)
+		tagRepo.EXPECT().InsertVariantTags(gomock.Any(), tagPairs(5, 2)).Return(nil)
+		variantRepo.EXPECT().GetVariantById(gomock.Any(), int64(5)).Return(domain.Variant{Id: 5, ProductId: 10, Name: "Hot", Tags: []domain.VariantTag{{Tag: knownTags[1]}}}, nil)
+
+		created, err := domain.NewVariantUsecase(variantRepo, productRepo, tagRepo).CreateVariant(context.Background(), withTags)
+
+		assert.Nil(t, err)
+		assert.Len(t, created.Tags, 1)
+	})
+
+	t.Run("omitted tagIds never touch the tag repository", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+		variantRepo := mock.NewMockVariantRepository(ctrl)
+		productRepo := mock.NewMockProductRepository(ctrl)
+		tagRepo := mock.NewMockTagRepository(ctrl)
+
+		productRepo.EXPECT().GetProductById(gomock.Any(), int64(10)).Return(product, nil)
+		variantRepo.EXPECT().CreateVariant(gomock.Any(), input).Return(domain.Variant{Id: 5, ProductId: 10, Name: "Hot"}, nil)
+
+		_, err := domain.NewVariantUsecase(variantRepo, productRepo, tagRepo).CreateVariant(context.Background(), input)
+
+		assert.Nil(t, err)
+	})
+
+	t.Run("unknown tag id is rejected before the variant is created", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+		variantRepo := mock.NewMockVariantRepository(ctrl)
+		productRepo := mock.NewMockProductRepository(ctrl)
+		tagRepo := mock.NewMockTagRepository(ctrl)
+
+		withTags := input
+		withTags.TagIds = []int64{99}
+		productRepo.EXPECT().GetProductById(gomock.Any(), int64(10)).Return(product, nil)
+		runVariantTransactionCallback(variantRepo)
+		tagRepo.EXPECT().GetTagList(gomock.Any()).Return(knownTags, nil)
+
+		_, err := domain.NewVariantUsecase(variantRepo, productRepo, tagRepo).CreateVariant(context.Background(), withTags)
+
+		assert.NotNil(t, err)
+		assert.Equal(t, domain.BadRequest, err.Type)
+	})
 }

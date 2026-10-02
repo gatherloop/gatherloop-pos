@@ -2,6 +2,7 @@
 import { Variant as ApiVariant } from '../../../../api-contract/src';
 import { Variant, VariantForm } from '../../domain';
 import { toMaterial } from './material.transformer';
+import { toProductTag, toTag } from './tag.transformer';
 
 export function toVariant(variant: ApiVariant): Variant {
   return {
@@ -17,6 +18,7 @@ export function toVariant(variant: ApiVariant): Variant {
     })),
     description: variant.description ?? '',
     recipe: variant.recipe ?? '',
+    imageUrl: variant.imageUrl || undefined,
     product: {
       category: {
         createdAt: variant.product.category.createdAt,
@@ -37,6 +39,7 @@ export function toVariant(variant: ApiVariant): Variant {
       availabilityTracking: variant.product.availabilityTracking,
       availableQuantity: variant.product.availableQuantity,
       isSellable: variant.product.isSellable,
+      tags: variant.product.tags.map(toProductTag),
       sellableQuantity: variant.product.sellableQuantity,
     },
     values: variant.values.map((value) => ({
@@ -56,6 +59,10 @@ export function toVariant(variant: ApiVariant): Variant {
     availableQuantity: variant.availableQuantity,
     isSellable: variant.isSellable,
     sellableQuantity: variant.sellableQuantity,
+    tags: variant.tags.map(({ tag, taggedAt }) => ({
+      tag: toTag(tag),
+      taggedAt,
+    })),
   };
 }
 
@@ -71,6 +78,7 @@ export function toApiVariant(form: VariantForm) {
     })),
     description: form.description,
     recipe: form.recipe,
+    imageUrl: form.imageUrl,
     values: form.values.map(({ id, optionValueId }) => ({
       id,
       optionValueId,
@@ -79,5 +87,6 @@ export function toApiVariant(form: VariantForm) {
       upToMinutes,
       price,
     })),
+    tagIds: form.tagIds,
   };
 }

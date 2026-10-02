@@ -4,7 +4,10 @@ import {
   MenuListState,
   MenuListParams,
 } from './menuList';
-import { MockMenuListQueryRepository, MockMenuRepository } from '../../data/mock';
+import {
+  MockMenuListQueryRepository,
+  MockMenuRepository,
+} from '../../data/mock';
 import { UsecaseTester, flushPromises } from '../../utils/usecase';
 
 const createTester = (
@@ -32,7 +35,9 @@ describe('MenuListUsecase', () => {
         variants: [],
         query: '',
         selectedCategoryId: null,
+        selectedTagId: null,
         selectedProductId: null,
+        selectedVariantId: null,
         errorMessage: null,
         fetchDebounceDelay: 0,
       });
@@ -45,7 +50,9 @@ describe('MenuListUsecase', () => {
         variants: repository.variants,
         query: '',
         selectedCategoryId: null,
+        selectedTagId: null,
         selectedProductId: null,
+        selectedVariantId: null,
         errorMessage: null,
         fetchDebounceDelay: 0,
       });
@@ -61,7 +68,9 @@ describe('MenuListUsecase', () => {
         variants: repository.variants,
         query: '',
         selectedCategoryId: null,
+        selectedTagId: null,
         selectedProductId: null,
+        selectedVariantId: null,
         errorMessage: null,
         fetchDebounceDelay: 0,
       });
@@ -74,7 +83,9 @@ describe('MenuListUsecase', () => {
         variants: repository.variants,
         query: '',
         selectedCategoryId: 2,
+        selectedTagId: null,
         selectedProductId: null,
+        selectedVariantId: null,
         errorMessage: null,
         fetchDebounceDelay: 0,
       });
@@ -117,7 +128,9 @@ describe('MenuListUsecase', () => {
         variants: [],
         query: '',
         selectedCategoryId: null,
+        selectedTagId: null,
         selectedProductId: null,
+        selectedVariantId: null,
         errorMessage: 'Failed to fetch menu',
         fetchDebounceDelay: 0,
       });
@@ -161,6 +174,55 @@ describe('MenuListUsecase', () => {
     expect(menuList.state.categories).toEqual(categories);
   });
 
+  describe('tag selection', () => {
+    it('clears the selected category when a tag is selected', async () => {
+      const menuList = createTester(new MockMenuRepository());
+      await flushPromises();
+
+      menuList.dispatch({ type: 'CHANGE_PARAMS', selectedCategoryId: 2 });
+      menuList.dispatch({ type: 'CHANGE_PARAMS', selectedTagId: 1 });
+
+      expect(menuList.state.selectedTagId).toBe(1);
+      expect(menuList.state.selectedCategoryId).toBeNull();
+    });
+
+    it('clears the selected tag when a category is selected', async () => {
+      const menuList = createTester(new MockMenuRepository());
+      await flushPromises();
+
+      menuList.dispatch({ type: 'CHANGE_PARAMS', selectedTagId: 1 });
+      menuList.dispatch({ type: 'CHANGE_PARAMS', selectedCategoryId: 2 });
+
+      expect(menuList.state.selectedCategoryId).toBe(2);
+      expect(menuList.state.selectedTagId).toBeNull();
+    });
+
+    it('clears both when null is given for both', async () => {
+      const menuList = createTester(new MockMenuRepository());
+      await flushPromises();
+
+      menuList.dispatch({ type: 'CHANGE_PARAMS', selectedTagId: 1 });
+      menuList.dispatch({
+        type: 'CHANGE_PARAMS',
+        selectedCategoryId: null,
+        selectedTagId: null,
+      });
+
+      expect(menuList.state.selectedCategoryId).toBeNull();
+      expect(menuList.state.selectedTagId).toBeNull();
+    });
+
+    it('keeps the selected tag when only the query changes', async () => {
+      const menuList = createTester(new MockMenuRepository());
+      await flushPromises();
+
+      menuList.dispatch({ type: 'CHANGE_PARAMS', selectedTagId: 1 });
+      menuList.dispatch({ type: 'CHANGE_PARAMS', query: 'kopi' });
+
+      expect(menuList.state.selectedTagId).toBe(1);
+    });
+  });
+
   describe('item selection', () => {
     it('holds the selected product id, from any fetch state, without changing it', async () => {
       const repository = new MockMenuRepository();
@@ -173,6 +235,28 @@ describe('MenuListUsecase', () => {
       expect(menuList.state.selectedProductId).toBe(1);
     });
 
+    it('keeps the variant id alongside the selected product', async () => {
+      const repository = new MockMenuRepository();
+      const menuList = createTester(repository);
+      await flushPromises();
+
+      menuList.dispatch({ type: 'SELECT_ITEM', productId: 1, variantId: 2 });
+
+      expect(menuList.state.selectedProductId).toBe(1);
+      expect(menuList.state.selectedVariantId).toBe(2);
+    });
+
+    it('selects a product without a variant when none is given, dropping a previous one', async () => {
+      const repository = new MockMenuRepository();
+      const menuList = createTester(repository);
+      await flushPromises();
+
+      menuList.dispatch({ type: 'SELECT_ITEM', productId: 1, variantId: 2 });
+      menuList.dispatch({ type: 'SELECT_ITEM', productId: 2 });
+
+      expect(menuList.state.selectedVariantId).toBeNull();
+    });
+
     it('clears the selected product id', async () => {
       const repository = new MockMenuRepository();
       const menuList = createTester(repository);
@@ -182,6 +266,7 @@ describe('MenuListUsecase', () => {
       menuList.dispatch({ type: 'CLEAR_ITEM' });
 
       expect(menuList.state.selectedProductId).toBeNull();
+      expect(menuList.state.selectedVariantId).toBeNull();
     });
 
     it('reads the initial selection from the query repository when the params do not seed one', () => {
