@@ -54,6 +54,7 @@ Use Playwright against the running app (`playwright` is already a workspace depe
 | `categories.png` | `/catalog/categories` |
 | `products.png` | `/catalog/products` |
 | `variants.png` | `/catalog/variants` (Product detail → **Variants** tab) |
+| `tags.png` | `/catalog/tags` (POS `/tags`; seed a highlighted "Best Seller" and "New" tag plus one non-highlighted tag, each assigned to at least one variant) |
 | `materials.png` | `/catalog/materials` |
 | `stock-checks.png` | `/inventory/stock-checks` |
 | `purchase-list.png` | `/inventory/purchase-lists` |

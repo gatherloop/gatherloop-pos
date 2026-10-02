@@ -80,6 +80,7 @@ export const createMenuVariants = (): Variant[] =>
       pricingTiers: [],
       isAvailable: true,
       isSellable: true,
+      tags: [],
     }))
   );
 
