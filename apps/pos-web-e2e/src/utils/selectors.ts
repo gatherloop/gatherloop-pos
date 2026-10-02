@@ -341,3 +341,38 @@ export const availabilityForm = {
     availabilityForm.row(page, rowName).getByText('Sold out'),
   saveButton: (page: Page) => page.getByRole('button', { name: 'Save' }).first(),
 };
+
+export const tagList = {
+  createLink: (page: Page) => page.locator('a[href="/tags/create"]'),
+  tagItem: (page: Page, name: string) =>
+    page.locator('h4').filter({ hasText: name }).first(),
+  menuButton: (page: Page, name: string) =>
+    page
+      .locator('h4')
+      .filter({ hasText: name })
+      .locator('../../../..')
+      .getByRole('button')
+      .last(),
+  menuOption: (page: Page, label: 'Assign products' | 'Edit' | 'Delete') =>
+    page.locator('[data-state="open"] li').filter({ hasText: label }).last(),
+  variantCount: (page: Page, name: string, count: number) =>
+    page
+      .locator('h4')
+      .filter({ hasText: name })
+      .locator('../../../..')
+      .getByText(`${count} ${count === 1 ? 'variant' : 'variants'}`),
+};
+
+export const tagForm = {
+  nameInput: (page: Page) => page.getByLabel('Name'),
+  colorOption: (page: Page, label: string) =>
+    page.getByRole('radio', { name: label, exact: true }),
+  submitButton: (page: Page) => page.getByRole('button', { name: 'Submit' }),
+};
+
+export const tagAssignment = {
+  searchInput: (page: Page) => page.getByPlaceholder('Search Products by Name'),
+  productCheckbox: (page: Page, productName: string) =>
+    page.getByRole('checkbox', { name: productName, exact: true }),
+  saveButton: (page: Page) => page.getByRole('button', { name: 'Save' }),
+};

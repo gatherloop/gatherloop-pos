@@ -301,3 +301,44 @@ export async function updateAvailability(
 ): Promise<void> {
   await apiPut('/availability', data);
 }
+
+export type TagColor =
+  | 'red'
+  | 'orange'
+  | 'yellow'
+  | 'green'
+  | 'blue'
+  | 'purple'
+  | 'pink'
+  | 'gray';
+
+export interface Tag {
+  id: number;
+  name: string;
+  color: TagColor;
+  isHighlighted: boolean;
+  sortOrder: number;
+  createdAt: string;
+}
+
+export interface CreateTagInput {
+  name: string;
+  color: TagColor;
+  isHighlighted: boolean;
+  sortOrder: number;
+}
+
+export async function createTag(data: CreateTagInput): Promise<Tag> {
+  return apiPost<Tag>('/tags', data);
+}
+
+export async function deleteTag(id: number): Promise<void> {
+  return apiDelete(`/tags/${id}`);
+}
+
+export async function setTagVariants(
+  tagId: number,
+  variantIds: number[]
+): Promise<void> {
+  await apiPut(`/tags/${tagId}/variants`, { variantIds });
+}

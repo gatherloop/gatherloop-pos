@@ -44,6 +44,25 @@ export interface OptionValue {
   name: string;
 }
 
+export type TagColor =
+  | 'red'
+  | 'orange'
+  | 'yellow'
+  | 'green'
+  | 'blue'
+  | 'purple'
+  | 'pink'
+  | 'gray';
+
+export interface Tag {
+  id: number;
+  name: string;
+  color: TagColor;
+  isHighlighted: boolean;
+  sortOrder: number;
+  createdAt: string;
+}
+
 export interface Budget {
   id: number;
   name: string;
@@ -581,4 +600,15 @@ export async function updateAvailability(
   data: UpdateAvailabilityInput
 ): Promise<void> {
   await apiPut(request, '/api/availability', data);
+}
+
+export async function listTags(request: APIRequestContext): Promise<Tag[]> {
+  return apiGet<Tag[]>(request, '/api/tags');
+}
+
+export async function deleteTag(
+  request: APIRequestContext,
+  id: number
+): Promise<void> {
+  return apiDelete(request, `/api/tags/${id}`);
 }

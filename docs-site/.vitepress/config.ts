@@ -79,6 +79,7 @@ export default defineConfig({
           { text: 'Categories', link: '/catalog/categories' },
           { text: 'Products', link: '/catalog/products' },
           { text: 'Product Variants', link: '/catalog/variants' },
+          { text: 'Tags', link: '/catalog/tags' },
           { text: 'Materials', link: '/catalog/materials' },
         ],
       },
