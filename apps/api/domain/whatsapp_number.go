@@ -10,11 +10,13 @@ func NormalizeWhatsappNumber(raw string) (string, *Error) {
 	stripped := whatsappNumberSeparators.Replace(raw)
 
 	var normalized string
+	hasExplicitCountryCode := false
 	switch {
 	case strings.HasPrefix(stripped, "0"):
 		normalized = "62" + stripped[1:]
 	case strings.HasPrefix(stripped, "+"):
 		normalized = strings.TrimPrefix(stripped, "+")
+		hasExplicitCountryCode = true
 	default:
 		normalized = stripped
 	}
@@ -31,6 +33,10 @@ func NormalizeWhatsappNumber(raw string) (string, *Error) {
 			return "", invalidWhatsappNumberError()
 		}
 		return normalized, nil
+	}
+
+	if !hasExplicitCountryCode {
+		return "", invalidWhatsappNumberError()
 	}
 
 	if len(normalized) < 8 || len(normalized) > 15 {

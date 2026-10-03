@@ -11,6 +11,8 @@ describe('normalizeWhatsappNumber', () => {
   }[] = [
     { name: 'leading 0 becomes 62', raw: '0812-3456-7890', expected: '6281234567890' },
     { name: '628 prefix is unchanged', raw: '6281234567890', expected: '6281234567890' },
+    { name: '62 prefix without a plus is accepted', raw: '6285335473895', expected: '6285335473895' },
+    { name: '0 prefix converts to the same number', raw: '085335473895', expected: '6285335473895' },
     { name: '+628 drops the plus', raw: '+62 812 3456 7890', expected: '6281234567890' },
     { name: 'other country plus is dropped, kept if 8-15 digits', raw: '+6591234567', expected: '6591234567' },
     { name: 'dots and parentheses are stripped', raw: '(0812).3456.7890', expected: '6281234567890' },
@@ -28,6 +30,9 @@ describe('normalizeWhatsappNumber', () => {
     { name: 'non-62 number at the 15 digit ceiling is accepted', raw: '+123456789012345', expected: '123456789012345' },
     { name: 'non-62 number over 15 digits is rejected', raw: '+1234567890123456', expected: null },
     { name: 'bare plus sign is rejected', raw: '+', expected: null },
+    { name: 'number without 0 or 62 prefix is rejected', raw: '85335473895', expected: null },
+    { name: 'number without prefix and with separators is rejected', raw: '853-3547-3895', expected: null },
+    { name: 'non-62 number without a plus is rejected', raw: '6591234567', expected: null },
   ];
 
   it.each(cases)('$name', ({ raw, expected }) => {
@@ -40,8 +45,8 @@ describe('formatWhatsappNumberForInput', () => {
     expect(formatWhatsappNumberForInput('6281234567890')).toBe('081234567890');
   });
 
-  it('leaves a non-Indonesian number unchanged', () => {
-    expect(formatWhatsappNumberForInput('6591234567')).toBe('6591234567');
+  it('shows a non-Indonesian number with a plus so it stays valid', () => {
+    expect(formatWhatsappNumberForInput('6591234567')).toBe('+6591234567');
   });
 
   it('leaves an empty string unchanged', () => {
