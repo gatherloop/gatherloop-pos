@@ -82,6 +82,12 @@ function initialSelectedOptionValueIds(
   return Array.from(new Set([...autoSelected, ...unambiguouslyMatched]));
 }
 
+function clampAmountToVariant(amount: number, variant: Variant | null): number {
+  const max = variant?.isSellable ? variant.sellableQuantity : undefined;
+  const capped = max !== undefined ? Math.min(amount, max) : amount;
+  return Math.max(1, capped);
+}
+
 export class MenuItemDetailUsecase extends Usecase<
   MenuItemDetailState,
   MenuItemDetailAction,
@@ -235,6 +241,7 @@ export class MenuItemDetailUsecase extends Usecase<
             ...state,
             type: 'ready',
             variant,
+            amount: clampAmountToVariant(state.amount, variant),
           })
         )
         .with(
@@ -257,16 +264,10 @@ export class MenuItemDetailUsecase extends Usecase<
             },
             { type: 'CHANGE_AMOUNT' },
           ],
-          ([state, { amount }]) => {
-            const max = state.variant?.isSellable
-              ? state.variant.sellableQuantity
-              : undefined;
-            const clamped = max !== undefined ? Math.min(amount, max) : amount;
-            return {
-              ...state,
-              amount: Math.max(1, clamped),
-            };
-          }
+          ([state, { amount }]) => ({
+            ...state,
+            amount: clampAmountToVariant(amount, state.variant),
+          })
         )
         .with(
           [

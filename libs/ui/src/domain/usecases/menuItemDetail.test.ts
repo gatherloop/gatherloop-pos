@@ -255,6 +255,68 @@ describe('MenuItemDetailUsecase', () => {
     expect(menuItemDetail.state.amount).toBe(3);
   });
 
+  it('lowers the amount to the new variant remaining quantity when the variant changes', async () => {
+    const repository = new MockMenuRepository();
+    repository.variants = repository.variants.map((variant) =>
+      variant.id === 1
+        ? { ...variant, sellableQuantity: 5 }
+        : variant.id === 2
+        ? { ...variant, sellableQuantity: 3 }
+        : variant
+    );
+    const menuItemDetail = createTester(repository, { productId: 1 });
+
+    await flushPromises();
+    menuItemDetail.dispatch({
+      type: 'SELECT_OPTION_VALUE',
+      optionId: 1,
+      optionValueId: 1,
+    });
+    await flushPromises();
+    menuItemDetail.dispatch({ type: 'CHANGE_AMOUNT', amount: 5 });
+    expect(menuItemDetail.state.amount).toBe(5);
+
+    menuItemDetail.dispatch({
+      type: 'SELECT_OPTION_VALUE',
+      optionId: 1,
+      optionValueId: 2,
+    });
+    await flushPromises();
+
+    expect(menuItemDetail.state.variant?.id).toBe(2);
+    expect(menuItemDetail.state.amount).toBe(3);
+  });
+
+  it('keeps the amount when it already fits the new variant remaining quantity', async () => {
+    const repository = new MockMenuRepository();
+    repository.variants = repository.variants.map((variant) =>
+      variant.id === 1
+        ? { ...variant, sellableQuantity: 5 }
+        : variant.id === 2
+        ? { ...variant, sellableQuantity: 3 }
+        : variant
+    );
+    const menuItemDetail = createTester(repository, { productId: 1 });
+
+    await flushPromises();
+    menuItemDetail.dispatch({
+      type: 'SELECT_OPTION_VALUE',
+      optionId: 1,
+      optionValueId: 1,
+    });
+    await flushPromises();
+    menuItemDetail.dispatch({ type: 'CHANGE_AMOUNT', amount: 2 });
+
+    menuItemDetail.dispatch({
+      type: 'SELECT_OPTION_VALUE',
+      optionId: 1,
+      optionValueId: 2,
+    });
+    await flushPromises();
+
+    expect(menuItemDetail.state.amount).toBe(2);
+  });
+
   it('does not cap the amount for a sold-out resolved variant', async () => {
     const repository = new MockMenuRepository();
     repository.variants = repository.variants.map((variant) =>
