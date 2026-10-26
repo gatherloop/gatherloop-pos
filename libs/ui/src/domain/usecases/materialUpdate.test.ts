@@ -47,6 +47,27 @@ describe('MaterialUpdateUsecase', () => {
     });
   });
 
+  it('takes weekly usage from the preloaded material', () => {
+    const repository = new MockMaterialRepository();
+    const existing = { ...repository.materials[0], weeklyUsage: 395 };
+    const usecase = new MaterialUpdateUsecase(repository, { materialId: 1, material: existing });
+    const tester = new UsecaseTester<MaterialUpdateUsecase, MaterialUpdateState, MaterialUpdateAction, MaterialUpdateParams>(usecase);
+    expect(tester.state.weeklyUsage).toBe(395);
+  });
+
+  it('takes weekly usage from the fetched material', async () => {
+    const repository = new MockMaterialRepository();
+    repository.materials[0] = { ...repository.materials[0], weeklyUsage: 120 };
+    const usecase = new MaterialUpdateUsecase(repository, { materialId: 1, material: null });
+    const tester = new UsecaseTester<MaterialUpdateUsecase, MaterialUpdateState, MaterialUpdateAction, MaterialUpdateParams>(usecase);
+
+    expect(tester.state.weeklyUsage).toBe(0);
+
+    await flushPromises();
+    expect(tester.state.type).toBe('loaded');
+    expect(tester.state.weeklyUsage).toBe(120);
+  });
+
   it('starts in loaded state when data is preloaded', () => {
     const repository = new MockMaterialRepository();
     const existing = repository.materials[0];

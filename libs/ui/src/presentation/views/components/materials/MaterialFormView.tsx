@@ -28,6 +28,7 @@ export type MaterialFormViewProps = {
   serverError?: string;
   suppliers: Supplier[];
   isLoadingSuppliers?: boolean;
+  weeklyUsage?: number;
 };
 
 const PURCHASE_TYPES: { label: string; value: PurchaseType }[] = [
@@ -153,6 +154,17 @@ export const MaterialFormView = (props: MaterialFormViewProps) => {
             </SizableText>
             <InputNumber fractionDigit={2} />
           </Field>
+          {props.weeklyUsage !== undefined && (
+            <YStack gap="$3">
+              <Label>Weekly Usage</Label>
+              <SizableText>
+                {`${props.weeklyUsage} ${props.defaultValues.unit}`}
+              </SizableText>
+              <Paragraph size="$2" color="$gray10">
+                Average weekly usage over the last 14 days of transactions.
+              </Paragraph>
+            </YStack>
+          )}
           <Field name="minimumStock" label="Minimum Stock (purchase units)">
             <InputNumber fractionDigit={0} />
           </Field>
