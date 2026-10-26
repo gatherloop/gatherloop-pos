@@ -305,7 +305,7 @@ func (usecase CartUsecase) validatePurchasableVariant(ctx context.Context, varia
 // variant past what remains, counting every other line in the cart against the same unit.
 // excludeItemId skips the line being updated so its old amount isn't counted twice.
 func checkCartCapacity(items []CartItem, product Product, variant Variant, excludeItemId int64, amount float32) *Error {
-	remaining := variantSellableQuantity(product, variant)
+	remaining := getVariantSellableQuantity(product, variant)
 	if remaining == nil {
 		return nil
 	}

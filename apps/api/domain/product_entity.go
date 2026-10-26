@@ -47,27 +47,6 @@ type Product struct {
 	Tags                 []ProductTag
 }
 
-func ResolveProductAvailability(product Product, variants []Variant) (isSellable bool, sellableQuantity *int) {
-	sellableQuantity = productSellableQuantity(product)
-
-	for _, variant := range variants {
-		variantIsSellable, _ := ResolveVariantAvailability(product, variant)
-		if variantIsSellable {
-			isSellable = true
-			break
-		}
-	}
-
-	return isSellable, sellableQuantity
-}
-
-func productSellableQuantity(product Product) *int {
-	if product.AvailabilityTracking == AvailabilityTrackingProduct {
-		return product.AvailableQuantity
-	}
-	return nil
-}
-
 type Option struct {
 	Id        int64
 	ProductId int64

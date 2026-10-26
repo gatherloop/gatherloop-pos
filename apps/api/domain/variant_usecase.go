@@ -165,19 +165,6 @@ func (usecase VariantUsecase) replaceVariantTags(ctx context.Context, variantId 
 	return applyVariantTagPairs(ctx, usecase.tagRepository, toVariantPairs(existingTagIds), toVariantPairs(tagIds))
 }
 
-func resolveVariantAvailability(variant Variant, product Product) Variant {
-	isSellable, sellableQuantity := ResolveVariantAvailability(product, variant)
-	variant.IsSellable = isSellable
-	variant.SellableQuantity = sellableQuantity
-
-	variant.Product = product
-	productIsSellable, productSellableQuantity := ResolveProductAvailability(product, []Variant{variant})
-	variant.Product.IsSellable = productIsSellable
-	variant.Product.SellableQuantity = productSellableQuantity
-
-	return variant
-}
-
 func (usecase VariantUsecase) DeleteVariantById(ctx context.Context, id int64) *Error {
 	return usecase.repository.DeleteVariantById(ctx, id)
 }
