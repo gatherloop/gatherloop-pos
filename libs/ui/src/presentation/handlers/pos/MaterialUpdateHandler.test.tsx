@@ -171,6 +171,40 @@ describe('MaterialUpdateHandler', () => {
     });
   });
 
+  describe('weekly usage', () => {
+    it('should show the weekly usage of the fetched material with its unit', async () => {
+      const materialRepo = new MockMaterialRepository();
+      materialRepo.materials[0] = { ...materialRepo.materials[0], weeklyUsage: 395 };
+
+      render(
+        <MaterialUpdateHandler
+          authLogoutUsecase={new AuthLogoutUsecase(new MockAuthRepository())}
+          materialUpdateUsecase={new MaterialUpdateUsecase(materialRepo, {
+            materialId: 1,
+            material: null,
+          })}
+          supplierListUsecase={createSupplierListUsecase()}
+        />
+      );
+
+      await act(async () => {
+        await flushPromises();
+      });
+
+      expect(screen.getByText('Weekly Usage')).toBeTruthy();
+      expect(screen.getByText('395 gram')).toBeTruthy();
+    });
+
+    it('should show zero weekly usage when the material has no recent transactions', async () => {
+      render(<MaterialUpdateHandler {...createProps({ preloaded: true })} />);
+
+      expect(screen.getByText('0 gram')).toBeTruthy();
+      await act(async () => {
+        await flushPromises();
+      });
+    });
+  });
+
   describe('error recovery', () => {
     it('should refetch material when retry button is pressed after error', async () => {
       const user = userEvent.setup();

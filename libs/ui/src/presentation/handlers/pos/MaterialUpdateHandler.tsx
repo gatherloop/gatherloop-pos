@@ -38,6 +38,7 @@ export const MaterialUpdateHandler = ({
   return (
     <MaterialUpdateScreen
       defaultValues={materialUpdate.state.values}
+      weeklyUsage={materialUpdate.state.weeklyUsage}
       onSubmit={(values) =>
         materialUpdate.dispatch({ type: 'SUBMIT', values })
       }
