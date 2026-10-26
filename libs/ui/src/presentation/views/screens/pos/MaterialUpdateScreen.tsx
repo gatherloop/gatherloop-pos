@@ -12,6 +12,7 @@ export type MaterialUpdateScreenProps = {
   serverError?: string;
   suppliers: Supplier[];
   isLoadingSuppliers?: boolean;
+  weeklyUsage: number;
 };
 
 export const MaterialUpdateScreen = (props: MaterialUpdateScreenProps) => {
@@ -31,6 +32,7 @@ export const MaterialUpdateScreen = (props: MaterialUpdateScreenProps) => {
           serverError={props.serverError}
           suppliers={props.suppliers}
           isLoadingSuppliers={props.isLoadingSuppliers}
+          weeklyUsage={props.weeklyUsage}
         />
       </ScrollView>
     </Layout>

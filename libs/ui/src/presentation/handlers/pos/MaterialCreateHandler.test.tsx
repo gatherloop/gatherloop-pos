@@ -57,6 +57,11 @@ describe('MaterialCreateHandler', () => {
       expect(screen.getByRole('textbox', { name: 'Name' })).toBeTruthy();
     });
 
+    it('should not show weekly usage for a material that does not exist yet', () => {
+      render(<MaterialCreateHandler {...createProps()} />);
+      expect(screen.queryByText('Weekly Usage')).toBeNull();
+    });
+
     it('should render the unit input field', () => {
       render(<MaterialCreateHandler {...createProps()} />);
       expect(screen.getByRole('textbox', { name: 'Unit' })).toBeTruthy();

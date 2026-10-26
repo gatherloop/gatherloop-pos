@@ -33,6 +33,7 @@ export const Default: Story = {
     isSubmitting: false,
     onLogoutPress: fn(),
     suppliers: [],
+    weeklyUsage: 395,
     variant: { type: 'loaded' },
   },
 };

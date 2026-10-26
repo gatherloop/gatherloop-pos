@@ -52,6 +52,13 @@ export const Populated: Story = {
   },
 };
 
+export const WithWeeklyUsage: Story = {
+  args: {
+    ...Populated.args,
+    weeklyUsage: 395,
+  },
+};
+
 export const ExcludedFromStockCheck: Story = {
   args: {
     ...Loaded.args,

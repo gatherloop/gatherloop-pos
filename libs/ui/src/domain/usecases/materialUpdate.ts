@@ -6,6 +6,7 @@ import { Usecase } from './IUsecase';
 type Context = {
   errorMessage: string | null;
   values: MaterialForm;
+  weeklyUsage: number;
 };
 
 export type MaterialUpdateState = (
@@ -21,7 +22,7 @@ export type MaterialUpdateState = (
 
 export type MaterialUpdateAction =
   | { type: 'FETCH' }
-  | { type: 'FETCH_SUCCESS'; values: MaterialForm }
+  | { type: 'FETCH_SUCCESS'; values: MaterialForm; weeklyUsage: number }
   | { type: 'FETCH_ERROR'; errorMessage: string }
   | { type: 'SUBMIT'; values: MaterialForm }
   | { type: 'SUBMIT_SUCCESS' }
@@ -69,6 +70,7 @@ export class MaterialUpdateUsecase extends Usecase<
       type: this.params.material !== null ? 'loaded' : 'idle',
       errorMessage: null,
       values,
+      weeklyUsage: this.params.material?.weeklyUsage ?? 0,
     };
   }
 
@@ -96,10 +98,11 @@ export class MaterialUpdateUsecase extends Usecase<
       }))
       .with(
         [{ type: 'loading' }, { type: 'FETCH_SUCCESS' }],
-        ([state, { values }]) => ({
+        ([state, { values, weeklyUsage }]) => ({
           ...state,
           type: 'loaded',
           values,
+          weeklyUsage,
         })
       )
       .with(
@@ -175,6 +178,7 @@ export class MaterialUpdateUsecase extends Usecase<
                   purchaseUrl: s.purchaseUrl,
                 })),
               },
+              weeklyUsage: material.weeklyUsage,
             })
           )
           .catch(() =>
