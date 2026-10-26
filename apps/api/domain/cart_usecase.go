@@ -206,18 +206,6 @@ func (usecase CartUsecase) ClearCart(ctx context.Context, sessionId string) (Car
 	return resolveCartAvailability(cleared), nil
 }
 
-// resolveCartAvailability fills the computed IsSellable/SellableQuantity fields, which the cart
-// repository cannot read from the database because they are derived, not stored.
-func resolveCartAvailability(cart Cart) Cart {
-	items := make([]CartItem, 0, len(cart.Items))
-	for _, item := range cart.Items {
-		item.Variant = resolveVariantAvailability(item.Variant, item.Variant.Product)
-		items = append(items, item)
-	}
-	cart.Items = items
-	return cart
-}
-
 // findAwaitingPayment is the single definition of "locked": both ensureCartUnlocked (which
 // rejects a write) and attachPendingPayment (which explains the lock on the cart response) read
 // it, so the two can never disagree (D18).
@@ -299,62 +287,4 @@ func (usecase CartUsecase) validatePurchasableVariant(ctx context.Context, varia
 	}
 
 	return variant, nil
-}
-
-// checkCartCapacity rejects an amount that would push the counting unit shared by product and
-// variant past what remains, counting every other line in the cart against the same unit.
-// excludeItemId skips the line being updated so its old amount isn't counted twice.
-func checkCartCapacity(items []CartItem, product Product, variant Variant, excludeItemId int64, amount float32) *Error {
-	remaining := getVariantSellableQuantity(product, variant)
-	if remaining == nil {
-		return nil
-	}
-
-	held := float32(0)
-	for _, item := range items {
-		if item.Id == excludeItemId || !sameAvailabilityCountingUnit(product, variant, item) {
-			continue
-		}
-		held += item.Amount
-	}
-
-	if held+amount > float32(*remaining) {
-		return &Error{Type: BadRequest, Message: fmt.Sprintf("only %d %s left", *remaining, availabilityItemName(product, variant))}
-	}
-
-	return nil
-}
-
-func sameAvailabilityCountingUnit(product Product, variant Variant, item CartItem) bool {
-	switch product.AvailabilityTracking {
-	case AvailabilityTrackingProduct:
-		return item.Variant.ProductId == product.Id
-	case AvailabilityTrackingVariant:
-		return item.VariantId == variant.Id
-	default:
-		return false
-	}
-}
-
-func validateCartItemInput(amount float32, note string) *Error {
-	if amount < 1 || amount != float32(int64(amount)) {
-		return &Error{Type: BadRequest, Message: "amount must be an integer >= 1"}
-	}
-	if len(note) > maxNoteLength {
-		return &Error{Type: BadRequest, Message: "note must be at most 255 characters"}
-	}
-	return nil
-}
-
-func findMatchingCartItem(items []CartItem, variantId int64, note string) (CartItem, bool) {
-	for _, item := range items {
-		if item.VariantId == variantId && strings.TrimSpace(item.Note) == note {
-			return item, true
-		}
-	}
-	return CartItem{}, false
-}
-
-func emptyCart(sessionId string) Cart {
-	return Cart{SessionId: sessionId, Status: CartStatusActive, Items: []CartItem{}}
 }
