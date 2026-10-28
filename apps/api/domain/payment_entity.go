@@ -199,6 +199,7 @@ func ToPaymentSummary(payment Payment, transaction TransactionSummary) PaymentSu
 
 const partnerReferenceNoRandomLength = 13
 
+// TODO: move to utils
 func GeneratePartnerReferenceNo() (string, error) {
 	randomBytes := make([]byte, partnerReferenceNoRandomLength)
 	if _, err := rand.Read(randomBytes); err != nil {
@@ -225,14 +226,4 @@ func GenerateOrderAccessKey() (string, error) {
 	}
 
 	return base64.RawURLEncoding.EncodeToString(randomBytes), nil
-}
-
-func ValidateOrderPaymentWallet(wallet Wallet) *Error {
-	if wallet.DeletedAt != nil {
-		return &Error{Type: InternalServerError, Message: "ORDER_PAYMENT_WALLET_ID points at a deleted wallet"}
-	}
-	if !wallet.IsPaymentTarget {
-		return &Error{Type: InternalServerError, Message: "ORDER_PAYMENT_WALLET_ID points at a wallet that is not a payment target"}
-	}
-	return nil
 }

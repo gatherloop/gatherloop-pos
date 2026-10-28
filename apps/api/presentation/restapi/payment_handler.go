@@ -31,13 +31,13 @@ func (handler PaymentHandler) Checkout(w http.ResponseWriter, r *http.Request) {
 	if request.Method != nil {
 		rawMethod = *request.Method
 	}
-	method, methodErr := domain.ParsePaymentMethod(rawMethod)
+
+	method, methodErr := ToPaymentMethod(rawMethod)
 	if methodErr != nil {
 		WriteError(ctx, w, apiContract.Error{Code: ToErrorCode(methodErr.Type), Message: methodErr.Message})
 		return
 	}
 
-	// FR-1: the use case must never see an inconsistent (method, verificationPhoto) pair.
 	hasVerificationPhoto := request.VerificationPhoto != nil && *request.VerificationPhoto != ""
 	if method == domain.PaymentMethodCod && !hasVerificationPhoto {
 		WriteError(ctx, w, apiContract.Error{Code: apiContract.BAD_REQUEST, Message: "verificationPhoto is required for cod checkout"})
@@ -63,7 +63,7 @@ func (handler PaymentHandler) Checkout(w http.ResponseWriter, r *http.Request) {
 		diningOption = domain.DiningOption(*request.DiningOption)
 	}
 
-	payment, transaction, usecaseErr := handler.usecase.Checkout(ctx, sessionId, request.CustomerName, customerWhatsappNumber, method, diningOption, verificationPhoto)
+	payment, transaction, canCancel, usecaseErr := handler.usecase.Checkout(ctx, sessionId, request.CustomerName, customerWhatsappNumber, method, diningOption, verificationPhoto)
 	if usecaseErr != nil {
 		apiError := apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message, Reason: ToErrorReason(usecaseErr.Reason)}
 		if usecaseErr.Type == domain.BadGateway {
@@ -74,7 +74,7 @@ func (handler PaymentHandler) Checkout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteResponse(w, apiContract.PaymentResponse{Data: ToApiPayment(payment, transaction, handler.usecase.CanCancel(payment, sessionId))})
+	WriteResponse(w, apiContract.PaymentResponse{Data: ToApiPayment(payment, transaction, canCancel)})
 }
 
 func (handler PaymentHandler) GetPaymentList(w http.ResponseWriter, r *http.Request) {
@@ -114,13 +114,13 @@ func (handler PaymentHandler) GetPaymentByPartnerReferenceNo(w http.ResponseWrit
 	partnerReferenceNo := GetPartnerReferenceNo(r)
 	accessKey := GetOrderAccessKey(r)
 
-	payment, transaction, usecaseErr := handler.usecase.GetPaymentStatus(ctx, sessionId, partnerReferenceNo, accessKey)
+	payment, transaction, canCancel, usecaseErr := handler.usecase.GetPaymentStatus(ctx, sessionId, partnerReferenceNo, accessKey)
 	if usecaseErr != nil {
 		WriteError(ctx, w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
 		return
 	}
 
-	WriteResponse(w, apiContract.PaymentResponse{Data: ToApiPayment(payment, transaction, handler.usecase.CanCancel(payment, sessionId))})
+	WriteResponse(w, apiContract.PaymentResponse{Data: ToApiPayment(payment, transaction, canCancel)})
 }
 
 func (handler PaymentHandler) Cancel(w http.ResponseWriter, r *http.Request) {
@@ -128,13 +128,13 @@ func (handler PaymentHandler) Cancel(w http.ResponseWriter, r *http.Request) {
 	sessionId := GetSessionId(r)
 	partnerReferenceNo := GetPartnerReferenceNo(r)
 
-	payment, transaction, usecaseErr := handler.usecase.CancelPayment(ctx, sessionId, partnerReferenceNo)
+	payment, transaction, canCancel, usecaseErr := handler.usecase.CancelPayment(ctx, sessionId, partnerReferenceNo)
 	if usecaseErr != nil {
 		WriteError(ctx, w, apiContract.Error{Code: ToErrorCode(usecaseErr.Type), Message: usecaseErr.Message})
 		return
 	}
 
-	WriteResponse(w, apiContract.PaymentResponse{Data: ToApiPayment(payment, transaction, handler.usecase.CanCancel(payment, sessionId))})
+	WriteResponse(w, apiContract.PaymentResponse{Data: ToApiPayment(payment, transaction, canCancel)})
 }
 
 func (handler PaymentHandler) Notification(w http.ResponseWriter, r *http.Request) {

@@ -14,9 +14,6 @@ func NewPaymentRouter(handler PaymentHandler) PaymentRouter {
 	return PaymentRouter{handler: handler}
 }
 
-// checkoutMaxRequestBytes is D13's 2 MiB cap on the checkout body — the first request in this
-// codebase to accept anything like a photo. The base64 photo itself is bounded a second time,
-// decoded, by ValidateVerificationPhoto; this is only the outer guard against an oversized body.
 const checkoutMaxRequestBytes = 2 * 1024 * 1024
 
 func limitCheckoutBody(next http.HandlerFunc) http.HandlerFunc {

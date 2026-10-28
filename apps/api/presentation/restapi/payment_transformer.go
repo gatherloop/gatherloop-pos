@@ -134,3 +134,14 @@ func ToApiPaymentSummary(summary domain.PaymentSummary) apiContract.PaymentSumma
 		VerificationStatus: verificationStatus,
 	}
 }
+
+func ToPaymentMethod(method string) (domain.PaymentMethod, *domain.Error) {
+	switch domain.PaymentMethod(method) {
+	case "":
+		return domain.PaymentMethodQris, nil
+	case domain.PaymentMethodQris, domain.PaymentMethodCash, domain.PaymentMethodCod:
+		return domain.PaymentMethod(method), nil
+	default:
+		return "", &domain.Error{Type: domain.BadRequest, Message: "unknown payment method"}
+	}
+}
