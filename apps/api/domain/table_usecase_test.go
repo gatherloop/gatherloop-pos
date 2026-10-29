@@ -49,7 +49,7 @@ func TestTableUsecase_GetTableList(t *testing.T) {
 			mockRepo := mock.NewMockTableRepository(ctrl)
 			tt.setupMock(mockRepo)
 
-			usecase := domain.NewTableUsecase(mockRepo)
+			usecase := domain.NewTableUsecase(mockRepo, domain.NewTableService(mockRepo))
 			tables, err := usecase.GetTableList(context.Background())
 
 			if tt.expectedError != nil {
@@ -97,7 +97,7 @@ func TestTableUsecase_GetTableById(t *testing.T) {
 			mockRepo := mock.NewMockTableRepository(ctrl)
 			tt.setupMock(mockRepo)
 
-			usecase := domain.NewTableUsecase(mockRepo)
+			usecase := domain.NewTableUsecase(mockRepo, domain.NewTableService(mockRepo))
 			table, err := usecase.GetTableById(context.Background(), tt.id)
 
 			if tt.expectedError != nil {
@@ -145,7 +145,7 @@ func TestTableUsecase_GetTableByCode(t *testing.T) {
 			mockRepo := mock.NewMockTableRepository(ctrl)
 			tt.setupMock(mockRepo)
 
-			usecase := domain.NewTableUsecase(mockRepo)
+			usecase := domain.NewTableUsecase(mockRepo, domain.NewTableService(mockRepo))
 			table, err := usecase.GetTableByCode(context.Background(), tt.code)
 
 			if tt.expectedError != nil {
@@ -244,7 +244,7 @@ func TestTableUsecase_CreateTable(t *testing.T) {
 			mockRepo := mock.NewMockTableRepository(ctrl)
 			tt.setupMock(mockRepo)
 
-			usecase := domain.NewTableUsecase(mockRepo)
+			usecase := domain.NewTableUsecase(mockRepo, domain.NewTableService(mockRepo))
 			table, err := usecase.CreateTable(context.Background(), tt.input)
 
 			if tt.expectedError != nil {
@@ -324,7 +324,7 @@ func TestTableUsecase_UpdateTableById(t *testing.T) {
 			mockRepo := mock.NewMockTableRepository(ctrl)
 			tt.setupMock(mockRepo)
 
-			usecase := domain.NewTableUsecase(mockRepo)
+			usecase := domain.NewTableUsecase(mockRepo, domain.NewTableService(mockRepo))
 			table, err := usecase.UpdateTableById(context.Background(), tt.input, tt.id)
 
 			if tt.expectedError != nil {
@@ -370,7 +370,7 @@ func TestTableUsecase_DeleteTableById(t *testing.T) {
 			mockRepo := mock.NewMockTableRepository(ctrl)
 			tt.setupMock(mockRepo)
 
-			usecase := domain.NewTableUsecase(mockRepo)
+			usecase := domain.NewTableUsecase(mockRepo, domain.NewTableService(mockRepo))
 			err := usecase.DeleteTableById(context.Background(), tt.id)
 
 			if tt.expectedError != nil {
@@ -421,7 +421,7 @@ func TestTableUsecase_RegenerateTableCode(t *testing.T) {
 			mockRepo := mock.NewMockTableRepository(ctrl)
 			tt.setupMock(mockRepo)
 
-			usecase := domain.NewTableUsecase(mockRepo)
+			usecase := domain.NewTableUsecase(mockRepo, domain.NewTableService(mockRepo))
 			table, err := usecase.RegenerateTableCode(context.Background(), tt.id)
 
 			if tt.expectedError != nil {

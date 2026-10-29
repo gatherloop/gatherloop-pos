@@ -28,7 +28,7 @@ func newPublicHandler(t *testing.T) (restapi.PublicHandler, *mock.MockProductRep
 		domain.NewProductUsecase(productRepo, variantRepo),
 		domain.NewCategoryUsecase(categoryRepo),
 		domain.NewVariantUsecase(variantRepo, productRepo, domain.NewVariantService(mock.NewMockTagRepository(ctrl))),
-		domain.NewTableUsecase(tableRepo),
+		domain.NewTableUsecase(tableRepo, domain.NewTableService(tableRepo)),
 	)
 
 	return handler, productRepo, categoryRepo, variantRepo, tableRepo

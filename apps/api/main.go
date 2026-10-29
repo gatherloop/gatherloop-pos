@@ -169,6 +169,7 @@ func main() {
 		cartRepository,
 		paymentService,
 	)
+	tableService := domain.NewTableService(tableRepository)
 
 	walletUsecase := domain.NewWalletUsecase(walletRepository)
 	transactionUsecase := domain.NewTransactionUsecase(
@@ -192,7 +193,7 @@ func main() {
 	tagUsecase := domain.NewTagUsecase(tagRepository, tagService)
 	couponUsecase := domain.NewCouponUsecase(couponRepository)
 	ticketUsecase := domain.NewTicketUsecase(ticketRepository)
-	tableUsecase := domain.NewTableUsecase(tableRepository)
+	tableUsecase := domain.NewTableUsecase(tableRepository, tableService)
 	cartUsecase := domain.NewCartUsecase(cartRepository, tableRepository, cartService)
 	customerUsecase := domain.NewCustomerUsecase(customerRepository)
 	paymentUsecase := domain.NewPaymentUsecase(
