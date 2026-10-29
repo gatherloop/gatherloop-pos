@@ -16,7 +16,7 @@ func NewKdsDeviceUsecase(repository KdsDeviceRepository, pushGateway KdsPushGate
 }
 
 func (usecase KdsDeviceUsecase) RegisterKdsDevice(ctx context.Context, device KdsDevice) (KdsDevice, *Error) {
-	if err := validateKdsDevice(device); err != nil {
+	if err := device.Validate(); err != nil {
 		return KdsDevice{}, err
 	}
 	return usecase.repository.RegisterKdsDevice(ctx, device)
@@ -58,18 +58,5 @@ func (usecase KdsDeviceUsecase) SendTestNotification(ctx context.Context, id int
 		return &Error{Type: BadGateway, Message: errMessage}
 	}
 
-	return nil
-}
-
-func validateKdsDevice(device KdsDevice) *Error {
-	if device.Name == "" {
-		return &Error{Type: BadRequest, Message: "name must not be empty"}
-	}
-	if device.PushToken == "" {
-		return &Error{Type: BadRequest, Message: "pushToken must not be empty"}
-	}
-	if device.Platform != KdsPlatformIos && device.Platform != KdsPlatformAndroid {
-		return &Error{Type: BadRequest, Message: "platform must be ios or android"}
-	}
 	return nil
 }
