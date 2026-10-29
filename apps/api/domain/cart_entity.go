@@ -26,6 +26,8 @@ type CartItem struct {
 	DeletedAt *time.Time
 }
 
+const maxNoteLength = 255
+
 func (item CartItem) Validate() *Error {
 	if item.Amount < 1 || item.Amount != float32(int64(item.Amount)) {
 		return &Error{Type: BadRequest, Message: "amount must be an integer >= 1"}
