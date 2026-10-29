@@ -163,18 +163,22 @@ func main() {
 	)
 	tagService := domain.NewTagService(tagRepository)
 	variantService := domain.NewVariantService(tagRepository)
+	transactionService := domain.NewTransactionService(
+		couponRepository,
+		paymentRepository,
+		cartRepository,
+		paymentService,
+	)
 
 	walletUsecase := domain.NewWalletUsecase(walletRepository)
 	transactionUsecase := domain.NewTransactionUsecase(
 		transactionRepository,
 		variantRepository,
-		couponRepository,
 		walletRepository,
-		kdsNotificationRepository,
 		paymentRepository,
 		guestNotificationRepository,
-		cartRepository,
-		paymentVerificationRepository,
+		transactionService,
+		paymentService,
 		availabilityService,
 		kdsNotificationUsecase,
 		guestNotificationUsecase,
@@ -219,7 +223,7 @@ func main() {
 		cartRepository,
 		kdsNotificationRepository,
 		paymentVerificationService,
-		availabilityService,
+		paymentService,
 		kdsNotificationUsecase,
 	)
 	budgetUsecase := domain.NewBudgetUsecase(budgetRepository)

@@ -114,3 +114,19 @@ const (
 	Unpaid
 	All
 )
+
+func SnapshotVariantValues(variant Variant) []TransactionItemValue {
+	optionNamesById := map[int64]string{}
+	for _, opt := range variant.Product.Options {
+		optionNamesById[opt.Id] = opt.Name
+	}
+
+	values := []TransactionItemValue{}
+	for _, vv := range variant.VariantValues {
+		values = append(values, TransactionItemValue{
+			OptionName:      optionNamesById[vv.OptionValue.OptionId],
+			OptionValueName: vv.OptionValue.Name,
+		})
+	}
+	return values
+}

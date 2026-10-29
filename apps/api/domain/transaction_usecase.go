@@ -7,16 +7,14 @@ import (
 )
 
 type TransactionUsecase struct {
-	transactionRepository         TransactionRepository
-	variantRepository             VariantRepository
-	couponRepository              CouponRepository
-	walletRepository              WalletRepository
-	kdsNotificationRepository     KdsNotificationRepository
-	paymentRepository             PaymentRepository
-	guestNotificationRepository   GuestNotificationRepository
-	cartRepository                CartRepository
-	paymentVerificationRepository PaymentVerificationRepository
+	transactionRepository       TransactionRepository
+	variantRepository           VariantRepository
+	walletRepository            WalletRepository
+	paymentRepository           PaymentRepository
+	guestNotificationRepository GuestNotificationRepository
 
+	transactionService  TransactionService
+	paymentService      PaymentService
 	availabilityService AvailabilityService
 
 	kdsNotificationDispatcher   KdsNotificationDispatcher
@@ -26,30 +24,26 @@ type TransactionUsecase struct {
 func NewTransactionUsecase(
 	transactionRepository TransactionRepository,
 	variantRepository VariantRepository,
-	couponRepository CouponRepository,
 	walletRepository WalletRepository,
-	kdsNotificationRepository KdsNotificationRepository,
 	paymentRepository PaymentRepository,
 	guestNotificationRepository GuestNotificationRepository,
-	cartRepository CartRepository,
-	paymentVerificationRepository PaymentVerificationRepository,
 
+	transactionService TransactionService,
+	paymentService PaymentService,
 	availabilityService AvailabilityService,
 
 	kdsNotificationDispatcher KdsNotificationDispatcher,
 	guestNotificationDispatcher GuestNotificationDispatcher,
 ) TransactionUsecase {
 	return TransactionUsecase{
-		transactionRepository:         transactionRepository,
-		variantRepository:             variantRepository,
-		couponRepository:              couponRepository,
-		walletRepository:              walletRepository,
-		kdsNotificationRepository:     kdsNotificationRepository,
-		paymentRepository:             paymentRepository,
-		guestNotificationRepository:   guestNotificationRepository,
-		cartRepository:                cartRepository,
-		paymentVerificationRepository: paymentVerificationRepository,
+		transactionRepository:       transactionRepository,
+		variantRepository:           variantRepository,
+		walletRepository:            walletRepository,
+		paymentRepository:           paymentRepository,
+		guestNotificationRepository: guestNotificationRepository,
 
+		transactionService:  transactionService,
+		paymentService:      paymentService,
 		availabilityService: availabilityService,
 
 		kdsNotificationDispatcher:   kdsNotificationDispatcher,
@@ -107,13 +101,13 @@ func (usecase TransactionUsecase) CreateTransaction(ctx context.Context, transac
 				Price:          variant.Price,
 				Note:           item.Note,
 				ProductName:    variant.Product.Name,
-				Values:         snapshotVariantValues(variant),
+				Values:         SnapshotVariantValues(variant),
 			}
 
 			transaction.TransactionItems[index] = transactionItem
 		}
 
-		if err := usecase.applyTransactionCoupons(ctxWithTx, &transaction, createdTransaction.Id); err != nil {
+		if err := usecase.transactionService.ApplyTransactionCoupons(ctxWithTx, &transaction, createdTransaction.Id); err != nil {
 			return err
 		}
 
@@ -197,13 +191,13 @@ func (usecase TransactionUsecase) UpdateTransactionById(ctx context.Context, tra
 				Price:          variant.Price,
 				Note:           item.Note,
 				ProductName:    variant.Product.Name,
-				Values:         snapshotVariantValues(variant),
+				Values:         SnapshotVariantValues(variant),
 			}
 
 			transaction.TransactionItems[index] = transactionItem
 		}
 
-		if err := usecase.applyTransactionCoupons(ctxWithTx, &transaction, id); err != nil {
+		if err := usecase.transactionService.ApplyTransactionCoupons(ctxWithTx, &transaction, id); err != nil {
 			return err
 		}
 
@@ -285,108 +279,20 @@ func (usecase TransactionUsecase) PayTransaction(ctx context.Context, walletId i
 			}
 		}
 
-		if err := payTransaction(ctxWithTx, transaction, usecase.transactionRepository, usecase.walletRepository, usecase.kdsNotificationRepository, walletId, paidAmount); err != nil {
+		if err := usecase.paymentService.PayTransaction(ctxWithTx, transaction, walletId, paidAmount); err != nil {
 			return err
 		}
 
 		if !hasLinkedPayment {
 			return nil
 		}
-		return usecase.settleOrderPayment(ctxWithTx, linkedPayment)
+		return usecase.transactionService.SettleOrderPayment(ctxWithTx, linkedPayment)
 	})
 	// FR-4: kicked after the commit so the cashier's HTTP response never waits on Expo.
 	if err == nil {
 		usecase.kdsNotificationDispatcher.TriggerDispatch()
 	}
 	return err
-}
-
-// settleOrderPayment closes FR-6: the guest's payments row, and cart, never moved when a
-// staff member paid the linked order transaction by hand instead of through the gateway or
-// the guest's own cash flow. payment is the row PayTransaction already locked with
-// GetPaymentByTransactionIdForUpdate (D6); an already-paid one (the webhook won the race) is
-// left alone.
-func (usecase TransactionUsecase) settleOrderPayment(ctx context.Context, payment Payment) *Error {
-	if payment.Status == PaymentStatePaid {
-		return nil
-	}
-
-	now := time.Now()
-	payment.Status = PaymentStatePaid
-	payment.PaidAt = &now
-
-	if _, err := usecase.paymentRepository.UpdatePaymentById(ctx, payment, payment.Id); err != nil {
-		return err
-	}
-
-	cart, err := usecase.cartRepository.GetCartById(ctx, payment.CartId)
-	if err != nil {
-		return err
-	}
-	cart.Status = CartStatusConverted
-	if _, err := usecase.cartRepository.UpdateCartById(ctx, cart, cart.Id); err != nil {
-		return err
-	}
-
-	// D7/D8: the guest may have checked out again on this cart before the cashier settled this
-	// (expired) order transaction by hand — finalise that newer attempt too, the same as a late
-	// QRIS webhook does, so the cart never ends up with two paid orders.
-	return supersedeLivePayments(ctx, payment.CartId, payment.Id, usecase.paymentRepository, usecase.transactionRepository, usecase.availabilityService, usecase.kdsNotificationRepository, usecase.paymentVerificationRepository)
-}
-
-func payTransaction(ctx context.Context, transaction Transaction, transactionRepository TransactionRepository, walletRepository WalletRepository, kdsNotificationRepository KdsNotificationRepository, walletId int64, paidAmount float32) *Error {
-	if transaction.PaidAt != nil {
-		return &Error{Type: BadRequest, Message: "transaction already paid"}
-	}
-
-	id := transaction.Id
-
-	paymentWallet, err := walletRepository.GetWalletById(ctx, walletId)
-	if err != nil {
-		return err
-	}
-
-	if !paymentWallet.IsPaymentTarget {
-		return &Error{Type: BadRequest, Message: "wallet cannot receive transaction payments"}
-	}
-
-	paymentCost := transaction.Total * paymentWallet.PaymentCostPercentage / 100
-	newBalance := paymentWallet.Balance + transaction.Total - paymentCost
-
-	if _, err := walletRepository.UpdateWalletById(ctx, Wallet{
-		Name:                  paymentWallet.Name,
-		PaymentCostPercentage: paymentWallet.PaymentCostPercentage,
-		Balance:               newBalance,
-		IsCashless:            paymentWallet.IsCashless,
-		IsPaymentTarget:       paymentWallet.IsPaymentTarget,
-	},
-		walletId); err != nil {
-		return err
-	}
-
-	variantMaterials := []VariantMaterial{}
-
-	for _, item := range transaction.TransactionItems {
-		variantMaterials = append(variantMaterials, item.Variant.Materials...)
-	}
-
-	var foodCost float32
-	for _, variantMaterial := range variantMaterials {
-		foodCost += variantMaterial.Amount * variantMaterial.Material.Price
-	}
-
-	totalIncome := transaction.Total - paymentCost - foodCost
-
-	if _, err := transactionRepository.UpdateTransactionById(ctx, Transaction{TotalIncome: totalIncome}, id); err != nil {
-		return err
-	}
-
-	// FR-1: enqueued after the wallet and income writes succeed, atomic with the payment (D5).
-	if err := kdsNotificationRepository.EnqueueForTransaction(ctx, transaction, KdsNotificationKindOrderPaid); err != nil {
-		return err
-	}
-
-	return transactionRepository.PayTransaction(ctx, walletId, time.Now(), paidAmount, id)
 }
 
 func (usecase TransactionUsecase) UnpayTransaction(ctx context.Context, id int64) *Error {
@@ -511,85 +417,4 @@ func (usecase TransactionUsecase) GetTransactionStatistics(ctx context.Context, 
 	}
 
 	return usecase.transactionRepository.GetTransactionStatistics(ctx, groupBy, startDate, endDate)
-}
-
-func (usecase TransactionUsecase) applyTransactionCoupons(ctx context.Context, transaction *Transaction, transactionId int64) *Error {
-	itemIndexById := map[int64]int{}
-	for index, item := range transaction.TransactionItems {
-		itemIndexById[item.Id] = index
-	}
-
-	usedItemIds := map[int64]bool{}
-	wholeBillCoupons := []Coupon{}
-
-	for index, transactionCoupon := range transaction.TransactionCoupons {
-		coupon, err := usecase.couponRepository.GetCouponById(ctx, transactionCoupon.CouponId)
-		if err != nil {
-			return err
-		}
-
-		if transactionCoupon.TransactionItemId == nil {
-			wholeBillCoupons = append(wholeBillCoupons, coupon)
-		} else {
-			itemId := *transactionCoupon.TransactionItemId
-
-			if usedItemIds[itemId] {
-				return &Error{Type: BadRequest, Message: "only one coupon allowed per transaction item"}
-			}
-			usedItemIds[itemId] = true
-
-			itemIndex, ok := itemIndexById[itemId]
-			if !ok {
-				return &Error{Type: BadRequest, Message: "transaction item not found for coupon"}
-			}
-
-			item := &transaction.TransactionItems[itemIndex]
-			base := item.Price * item.Amount
-
-			discount, err := ApplyCouponToBase(base, coupon)
-			if err != nil {
-				return err
-			}
-
-			newSubtotal := base - discount
-			transaction.Total += newSubtotal - item.Subtotal
-			item.DiscountAmount = discount
-			item.Subtotal = newSubtotal
-		}
-
-		transaction.TransactionCoupons[index] = TransactionCoupon{
-			Id:                transactionCoupon.Id,
-			TransactionId:     transactionId,
-			CouponId:          transactionCoupon.CouponId,
-			Type:              coupon.Type,
-			Amount:            coupon.Amount,
-			TransactionItemId: transactionCoupon.TransactionItemId,
-		}
-	}
-
-	for _, coupon := range wholeBillCoupons {
-		discount, err := ApplyCouponToBase(transaction.Total, coupon)
-		if err != nil {
-			return err
-		}
-		transaction.Total -= discount
-	}
-
-	return nil
-}
-
-func snapshotVariantValues(variant Variant) []TransactionItemValue {
-	optionNamesById := map[int64]string{}
-	for _, opt := range variant.Product.Options {
-		optionNamesById[opt.Id] = opt.Name
-	}
-
-	values := []TransactionItemValue{}
-	for _, vv := range variant.VariantValues {
-		values = append(values, TransactionItemValue{
-			OptionName:      optionNamesById[vv.OptionValue.OptionId],
-			OptionValueName: vv.OptionValue.Name,
-		})
-	}
-	return values
 }

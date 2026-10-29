@@ -31,7 +31,8 @@ func newPaymentVerificationHandler(t *testing.T, setupMocks func(paymentRepo *mo
 
 	setupMocks(paymentRepo, verificationRepo, transactionRepo, cartRepo)
 
-	usecase := domain.NewPaymentVerificationUsecase(paymentRepo, verificationRepo, transactionRepo, cartRepo, kdsNotificationRepo, domain.NewPaymentVerificationService(paymentRepo), domain.NewAvailabilityService(nil, nil, availabilityRepo), kdsNotificationDispatcher)
+	paymentService := domain.NewPaymentService(transactionRepo, paymentRepo, verificationRepo, nil, cartRepo, nil, kdsNotificationRepo, domain.NewAvailabilityService(nil, nil, availabilityRepo), 0, false, kdsNotificationDispatcher)
+	usecase := domain.NewPaymentVerificationUsecase(paymentRepo, verificationRepo, transactionRepo, cartRepo, kdsNotificationRepo, domain.NewPaymentVerificationService(paymentRepo), paymentService, kdsNotificationDispatcher)
 	return restapi.NewPaymentVerificationHandler(usecase), ctrl
 }
 
@@ -222,15 +223,21 @@ func TestPaymentVerificationRoutes_RequireAuth(t *testing.T) {
 	defer ctrl.Finish()
 
 	paymentRepo := mock.NewMockPaymentRepository(ctrl)
+	verificationRepo := mock.NewMockPaymentVerificationRepository(ctrl)
+	transactionRepo := mock.NewMockTransactionRepository(ctrl)
+	cartRepo := mock.NewMockCartRepository(ctrl)
+	kdsNotificationRepo := mock.NewMockKdsNotificationRepository(ctrl)
+	kdsNotificationDispatcher := mock.NewMockKdsNotificationDispatcher(ctrl)
+	paymentService := domain.NewPaymentService(transactionRepo, paymentRepo, verificationRepo, nil, cartRepo, nil, kdsNotificationRepo, domain.NewAvailabilityService(nil, nil, mock.NewMockAvailabilityRepository(ctrl)), 0, false, kdsNotificationDispatcher)
 	usecase := domain.NewPaymentVerificationUsecase(
 		paymentRepo,
-		mock.NewMockPaymentVerificationRepository(ctrl),
-		mock.NewMockTransactionRepository(ctrl),
-		mock.NewMockCartRepository(ctrl),
-		mock.NewMockKdsNotificationRepository(ctrl),
+		verificationRepo,
+		transactionRepo,
+		cartRepo,
+		kdsNotificationRepo,
 		domain.NewPaymentVerificationService(paymentRepo),
-		domain.NewAvailabilityService(nil, nil, mock.NewMockAvailabilityRepository(ctrl)),
-		mock.NewMockKdsNotificationDispatcher(ctrl),
+		paymentService,
+		kdsNotificationDispatcher,
 	)
 	handler := restapi.NewPaymentVerificationHandler(usecase)
 	router := mux.NewRouter()

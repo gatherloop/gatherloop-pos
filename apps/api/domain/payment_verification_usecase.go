@@ -12,7 +12,7 @@ type PaymentVerificationUsecase struct {
 	cartRepository                CartRepository
 	kdsNotificationRepository     KdsNotificationRepository
 	paymentVerificationService    PaymentVerificationService
-	availabilityService           AvailabilityService
+	paymentService                PaymentService
 	kdsNotificationDispatcher     KdsNotificationDispatcher
 }
 
@@ -23,7 +23,7 @@ func NewPaymentVerificationUsecase(
 	cartRepository CartRepository,
 	kdsNotificationRepository KdsNotificationRepository,
 	paymentVerificationService PaymentVerificationService,
-	availabilityService AvailabilityService,
+	paymentService PaymentService,
 	kdsNotificationDispatcher KdsNotificationDispatcher,
 ) PaymentVerificationUsecase {
 	return PaymentVerificationUsecase{
@@ -33,7 +33,7 @@ func NewPaymentVerificationUsecase(
 		cartRepository:                cartRepository,
 		kdsNotificationRepository:     kdsNotificationRepository,
 		paymentVerificationService:    paymentVerificationService,
-		availabilityService:           availabilityService,
+		paymentService:                paymentService,
 		kdsNotificationDispatcher:     kdsNotificationDispatcher,
 	}
 }
@@ -132,7 +132,7 @@ func (usecase PaymentVerificationUsecase) Reject(ctx context.Context, transactio
 		payment.VerifiedAt = &now
 
 		reason := PaymentCancelReasonRejected
-		_, finalizeErr := finalizeUncollectedPayment(ctxWithTx, payment, PaymentStateCancelled, &reason, usecase.paymentRepository, usecase.transactionRepository, usecase.availabilityService, usecase.kdsNotificationRepository, usecase.paymentVerificationRepository)
+		_, finalizeErr := usecase.paymentService.FinalizeUncollectedPayment(ctxWithTx, payment, PaymentStateCancelled, &reason)
 		return finalizeErr
 	})
 }

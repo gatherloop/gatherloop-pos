@@ -51,7 +51,10 @@ func newTransactionHandler(t *testing.T, setupMocks func(txRepo *mock.MockTransa
 	paymentVerificationRepo := mock.NewMockPaymentVerificationRepository(ctrl)
 	paymentVerificationRepo.EXPECT().DeleteByPaymentId(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 	setupMocks(txRepo, variantRepo, couponRepo, walletRepo)
-	usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, kdsNotificationRepo, paymentRepo, guestNotificationRepo, cartRepo, paymentVerificationRepo, domain.NewAvailabilityService(nil, nil, availabilityRepo), kdsNotificationDispatcher, guestNotificationDispatcher)
+	availabilityService := domain.NewAvailabilityService(nil, nil, availabilityRepo)
+	paymentService := domain.NewPaymentService(txRepo, paymentRepo, paymentVerificationRepo, nil, cartRepo, walletRepo, kdsNotificationRepo, availabilityService, 0, false, kdsNotificationDispatcher)
+	transactionService := domain.NewTransactionService(couponRepo, paymentRepo, cartRepo, paymentService)
+	usecase := domain.NewTransactionUsecase(txRepo, variantRepo, walletRepo, paymentRepo, guestNotificationRepo, transactionService, paymentService, availabilityService, kdsNotificationDispatcher, guestNotificationDispatcher)
 	return restapi.NewTransactionHandler(usecase), ctrl
 }
 

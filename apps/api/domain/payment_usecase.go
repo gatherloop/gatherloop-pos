@@ -205,7 +205,7 @@ func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, cu
 				Subtotal:       subtotal,
 				Price:          variant.Price,
 				ProductName:    variant.Product.Name,
-				Values:         snapshotVariantValues(variant),
+				Values:         SnapshotVariantValues(variant),
 			})
 		}
 
@@ -332,7 +332,7 @@ func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, cu
 		usecase.kdsNotificationDispatcher.TriggerDispatch()
 	}
 
-	canCancel := usecase.paymentService.canCancel(resultPayment, sessionId)
+	canCancel := usecase.paymentService.CanCancel(resultPayment, sessionId)
 	return resultPayment, resultTransaction, canCancel, err
 }
 
@@ -352,7 +352,7 @@ func (usecase PaymentUsecase) ConfirmPayment(ctx context.Context, status QrisSta
 			return err
 		}
 
-		updatedPayment, transitionOutcome, transitionErr := usecase.paymentService.applyQrisStatus(ctxWithTx, payment, status)
+		updatedPayment, transitionOutcome, transitionErr := usecase.paymentService.ApplyQrisStatus(ctxWithTx, payment, status)
 		if transitionErr != nil {
 			return transitionErr
 		}
@@ -383,12 +383,12 @@ func (usecase PaymentUsecase) GetPaymentStatus(ctx context.Context, sessionId st
 			}
 			return err
 		}
-		if !authorizePaymentAccess(payment, sessionId, accessKey) {
+		if !usecase.paymentService.AuthorizePaymentAccess(payment, sessionId, accessKey) {
 			return &Error{Type: NotFound, Message: "payment not found"}
 		}
 
 		if payment.Status == PaymentStatePending {
-			refreshed, refreshOutcome, refreshErr := usecase.paymentService.refreshPendingPaymentStatus(ctxWithTx, payment, time.Now())
+			refreshed, refreshOutcome, refreshErr := usecase.paymentService.RefreshPendingPaymentStatus(ctxWithTx, payment, time.Now())
 			if refreshErr != nil {
 				return refreshErr
 			}
@@ -415,7 +415,7 @@ func (usecase PaymentUsecase) GetPaymentStatus(ctx context.Context, sessionId st
 		usecase.kdsNotificationDispatcher.TriggerDispatch()
 	}
 
-	canCancel := usecase.paymentService.canCancel(resultPayment, sessionId)
+	canCancel := usecase.paymentService.CanCancel(resultPayment, sessionId)
 	return resultPayment, resultTransaction, canCancel, err
 }
 
@@ -483,7 +483,7 @@ func (usecase PaymentUsecase) CancelPayment(ctx context.Context, sessionId strin
 
 		if payment.Status != PaymentStatePending {
 			resultPayment = payment
-			return usecase.paymentService.loadPaymentTransaction(ctxWithTx, payment, &resultTransaction)
+			return usecase.paymentService.LoadPaymentTransaction(ctxWithTx, payment, &resultTransaction)
 		}
 
 		// FR-5/D10: an approved COD order is being made — the guest may no longer cancel it
@@ -504,13 +504,13 @@ func (usecase PaymentUsecase) CancelPayment(ctx context.Context, sessionId strin
 					slog.Any("error", gatewayErr),
 				)
 			} else if gatewayStatus.Status == PaymentGatewayStatusPaid {
-				updatedPayment, applyOutcome, applyErr := usecase.paymentService.applyQrisStatus(ctxWithTx, payment, gatewayStatus)
+				updatedPayment, applyOutcome, applyErr := usecase.paymentService.ApplyQrisStatus(ctxWithTx, payment, gatewayStatus)
 				if applyErr != nil {
 					return applyErr
 				}
 				outcome = applyOutcome
 				resultPayment = updatedPayment
-				return usecase.paymentService.loadPaymentTransaction(ctxWithTx, updatedPayment, &resultTransaction)
+				return usecase.paymentService.LoadPaymentTransaction(ctxWithTx, updatedPayment, &resultTransaction)
 			}
 
 			// Best-effort: cancelling the QR at DOKU (D5, phase 9) shrinks D7's late-payment window,
@@ -527,14 +527,14 @@ func (usecase PaymentUsecase) CancelPayment(ctx context.Context, sessionId strin
 		}
 
 		reason := PaymentCancelReasonGuest
-		updatedPayment, finalizeErr := finalizeUncollectedPayment(ctxWithTx, payment, PaymentStateCancelled, &reason, usecase.paymentRepository, usecase.transactionRepository, usecase.availabilityService, usecase.kdsNotificationRepository, usecase.paymentVerificationRepository)
+		updatedPayment, finalizeErr := usecase.paymentService.FinalizeUncollectedPayment(ctxWithTx, payment, PaymentStateCancelled, &reason)
 		if finalizeErr != nil {
 			return finalizeErr
 		}
 
 		cancelledCash = payment.Method == PaymentMethodCash
 		resultPayment = updatedPayment
-		return usecase.paymentService.loadPaymentTransaction(ctxWithTx, updatedPayment, &resultTransaction)
+		return usecase.paymentService.LoadPaymentTransaction(ctxWithTx, updatedPayment, &resultTransaction)
 	})
 
 	// FR-4: a cancel that discovers the payment was already paid at DOKU (D4) triggers the KDS
@@ -544,7 +544,7 @@ func (usecase PaymentUsecase) CancelPayment(ctx context.Context, sessionId strin
 		usecase.kdsNotificationDispatcher.TriggerDispatch()
 	}
 
-	canCancel := usecase.paymentService.canCancel(resultPayment, sessionId)
+	canCancel := usecase.paymentService.CanCancel(resultPayment, sessionId)
 	return resultPayment, resultTransaction, canCancel, err
 }
 
@@ -556,7 +556,7 @@ func (usecase PaymentUsecase) ExpireStalePayments(ctx context.Context) *Error {
 	}
 
 	for _, payment := range payments {
-		usecase.paymentService.expireOne(ctx, payment, now)
+		usecase.paymentService.ExpireOne(ctx, payment, now)
 	}
 
 	return nil
