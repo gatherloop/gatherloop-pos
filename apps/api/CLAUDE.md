@@ -20,9 +20,22 @@ as the reference slice; every feature in `domain/` follows the same three-file-p
 | Handler | `presentation/restapi/<feature>_handler.go`, `_handler_test.go` | ctx → transformer → use case → `WriteResponse`/`WriteError` |
 | Route | `presentation/restapi/<feature>_route.go` | `gorilla/mux`, wrapped in `CheckAuth` |
 | Transformer | `presentation/restapi/<feature>_transformer.go` | `Get<Feature>Id`, `Get<Feature>Request`, `ToApi<Feature>`, `To<Feature>` |
+| Scheduled job (only if the feature sweeps) | `presentation/scheduler/<feature>_job.go`, `_job_test.go` | `Name()` + `Run(ctx) *domain.Error` per sweep, and an `Add<Feature>Jobs(scheduler, usecase)` that registers them |
 
 Wire it into `main.go` once: repository → use case → handler → router, in that order, next to
-the `budget*` lines.
+the `budget*` lines. A feature with a scheduled job adds one more line next to the other
+`scheduler.Add*Jobs` calls.
+
+### A periodic sweep is a driver, not a `main.go` loop
+
+HTTP is one way to trigger a use case; a ticker is another, and both are presentation. A sweep
+goes in `presentation/scheduler` as a `Job`, never as a loop or a `go func()` in `main.go` —
+`main.go` is a composition root and stays wiring only. `scheduler.Scheduler` owns the single
+ticker (`KDS_DISPATCH_INTERVAL_SECONDS`, which now paces every sweep, not just KDS), the
+goroutine, graceful `Stop`, and the `err.Type → logger.Error` mapping that is the sweeper's
+`WriteError`. A job itself is a delegation to one use case method; its behaviour belongs in
+`domain/<feature>_usecase_test.go`, and `_job_test.go` only proves the right method is wired to
+the right job name. No `_transformer.go` or `_route.go` — there is no request to transform.
 
 ## The contract is the source of truth, generated code is not
 

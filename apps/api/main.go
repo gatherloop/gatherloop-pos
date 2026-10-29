@@ -7,6 +7,7 @@ import (
 	"apps/api/data/mysql"
 	"apps/api/domain"
 	"apps/api/presentation/restapi"
+	"apps/api/presentation/scheduler"
 	"apps/api/utils"
 	"apps/api/utils/logger"
 	"context"
@@ -16,7 +17,6 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
-	"sync"
 	"syscall"
 	"time"
 
@@ -301,16 +301,11 @@ func main() {
 		w.Write([]byte("success"))
 	})
 
-	// FR-4/D5: the sweeper that catches a crash, a deploy or a push-service outage — the
-	// post-commit goroutine kick in payTransaction's and CompleteTransaction's callers is the
-	// fast path for each outbox, this is the backstop for both.
-	dispatchCtx, stopDispatch := context.WithCancel(context.Background())
-	var dispatchWaitGroup sync.WaitGroup
-	dispatchWaitGroup.Add(1)
-	go func() {
-		defer dispatchWaitGroup.Done()
-		runMaintenanceSweeper(dispatchCtx, kdsNotificationUsecase, guestNotificationUsecase, paymentUsecase, env.KdsDispatchIntervalSeconds, rootLogger)
-	}()
+	maintenanceScheduler := scheduler.New(env.KdsDispatchIntervalSeconds, rootLogger)
+	scheduler.AddKdsNotificationJobs(maintenanceScheduler, kdsNotificationUsecase)
+	scheduler.AddGuestNotificationJobs(maintenanceScheduler, guestNotificationUsecase)
+	scheduler.AddPaymentJobs(maintenanceScheduler, paymentUsecase)
+	maintenanceScheduler.Start()
 
 	server := &http.Server{Addr: fmt.Sprintf(":%s", env.Port), Handler: router}
 
@@ -327,43 +322,11 @@ func main() {
 
 	rootLogger.Info("server shutting down")
 
-	stopDispatch()
-	dispatchWaitGroup.Wait()
+	maintenanceScheduler.Stop()
 
 	shutdownCtx, cancelShutdown := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancelShutdown()
 	if err := server.Shutdown(shutdownCtx); err != nil {
 		rootLogger.Error("server shutdown failed", slog.Any("error", err))
-	}
-}
-
-// runMaintenanceSweeper drives both outboxes and the payment expiry sweep from one ticker (D5,
-// FR-4): three tickers at the same interval would be three goroutines doing the same job, and
-// extra env variables to keep in sync for no reason anyone could articulate.
-func runMaintenanceSweeper(ctx context.Context, kdsNotificationUsecase domain.KdsNotificationUsecase, guestNotificationUsecase domain.GuestNotificationUsecase, paymentUsecase domain.PaymentUsecase, intervalSeconds int, logger *slog.Logger) {
-	ticker := time.NewTicker(time.Duration(intervalSeconds) * time.Second)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-			if err := kdsNotificationUsecase.DispatchPending(context.Background()); err != nil {
-				logger.Error("kds dispatch sweep failed", slog.Any("error", err))
-			}
-			if err := guestNotificationUsecase.DispatchPending(context.Background()); err != nil {
-				logger.Error("guest notification dispatch sweep failed", slog.Any("error", err))
-			}
-			if err := guestNotificationUsecase.ExpireStaleSending(context.Background()); err != nil {
-				logger.Error("guest notification stale-sending sweep failed", slog.Any("error", err))
-			}
-			if err := paymentUsecase.ExpireStalePayments(context.Background()); err != nil {
-				logger.Error("payment expiry sweep failed", slog.Any("error", err))
-			}
-			if err := paymentUsecase.DeleteOrphanedVerificationPhotos(context.Background()); err != nil {
-				logger.Error("COD verification photo orphan sweep failed", slog.Any("error", err))
-			}
-		}
 	}
 }

@@ -34,8 +34,8 @@ func NewGuestNotificationUsecase(
 }
 
 // TriggerDispatch runs DispatchPending in the background (FR-4) so CompleteTransaction's caller
-// never waits on a push service; the periodic sweeper in main.go is what catches this goroutine
-// if it is lost to a crash or a deploy mid-flight.
+// never waits on a push service; the periodic sweeper in presentation/scheduler is what catches
+// this goroutine if it is lost to a crash or a deploy mid-flight.
 func (usecase GuestNotificationUsecase) TriggerDispatch() {
 	go func() {
 		if err := usecase.DispatchPending(context.Background()); err != nil {
@@ -46,7 +46,7 @@ func (usecase GuestNotificationUsecase) TriggerDispatch() {
 
 // DispatchPending claims up to guestDispatchBatchSize pending rows, oldest first, and sends each
 // its WhatsApp message (FR-7). Called immediately after a completion commits and on every
-// notification sweeper tick from main.go.
+// notification sweeper tick from presentation/scheduler.
 func (usecase GuestNotificationUsecase) DispatchPending(ctx context.Context) *Error {
 	notifications, err := usecase.repository.ClaimPendingGuestNotifications(ctx, guestDispatchBatchSize)
 	if err != nil {
@@ -61,7 +61,7 @@ func (usecase GuestNotificationUsecase) DispatchPending(ctx context.Context) *Er
 }
 
 // ExpireStaleSending gives up on rows a dispatcher claimed but never resolved (D8): called on
-// every runMaintenanceSweeper tick alongside DispatchPending, so a claim orphaned by a crashed or
+// every scheduler tick alongside DispatchPending, so a claim orphaned by a crashed or
 // deployed-over process does not sit in `sending` forever.
 func (usecase GuestNotificationUsecase) ExpireStaleSending(ctx context.Context) *Error {
 	return usecase.repository.ExpireStaleSending(ctx, time.Now().Add(-GuestNotificationStaleSendingThreshold))
