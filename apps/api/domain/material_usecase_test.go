@@ -11,7 +11,7 @@ import (
 )
 
 func newMaterialUsecase(ctrl *gomock.Controller, matRepo *mock.MockMaterialRepository, suppRepo *mock.MockSupplierRepository) domain.MaterialUsecase {
-	return domain.NewMaterialUsecase(matRepo, suppRepo)
+	return domain.NewMaterialUsecase(matRepo, domain.NewMaterialService(suppRepo))
 }
 
 func TestMaterialUsecase_GetMaterialList(t *testing.T) {

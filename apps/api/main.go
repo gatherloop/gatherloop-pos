@@ -170,6 +170,7 @@ func main() {
 		paymentService,
 	)
 	tableService := domain.NewTableService(tableRepository)
+	materialService := domain.NewMaterialService(supplierRepository)
 
 	walletUsecase := domain.NewWalletUsecase(walletRepository)
 	transactionUsecase := domain.NewTransactionUsecase(
@@ -186,7 +187,7 @@ func main() {
 	)
 	variantUsecase := domain.NewVariantUsecase(variantRepository, productRepository, variantService)
 	productUsecase := domain.NewProductUsecase(productRepository, variantRepository)
-	materialUsecase := domain.NewMaterialUsecase(materialRepository, supplierRepository)
+	materialUsecase := domain.NewMaterialUsecase(materialRepository, materialService)
 	supplierUsecase := domain.NewSupplierUsecase(supplierRepository)
 	expenseUsecase := domain.NewExpenseUsecase(expenseRepository, budgetRepository, walletRepository)
 	categoryUsecase := domain.NewCategoryUsecase(categoryRepository)
