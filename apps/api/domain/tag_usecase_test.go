@@ -47,7 +47,7 @@ func TestTagUsecase_GetTagList(t *testing.T) {
 			mockRepo := mock.NewMockTagRepository(ctrl)
 			tt.setupMock(mockRepo)
 
-			tags, err := domain.NewTagUsecase(mockRepo).GetTagList(context.Background())
+			tags, err := domain.NewTagUsecase(mockRepo, domain.NewTagService(mockRepo)).GetTagList(context.Background())
 
 			if tt.expectedError != nil {
 				assert.NotNil(t, err)
@@ -89,7 +89,7 @@ func TestTagUsecase_GetTagById(t *testing.T) {
 			mockRepo := mock.NewMockTagRepository(ctrl)
 			tt.setupMock(mockRepo)
 
-			tag, err := domain.NewTagUsecase(mockRepo).GetTagById(context.Background(), 1)
+			tag, err := domain.NewTagUsecase(mockRepo, domain.NewTagService(mockRepo)).GetTagById(context.Background(), 1)
 
 			if tt.expectedError != nil {
 				assert.NotNil(t, err)
@@ -171,7 +171,7 @@ func TestTagUsecase_CreateTag(t *testing.T) {
 			mockRepo := mock.NewMockTagRepository(ctrl)
 			tt.setupMock(mockRepo)
 
-			tag, err := domain.NewTagUsecase(mockRepo).CreateTag(context.Background(), tt.input)
+			tag, err := domain.NewTagUsecase(mockRepo, domain.NewTagService(mockRepo)).CreateTag(context.Background(), tt.input)
 
 			if tt.expectedError != nil {
 				assert.NotNil(t, err)
@@ -236,7 +236,7 @@ func TestTagUsecase_UpdateTagById(t *testing.T) {
 			mockRepo := mock.NewMockTagRepository(ctrl)
 			tt.setupMock(mockRepo)
 
-			tag, err := domain.NewTagUsecase(mockRepo).UpdateTagById(context.Background(), tt.input, tt.id)
+			tag, err := domain.NewTagUsecase(mockRepo, domain.NewTagService(mockRepo)).UpdateTagById(context.Background(), tt.input, tt.id)
 
 			if tt.expectedError != nil {
 				assert.NotNil(t, err)
@@ -287,7 +287,7 @@ func TestTagUsecase_DeleteTagById(t *testing.T) {
 			mockRepo := mock.NewMockTagRepository(ctrl)
 			tt.setupMock(mockRepo)
 
-			err := domain.NewTagUsecase(mockRepo).DeleteTagById(context.Background(), 1)
+			err := domain.NewTagUsecase(mockRepo, domain.NewTagService(mockRepo)).DeleteTagById(context.Background(), 1)
 
 			if tt.expectedError != nil {
 				assert.NotNil(t, err)
@@ -402,7 +402,7 @@ func TestTagUsecase_SetTagVariants(t *testing.T) {
 			mockRepo := mock.NewMockTagRepository(ctrl)
 			tt.setupMock(mockRepo)
 
-			tag, err := domain.NewTagUsecase(mockRepo).SetTagVariants(context.Background(), 1, tt.variantIds)
+			tag, err := domain.NewTagUsecase(mockRepo, domain.NewTagService(mockRepo)).SetTagVariants(context.Background(), 1, tt.variantIds)
 
 			if tt.expectedError != nil {
 				assert.NotNil(t, err)
