@@ -162,6 +162,7 @@ func main() {
 		variantRepository,
 	)
 	tagService := domain.NewTagService(tagRepository)
+	variantService := domain.NewVariantService(tagRepository)
 
 	walletUsecase := domain.NewWalletUsecase(walletRepository)
 	transactionUsecase := domain.NewTransactionUsecase(
@@ -178,7 +179,7 @@ func main() {
 		kdsNotificationUsecase,
 		guestNotificationUsecase,
 	)
-	variantUsecase := domain.NewVariantUsecase(variantRepository, productRepository, tagRepository)
+	variantUsecase := domain.NewVariantUsecase(variantRepository, productRepository, variantService)
 	productUsecase := domain.NewProductUsecase(productRepository, variantRepository)
 	materialUsecase := domain.NewMaterialUsecase(materialRepository, supplierRepository)
 	supplierUsecase := domain.NewSupplierUsecase(supplierRepository)
