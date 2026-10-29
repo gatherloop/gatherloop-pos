@@ -8,6 +8,8 @@ import (
 	"time"
 )
 
+const maxCustomerNameLength = 60
+
 type PaymentUsecase struct {
 	paymentRepository             PaymentRepository
 	paymentGatewayRepository      PaymentGatewayRepository
@@ -136,7 +138,15 @@ func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, cu
 			return &Error{Type: BadRequest, Message: "invalid dining option"}
 		}
 
-		customer, err := upsertCustomer(ctxWithTx, usecase.customerRepository, sessionId, customerName, whatsappNumber)
+		customerName = strings.TrimSpace(customerName)
+		if customerName == "" {
+			return &Error{Type: BadRequest, Message: "customerName must not be empty"}
+		}
+		if len([]rune(customerName)) > maxCustomerNameLength {
+			return &Error{Type: BadRequest, Message: "customerName must be at most 60 characters"}
+		}
+
+		customer, err := usecase.customerRepository.UpsertCustomerBySessionId(ctx, sessionId, customerName, whatsappNumber)
 		if err != nil {
 			return err
 		}
