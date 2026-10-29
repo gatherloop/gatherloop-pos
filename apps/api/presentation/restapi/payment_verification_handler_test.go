@@ -31,7 +31,7 @@ func newPaymentVerificationHandler(t *testing.T, setupMocks func(paymentRepo *mo
 
 	setupMocks(paymentRepo, verificationRepo, transactionRepo, cartRepo)
 
-	usecase := domain.NewPaymentVerificationUsecase(paymentRepo, verificationRepo, transactionRepo, cartRepo, kdsNotificationRepo, domain.NewAvailabilityService(nil, nil, availabilityRepo), kdsNotificationDispatcher)
+	usecase := domain.NewPaymentVerificationUsecase(paymentRepo, verificationRepo, transactionRepo, cartRepo, kdsNotificationRepo, domain.NewPaymentVerificationService(paymentRepo), domain.NewAvailabilityService(nil, nil, availabilityRepo), kdsNotificationDispatcher)
 	return restapi.NewPaymentVerificationHandler(usecase), ctrl
 }
 
@@ -221,12 +221,14 @@ func TestPaymentVerificationRoutes_RequireAuth(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
+	paymentRepo := mock.NewMockPaymentRepository(ctrl)
 	usecase := domain.NewPaymentVerificationUsecase(
-		mock.NewMockPaymentRepository(ctrl),
+		paymentRepo,
 		mock.NewMockPaymentVerificationRepository(ctrl),
 		mock.NewMockTransactionRepository(ctrl),
 		mock.NewMockCartRepository(ctrl),
 		mock.NewMockKdsNotificationRepository(ctrl),
+		domain.NewPaymentVerificationService(paymentRepo),
 		domain.NewAvailabilityService(nil, nil, mock.NewMockAvailabilityRepository(ctrl)),
 		mock.NewMockKdsNotificationDispatcher(ctrl),
 	)

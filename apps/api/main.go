@@ -155,6 +155,7 @@ func main() {
 		env.OrderPaymentCancelEnabled,
 		kdsNotificationUsecase,
 	)
+	paymentVerificationService := domain.NewPaymentVerificationService(paymentRepository)
 	cartService := domain.NewCartService(
 		cartRepository,
 		paymentRepository,
@@ -215,6 +216,7 @@ func main() {
 		transactionRepository,
 		cartRepository,
 		kdsNotificationRepository,
+		paymentVerificationService,
 		availabilityService,
 		kdsNotificationUsecase,
 	)

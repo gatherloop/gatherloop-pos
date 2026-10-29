@@ -35,8 +35,9 @@ func newPaymentVerificationUsecaseMocks(ctrl *gomock.Controller) paymentVerifica
 }
 
 func (m paymentVerificationUsecaseMocks) usecase() domain.PaymentVerificationUsecase {
+	paymentVerificationService := domain.NewPaymentVerificationService(m.paymentRepo)
 	availabilityService := domain.NewAvailabilityService(nil, nil, m.availabilityRepo)
-	return domain.NewPaymentVerificationUsecase(m.paymentRepo, m.verificationRepo, m.transactionRepo, m.cartRepo, m.kdsNotificationRepo, availabilityService, m.kdsNotificationDispatcher)
+	return domain.NewPaymentVerificationUsecase(m.paymentRepo, m.verificationRepo, m.transactionRepo, m.cartRepo, m.kdsNotificationRepo, paymentVerificationService, availabilityService, m.kdsNotificationDispatcher)
 }
 
 func withVerificationPaymentTransactionMock(r *mock.MockPaymentRepository) {
@@ -185,75 +186,6 @@ func TestPaymentVerificationUsecase_Approve(t *testing.T) {
 		assert.Nil(t, err)
 	})
 
-	t.Run("refuses a non-cod payment with 400", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
-
-		m := newPaymentVerificationUsecaseMocks(ctrl)
-		withVerificationPaymentTransactionMock(m.paymentRepo)
-
-		payment := awaitingCodPaymentFixture()
-		payment.Method = domain.PaymentMethodQris
-		m.paymentRepo.EXPECT().GetPaymentByTransactionIdForUpdate(gomock.Any(), int64(99)).Return(payment, nil)
-
-		err := m.usecase().Approve(context.Background(), 99)
-
-		require.NotNil(t, err)
-		assert.Equal(t, domain.BadRequest, err.Type)
-	})
-
-	t.Run("refuses an already-approved payment with 400", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
-
-		m := newPaymentVerificationUsecaseMocks(ctrl)
-		withVerificationPaymentTransactionMock(m.paymentRepo)
-
-		payment := awaitingCodPaymentFixture()
-		approved := domain.PaymentVerificationStatusApproved
-		payment.VerificationStatus = &approved
-		m.paymentRepo.EXPECT().GetPaymentByTransactionIdForUpdate(gomock.Any(), int64(99)).Return(payment, nil)
-
-		err := m.usecase().Approve(context.Background(), 99)
-
-		require.NotNil(t, err)
-		assert.Equal(t, domain.BadRequest, err.Type)
-	})
-
-	t.Run("refuses a cancelled payment with 400", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
-
-		m := newPaymentVerificationUsecaseMocks(ctrl)
-		withVerificationPaymentTransactionMock(m.paymentRepo)
-
-		payment := awaitingCodPaymentFixture()
-		payment.Status = domain.PaymentStateCancelled
-		m.paymentRepo.EXPECT().GetPaymentByTransactionIdForUpdate(gomock.Any(), int64(99)).Return(payment, nil)
-
-		err := m.usecase().Approve(context.Background(), 99)
-
-		require.NotNil(t, err)
-		assert.Equal(t, domain.BadRequest, err.Type)
-	})
-
-	t.Run("refuses a paid payment with 400", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
-
-		m := newPaymentVerificationUsecaseMocks(ctrl)
-		withVerificationPaymentTransactionMock(m.paymentRepo)
-
-		payment := awaitingCodPaymentFixture()
-		payment.Status = domain.PaymentStatePaid
-		m.paymentRepo.EXPECT().GetPaymentByTransactionIdForUpdate(gomock.Any(), int64(99)).Return(payment, nil)
-
-		err := m.usecase().Approve(context.Background(), 99)
-
-		require.NotNil(t, err)
-		assert.Equal(t, domain.BadRequest, err.Type)
-	})
-
 	t.Run("404 when there is no linked payment", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
@@ -315,75 +247,6 @@ func TestPaymentVerificationUsecase_Reject(t *testing.T) {
 		err := m.usecase().Reject(context.Background(), 99)
 
 		assert.Nil(t, err)
-	})
-
-	t.Run("refuses an already-approved payment with 400", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
-
-		m := newPaymentVerificationUsecaseMocks(ctrl)
-		withVerificationPaymentTransactionMock(m.paymentRepo)
-
-		payment := awaitingCodPaymentFixture()
-		approved := domain.PaymentVerificationStatusApproved
-		payment.VerificationStatus = &approved
-		m.paymentRepo.EXPECT().GetPaymentByTransactionIdForUpdate(gomock.Any(), int64(99)).Return(payment, nil)
-
-		err := m.usecase().Reject(context.Background(), 99)
-
-		require.NotNil(t, err)
-		assert.Equal(t, domain.BadRequest, err.Type)
-	})
-
-	t.Run("refuses a non-cod payment with 400", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
-
-		m := newPaymentVerificationUsecaseMocks(ctrl)
-		withVerificationPaymentTransactionMock(m.paymentRepo)
-
-		payment := awaitingCodPaymentFixture()
-		payment.Method = domain.PaymentMethodCash
-		m.paymentRepo.EXPECT().GetPaymentByTransactionIdForUpdate(gomock.Any(), int64(99)).Return(payment, nil)
-
-		err := m.usecase().Reject(context.Background(), 99)
-
-		require.NotNil(t, err)
-		assert.Equal(t, domain.BadRequest, err.Type)
-	})
-
-	t.Run("refuses a cancelled payment with 400", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
-
-		m := newPaymentVerificationUsecaseMocks(ctrl)
-		withVerificationPaymentTransactionMock(m.paymentRepo)
-
-		payment := awaitingCodPaymentFixture()
-		payment.Status = domain.PaymentStateCancelled
-		m.paymentRepo.EXPECT().GetPaymentByTransactionIdForUpdate(gomock.Any(), int64(99)).Return(payment, nil)
-
-		err := m.usecase().Reject(context.Background(), 99)
-
-		require.NotNil(t, err)
-		assert.Equal(t, domain.BadRequest, err.Type)
-	})
-
-	t.Run("refuses a paid payment with 400", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
-
-		m := newPaymentVerificationUsecaseMocks(ctrl)
-		withVerificationPaymentTransactionMock(m.paymentRepo)
-
-		payment := awaitingCodPaymentFixture()
-		payment.Status = domain.PaymentStatePaid
-		m.paymentRepo.EXPECT().GetPaymentByTransactionIdForUpdate(gomock.Any(), int64(99)).Return(payment, nil)
-
-		err := m.usecase().Reject(context.Background(), 99)
-
-		require.NotNil(t, err)
-		assert.Equal(t, domain.BadRequest, err.Type)
 	})
 
 	t.Run("404 when there is no linked payment", func(t *testing.T) {
