@@ -106,3 +106,15 @@ func availabilityMovementTransactionId(items []TransactionItem) *int64 {
 	}
 	return nil
 }
+
+type availabilityCountingLevel int
+
+const (
+	availabilityCountingProduct availabilityCountingLevel = iota
+	availabilityCountingVariant
+)
+
+type availabilityCountingUnit struct {
+	level availabilityCountingLevel
+	id    int64
+}

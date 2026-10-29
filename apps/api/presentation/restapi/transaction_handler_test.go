@@ -25,7 +25,7 @@ func newTransactionHandler(t *testing.T, setupMocks func(txRepo *mock.MockTransa
 	variantRepo := mock.NewMockVariantRepository(ctrl)
 	couponRepo := mock.NewMockCouponRepository(ctrl)
 	walletRepo := mock.NewMockWalletRepository(ctrl)
-	availabilityRepo := mock.NewMockAvailabilityReservationRepository(ctrl)
+	availabilityRepo := mock.NewMockAvailabilityRepository(ctrl)
 	availabilityRepo.EXPECT().LockVariantById(gomock.Any(), gomock.Any()).DoAndReturn(
 		func(ctx context.Context, id int64) (domain.Variant, *domain.Error) {
 			return domain.Variant{Id: id, IsAvailable: true, Product: domain.Product{IsAvailable: true}}, nil
@@ -51,7 +51,7 @@ func newTransactionHandler(t *testing.T, setupMocks func(txRepo *mock.MockTransa
 	paymentVerificationRepo := mock.NewMockPaymentVerificationRepository(ctrl)
 	paymentVerificationRepo.EXPECT().DeleteByPaymentId(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 	setupMocks(txRepo, variantRepo, couponRepo, walletRepo)
-	usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, domain.NewAvailabilityReservation(availabilityRepo), kdsNotificationRepo, kdsNotificationDispatcher, paymentRepo, guestNotificationRepo, guestNotificationDispatcher, cartRepo, paymentVerificationRepo)
+	usecase := domain.NewTransactionUsecase(txRepo, variantRepo, couponRepo, walletRepo, kdsNotificationRepo, paymentRepo, guestNotificationRepo, cartRepo, paymentVerificationRepo, domain.NewAvailabilityService(nil, nil, availabilityRepo), kdsNotificationDispatcher, guestNotificationDispatcher)
 	return restapi.NewTransactionHandler(usecase), ctrl
 }
 

@@ -34,7 +34,7 @@ type paymentHandlerMocks struct {
 	transactionRepo           *mock.MockTransactionRepository
 	variantRepo               *mock.MockVariantRepository
 	walletRepo                *mock.MockWalletRepository
-	availabilityRepo          *mock.MockAvailabilityReservationRepository
+	availabilityRepo          *mock.MockAvailabilityRepository
 	kdsNotificationRepo       *mock.MockKdsNotificationRepository
 	kdsNotificationDispatcher *mock.MockKdsNotificationDispatcher
 	paymentVerificationRepo   *mock.MockPaymentVerificationRepository
@@ -56,7 +56,7 @@ func newPaymentHandlerMocks(ctrl *gomock.Controller) paymentHandlerMocks {
 		transactionRepo:           mock.NewMockTransactionRepository(ctrl),
 		variantRepo:               mock.NewMockVariantRepository(ctrl),
 		walletRepo:                mock.NewMockWalletRepository(ctrl),
-		availabilityRepo:          mock.NewMockAvailabilityReservationRepository(ctrl),
+		availabilityRepo:          mock.NewMockAvailabilityRepository(ctrl),
 		kdsNotificationRepo:       kdsNotificationRepo,
 		kdsNotificationDispatcher: kdsNotificationDispatcher,
 		paymentVerificationRepo:   paymentVerificationRepo,
@@ -78,8 +78,9 @@ func (m paymentHandlerMocks) handlerWithCodEnabled() restapi.PaymentHandler {
 }
 
 func (m paymentHandlerMocks) handlerWithCancelAndCodEnabled(orderPaymentCancelEnabled bool, orderCodPaymentEnabled bool) restapi.PaymentHandler {
-	availabilityReservation := domain.NewAvailabilityReservation(m.availabilityRepo)
-	usecase := domain.NewPaymentUsecase(m.paymentRepo, m.gatewayRepo, m.customerRepo, m.cartRepo, m.transactionRepo, m.variantRepo, m.walletRepo, availabilityReservation, m.kdsNotificationRepo, m.kdsNotificationDispatcher, domain.NoopWhatsappNumberVerifier{}, m.paymentVerificationRepo, 300, 600, 900, paymentHandlerOrderPaymentWalletId, orderPaymentCancelEnabled, orderCodPaymentEnabled)
+	availabilityService := domain.NewAvailabilityService(nil, nil, m.availabilityRepo)
+	paymentService := domain.NewPaymentService(m.transactionRepo, m.paymentRepo, m.paymentVerificationRepo, m.gatewayRepo, m.cartRepo, m.walletRepo, m.kdsNotificationRepo, availabilityService, paymentHandlerOrderPaymentWalletId, orderPaymentCancelEnabled, m.kdsNotificationDispatcher)
+	usecase := domain.NewPaymentUsecase(m.paymentRepo, m.gatewayRepo, m.customerRepo, m.cartRepo, m.transactionRepo, m.variantRepo, m.walletRepo, m.kdsNotificationRepo, m.paymentVerificationRepo, paymentService, availabilityService, m.kdsNotificationDispatcher, domain.NoopWhatsappNumberVerifier{}, 300, 600, 900, paymentHandlerOrderPaymentWalletId, orderPaymentCancelEnabled, orderCodPaymentEnabled)
 	return restapi.NewPaymentHandler(usecase)
 }
 

@@ -7,24 +7,20 @@ import (
 )
 
 type CartUsecase struct {
-	cartRepository    CartRepository
-	variantRepository VariantRepository
-	tableRepository   TableRepository
-	paymentRepository PaymentRepository
-	cartService       CartService
+	cartRepository  CartRepository
+	tableRepository TableRepository
+	cartService     CartService
 }
 
-func NewCartUsecase(cartRepository CartRepository, variantRepository VariantRepository, tableRepository TableRepository, paymentRepository PaymentRepository) CartUsecase {
+func NewCartUsecase(
+	cartRepository CartRepository,
+	tableRepository TableRepository,
+	cartService CartService,
+) CartUsecase {
 	return CartUsecase{
-		cartRepository:    cartRepository,
-		variantRepository: variantRepository,
-		tableRepository:   tableRepository,
-		paymentRepository: paymentRepository,
-		cartService: NewCartService(
-			cartRepository,
-			paymentRepository,
-			variantRepository,
-		),
+		cartRepository:  cartRepository,
+		tableRepository: tableRepository,
+		cartService:     cartService,
 	}
 }
 

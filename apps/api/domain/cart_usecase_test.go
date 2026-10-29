@@ -17,7 +17,7 @@ func withCartTransaction(r *mock.MockCartRepository) {
 }
 
 func newCartUsecase(cartRepo *mock.MockCartRepository, variantRepo *mock.MockVariantRepository, tableRepo *mock.MockTableRepository, paymentRepo *mock.MockPaymentRepository) domain.CartUsecase {
-	return domain.NewCartUsecase(cartRepo, variantRepo, tableRepo, paymentRepo)
+	return domain.NewCartUsecase(cartRepo, tableRepo, domain.NewCartService(cartRepo, paymentRepo, variantRepo))
 }
 
 func unlockedCart(pr *mock.MockPaymentRepository, cartId int64) {

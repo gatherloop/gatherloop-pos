@@ -16,19 +16,21 @@ type PaymentUsecase struct {
 	transactionRepository         TransactionRepository
 	variantRepository             VariantRepository
 	walletRepository              WalletRepository
-	availabilityReservation       AvailabilityReservation
 	kdsNotificationRepository     KdsNotificationRepository
-	kdsNotificationDispatcher     KdsNotificationDispatcher
-	whatsappNumberVerifier        WhatsappNumberVerifier
 	paymentVerificationRepository PaymentVerificationRepository
-	qrisExpirySeconds             int
-	cashExpirySeconds             int
-	codVerificationExpirySeconds  int
-	orderPaymentWalletId          int64
-	orderPaymentCancelEnabled     bool
-	orderCodPaymentEnabled        bool
 
-	service PaymentService
+	paymentService      PaymentService
+	availabilityService AvailabilityService
+
+	kdsNotificationDispatcher KdsNotificationDispatcher
+
+	whatsappNumberVerifier       WhatsappNumberVerifier
+	qrisExpirySeconds            int
+	cashExpirySeconds            int
+	codVerificationExpirySeconds int
+	orderPaymentWalletId         int64
+	orderPaymentCancelEnabled    bool
+	orderCodPaymentEnabled       bool
 }
 
 func NewPaymentUsecase(
@@ -39,11 +41,15 @@ func NewPaymentUsecase(
 	transactionRepository TransactionRepository,
 	variantRepository VariantRepository,
 	walletRepository WalletRepository,
-	availabilityReservation AvailabilityReservation,
 	kdsNotificationRepository KdsNotificationRepository,
-	kdsNotificationDispatcher KdsNotificationDispatcher,
-	whatsappNumberVerifier WhatsappNumberVerifier,
 	paymentVerificationRepository PaymentVerificationRepository,
+
+	paymentService PaymentService,
+	availabilityService AvailabilityService,
+
+	kdsNotificationDispatcher KdsNotificationDispatcher,
+
+	whatsappNumberVerifier WhatsappNumberVerifier,
 	qrisExpirySeconds int,
 	cashExpirySeconds int,
 	codVerificationExpirySeconds int,
@@ -59,30 +65,18 @@ func NewPaymentUsecase(
 		transactionRepository:         transactionRepository,
 		variantRepository:             variantRepository,
 		walletRepository:              walletRepository,
-		availabilityReservation:       availabilityReservation,
 		kdsNotificationRepository:     kdsNotificationRepository,
+		paymentVerificationRepository: paymentVerificationRepository,
+		paymentService:                paymentService,
+		availabilityService:           availabilityService,
 		kdsNotificationDispatcher:     kdsNotificationDispatcher,
 		whatsappNumberVerifier:        whatsappNumberVerifier,
-		paymentVerificationRepository: paymentVerificationRepository,
 		qrisExpirySeconds:             qrisExpirySeconds,
 		cashExpirySeconds:             cashExpirySeconds,
 		codVerificationExpirySeconds:  codVerificationExpirySeconds,
 		orderPaymentWalletId:          orderPaymentWalletId,
 		orderPaymentCancelEnabled:     orderPaymentCancelEnabled,
 		orderCodPaymentEnabled:        orderCodPaymentEnabled,
-		service: PaymentService{
-			paymentRepository:             paymentRepository,
-			paymentGatewayRepository:      paymentGatewayRepository,
-			cartRepository:                cartRepository,
-			transactionRepository:         transactionRepository,
-			walletRepository:              walletRepository,
-			availabilityReservation:       availabilityReservation,
-			kdsNotificationRepository:     kdsNotificationRepository,
-			kdsNotificationDispatcher:     kdsNotificationDispatcher,
-			paymentVerificationRepository: paymentVerificationRepository,
-			orderPaymentWalletId:          orderPaymentWalletId,
-			orderPaymentCancelEnabled:     orderPaymentCancelEnabled,
-		},
 	}
 }
 
@@ -215,7 +209,7 @@ func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, cu
 			})
 		}
 
-		if err := usecase.availabilityReservation.Reserve(ctxWithTx, transactionItems); err != nil {
+		if err := usecase.availabilityService.Reserve(ctxWithTx, transactionItems); err != nil {
 			return err
 		}
 
@@ -338,7 +332,7 @@ func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, cu
 		usecase.kdsNotificationDispatcher.TriggerDispatch()
 	}
 
-	canCancel := usecase.service.canCancel(resultPayment, sessionId)
+	canCancel := usecase.paymentService.canCancel(resultPayment, sessionId)
 	return resultPayment, resultTransaction, canCancel, err
 }
 
@@ -358,7 +352,7 @@ func (usecase PaymentUsecase) ConfirmPayment(ctx context.Context, status QrisSta
 			return err
 		}
 
-		updatedPayment, transitionOutcome, transitionErr := usecase.service.applyQrisStatus(ctxWithTx, payment, status)
+		updatedPayment, transitionOutcome, transitionErr := usecase.paymentService.applyQrisStatus(ctxWithTx, payment, status)
 		if transitionErr != nil {
 			return transitionErr
 		}
@@ -394,7 +388,7 @@ func (usecase PaymentUsecase) GetPaymentStatus(ctx context.Context, sessionId st
 		}
 
 		if payment.Status == PaymentStatePending {
-			refreshed, refreshOutcome, refreshErr := usecase.service.refreshPendingPaymentStatus(ctxWithTx, payment, time.Now())
+			refreshed, refreshOutcome, refreshErr := usecase.paymentService.refreshPendingPaymentStatus(ctxWithTx, payment, time.Now())
 			if refreshErr != nil {
 				return refreshErr
 			}
@@ -421,7 +415,7 @@ func (usecase PaymentUsecase) GetPaymentStatus(ctx context.Context, sessionId st
 		usecase.kdsNotificationDispatcher.TriggerDispatch()
 	}
 
-	canCancel := usecase.service.canCancel(resultPayment, sessionId)
+	canCancel := usecase.paymentService.canCancel(resultPayment, sessionId)
 	return resultPayment, resultTransaction, canCancel, err
 }
 
@@ -489,7 +483,7 @@ func (usecase PaymentUsecase) CancelPayment(ctx context.Context, sessionId strin
 
 		if payment.Status != PaymentStatePending {
 			resultPayment = payment
-			return usecase.service.loadPaymentTransaction(ctxWithTx, payment, &resultTransaction)
+			return usecase.paymentService.loadPaymentTransaction(ctxWithTx, payment, &resultTransaction)
 		}
 
 		// FR-5/D10: an approved COD order is being made — the guest may no longer cancel it
@@ -510,13 +504,13 @@ func (usecase PaymentUsecase) CancelPayment(ctx context.Context, sessionId strin
 					slog.Any("error", gatewayErr),
 				)
 			} else if gatewayStatus.Status == PaymentGatewayStatusPaid {
-				updatedPayment, applyOutcome, applyErr := usecase.service.applyQrisStatus(ctxWithTx, payment, gatewayStatus)
+				updatedPayment, applyOutcome, applyErr := usecase.paymentService.applyQrisStatus(ctxWithTx, payment, gatewayStatus)
 				if applyErr != nil {
 					return applyErr
 				}
 				outcome = applyOutcome
 				resultPayment = updatedPayment
-				return usecase.service.loadPaymentTransaction(ctxWithTx, updatedPayment, &resultTransaction)
+				return usecase.paymentService.loadPaymentTransaction(ctxWithTx, updatedPayment, &resultTransaction)
 			}
 
 			// Best-effort: cancelling the QR at DOKU (D5, phase 9) shrinks D7's late-payment window,
@@ -533,14 +527,14 @@ func (usecase PaymentUsecase) CancelPayment(ctx context.Context, sessionId strin
 		}
 
 		reason := PaymentCancelReasonGuest
-		updatedPayment, finalizeErr := finalizeUncollectedPayment(ctxWithTx, payment, PaymentStateCancelled, &reason, usecase.paymentRepository, usecase.transactionRepository, usecase.availabilityReservation, usecase.kdsNotificationRepository, usecase.paymentVerificationRepository)
+		updatedPayment, finalizeErr := finalizeUncollectedPayment(ctxWithTx, payment, PaymentStateCancelled, &reason, usecase.paymentRepository, usecase.transactionRepository, usecase.availabilityService, usecase.kdsNotificationRepository, usecase.paymentVerificationRepository)
 		if finalizeErr != nil {
 			return finalizeErr
 		}
 
 		cancelledCash = payment.Method == PaymentMethodCash
 		resultPayment = updatedPayment
-		return usecase.service.loadPaymentTransaction(ctxWithTx, updatedPayment, &resultTransaction)
+		return usecase.paymentService.loadPaymentTransaction(ctxWithTx, updatedPayment, &resultTransaction)
 	})
 
 	// FR-4: a cancel that discovers the payment was already paid at DOKU (D4) triggers the KDS
@@ -550,7 +544,7 @@ func (usecase PaymentUsecase) CancelPayment(ctx context.Context, sessionId strin
 		usecase.kdsNotificationDispatcher.TriggerDispatch()
 	}
 
-	canCancel := usecase.service.canCancel(resultPayment, sessionId)
+	canCancel := usecase.paymentService.canCancel(resultPayment, sessionId)
 	return resultPayment, resultTransaction, canCancel, err
 }
 
@@ -562,7 +556,7 @@ func (usecase PaymentUsecase) ExpireStalePayments(ctx context.Context) *Error {
 	}
 
 	for _, payment := range payments {
-		usecase.service.expireOne(ctx, payment, now)
+		usecase.paymentService.expireOne(ctx, payment, now)
 	}
 
 	return nil

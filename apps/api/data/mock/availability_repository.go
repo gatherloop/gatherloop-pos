@@ -99,6 +99,36 @@ func (mr *MockAvailabilityRepositoryMockRecorder) GetAvailabilityMovementListTot
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAvailabilityMovementListTotal", reflect.TypeOf((*MockAvailabilityRepository)(nil).GetAvailabilityMovementListTotal), ctx, level, id)
 }
 
+// LockProductById mocks base method.
+func (m *MockAvailabilityRepository) LockProductById(ctx context.Context, id int64) (domain.Product, *domain.Error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LockProductById", ctx, id)
+	ret0, _ := ret[0].(domain.Product)
+	ret1, _ := ret[1].(*domain.Error)
+	return ret0, ret1
+}
+
+// LockProductById indicates an expected call of LockProductById.
+func (mr *MockAvailabilityRepositoryMockRecorder) LockProductById(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LockProductById", reflect.TypeOf((*MockAvailabilityRepository)(nil).LockProductById), ctx, id)
+}
+
+// LockVariantById mocks base method.
+func (m *MockAvailabilityRepository) LockVariantById(ctx context.Context, id int64) (domain.Variant, *domain.Error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LockVariantById", ctx, id)
+	ret0, _ := ret[0].(domain.Variant)
+	ret1, _ := ret[1].(*domain.Error)
+	return ret0, ret1
+}
+
+// LockVariantById indicates an expected call of LockVariantById.
+func (mr *MockAvailabilityRepositoryMockRecorder) LockVariantById(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LockVariantById", reflect.TypeOf((*MockAvailabilityRepository)(nil).LockVariantById), ctx, id)
+}
+
 // UpdateProductAvailability mocks base method.
 func (m *MockAvailabilityRepository) UpdateProductAvailability(ctx context.Context, productId int64, isAvailable *bool, availableQuantity *int) *domain.Error {
 	m.ctrl.T.Helper()
@@ -113,6 +143,20 @@ func (mr *MockAvailabilityRepositoryMockRecorder) UpdateProductAvailability(ctx,
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateProductAvailability", reflect.TypeOf((*MockAvailabilityRepository)(nil).UpdateProductAvailability), ctx, productId, isAvailable, availableQuantity)
 }
 
+// UpdateProductAvailableQuantity mocks base method.
+func (m *MockAvailabilityRepository) UpdateProductAvailableQuantity(ctx context.Context, id int64, quantity int) *domain.Error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateProductAvailableQuantity", ctx, id, quantity)
+	ret0, _ := ret[0].(*domain.Error)
+	return ret0
+}
+
+// UpdateProductAvailableQuantity indicates an expected call of UpdateProductAvailableQuantity.
+func (mr *MockAvailabilityRepositoryMockRecorder) UpdateProductAvailableQuantity(ctx, id, quantity any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateProductAvailableQuantity", reflect.TypeOf((*MockAvailabilityRepository)(nil).UpdateProductAvailableQuantity), ctx, id, quantity)
+}
+
 // UpdateVariantAvailability mocks base method.
 func (m *MockAvailabilityRepository) UpdateVariantAvailability(ctx context.Context, variantId int64, isAvailable *bool, availableQuantity *int) *domain.Error {
 	m.ctrl.T.Helper()
@@ -125,4 +169,18 @@ func (m *MockAvailabilityRepository) UpdateVariantAvailability(ctx context.Conte
 func (mr *MockAvailabilityRepositoryMockRecorder) UpdateVariantAvailability(ctx, variantId, isAvailable, availableQuantity any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateVariantAvailability", reflect.TypeOf((*MockAvailabilityRepository)(nil).UpdateVariantAvailability), ctx, variantId, isAvailable, availableQuantity)
+}
+
+// UpdateVariantAvailableQuantity mocks base method.
+func (m *MockAvailabilityRepository) UpdateVariantAvailableQuantity(ctx context.Context, id int64, quantity int) *domain.Error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateVariantAvailableQuantity", ctx, id, quantity)
+	ret0, _ := ret[0].(*domain.Error)
+	return ret0
+}
+
+// UpdateVariantAvailableQuantity indicates an expected call of UpdateVariantAvailableQuantity.
+func (mr *MockAvailabilityRepositoryMockRecorder) UpdateVariantAvailableQuantity(ctx, id, quantity any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateVariantAvailableQuantity", reflect.TypeOf((*MockAvailabilityRepository)(nil).UpdateVariantAvailableQuantity), ctx, id, quantity)
 }

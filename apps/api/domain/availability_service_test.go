@@ -10,12 +10,12 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-func TestAvailabilityReservation_Reserve(t *testing.T) {
+func TestAvailabilityService_Reserve(t *testing.T) {
 	t.Run("decrements a variant-level counter", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		repo := mock.NewMockAvailabilityReservationRepository(ctrl)
+		repo := mock.NewMockAvailabilityRepository(ctrl)
 		repo.EXPECT().LockVariantById(gomock.Any(), int64(1)).Return(domain.Variant{
 			Id: 1, IsAvailable: true, AvailableQuantity: intPtr(6),
 			Product: domain.Product{IsAvailable: true, AvailabilityTracking: domain.AvailabilityTrackingVariant},
@@ -23,7 +23,7 @@ func TestAvailabilityReservation_Reserve(t *testing.T) {
 		repo.EXPECT().UpdateVariantAvailableQuantity(gomock.Any(), int64(1), 4).Return(nil)
 		repo.EXPECT().CreateAvailabilityMovement(gomock.Any(), gomock.Any()).Return(nil)
 
-		reservation := domain.NewAvailabilityReservation(repo)
+		reservation := domain.NewAvailabilityService(nil, nil, repo)
 		err := reservation.Reserve(context.Background(), []domain.TransactionItem{{VariantId: 1, Amount: 2}})
 
 		assert.Nil(t, err)
@@ -35,14 +35,14 @@ func TestAvailabilityReservation_Reserve(t *testing.T) {
 
 		product := domain.Product{Id: 10, Name: "Pancong", IsAvailable: true, AvailabilityTracking: domain.AvailabilityTrackingProduct, AvailableQuantity: intPtr(5)}
 
-		repo := mock.NewMockAvailabilityReservationRepository(ctrl)
+		repo := mock.NewMockAvailabilityRepository(ctrl)
 		repo.EXPECT().LockVariantById(gomock.Any(), int64(1)).Return(domain.Variant{Id: 1, ProductId: 10, IsAvailable: true, Product: product}, nil)
 		repo.EXPECT().LockVariantById(gomock.Any(), int64(2)).Return(domain.Variant{Id: 2, ProductId: 10, IsAvailable: true, Product: product}, nil)
 		repo.EXPECT().LockProductById(gomock.Any(), int64(10)).Times(1).Return(product, nil)
 		repo.EXPECT().UpdateProductAvailableQuantity(gomock.Any(), int64(10), 2).Return(nil)
 		repo.EXPECT().CreateAvailabilityMovement(gomock.Any(), gomock.Any()).Return(nil)
 
-		reservation := domain.NewAvailabilityReservation(repo)
+		reservation := domain.NewAvailabilityService(nil, nil, repo)
 		err := reservation.Reserve(context.Background(), []domain.TransactionItem{
 			{VariantId: 1, Amount: 2},
 			{VariantId: 2, Amount: 1},
@@ -55,7 +55,7 @@ func TestAvailabilityReservation_Reserve(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		repo := mock.NewMockAvailabilityReservationRepository(ctrl)
+		repo := mock.NewMockAvailabilityRepository(ctrl)
 		repo.EXPECT().LockVariantById(gomock.Any(), int64(1)).Times(1).Return(domain.Variant{
 			Id: 1, IsAvailable: true, AvailableQuantity: intPtr(3),
 			Product: domain.Product{IsAvailable: true, AvailabilityTracking: domain.AvailabilityTrackingVariant},
@@ -63,7 +63,7 @@ func TestAvailabilityReservation_Reserve(t *testing.T) {
 		repo.EXPECT().UpdateVariantAvailableQuantity(gomock.Any(), int64(1), 1).Return(nil)
 		repo.EXPECT().CreateAvailabilityMovement(gomock.Any(), gomock.Any()).Return(nil)
 
-		reservation := domain.NewAvailabilityReservation(repo)
+		reservation := domain.NewAvailabilityService(nil, nil, repo)
 		err := reservation.Reserve(context.Background(), []domain.TransactionItem{
 			{VariantId: 1, Amount: 1, Note: "less ice"},
 			{VariantId: 1, Amount: 1, Note: "no sugar"},
@@ -76,13 +76,13 @@ func TestAvailabilityReservation_Reserve(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		repo := mock.NewMockAvailabilityReservationRepository(ctrl)
+		repo := mock.NewMockAvailabilityRepository(ctrl)
 		repo.EXPECT().LockVariantById(gomock.Any(), int64(1)).Return(domain.Variant{
 			Id: 1, IsAvailable: true,
 			Product: domain.Product{IsAvailable: true, AvailabilityTracking: domain.AvailabilityTrackingNone},
 		}, nil)
 
-		reservation := domain.NewAvailabilityReservation(repo)
+		reservation := domain.NewAvailabilityService(nil, nil, repo)
 		err := reservation.Reserve(context.Background(), []domain.TransactionItem{{VariantId: 1, Amount: 5}})
 
 		assert.Nil(t, err)
@@ -92,13 +92,13 @@ func TestAvailabilityReservation_Reserve(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		repo := mock.NewMockAvailabilityReservationRepository(ctrl)
+		repo := mock.NewMockAvailabilityRepository(ctrl)
 		repo.EXPECT().LockVariantById(gomock.Any(), int64(1)).Return(domain.Variant{
 			Id: 1, Name: "Vanilla", IsAvailable: true,
 			Product: domain.Product{Name: "Es Kopi Susu", IsAvailable: false, AvailabilityTracking: domain.AvailabilityTrackingNone},
 		}, nil)
 
-		reservation := domain.NewAvailabilityReservation(repo)
+		reservation := domain.NewAvailabilityService(nil, nil, repo)
 		err := reservation.Reserve(context.Background(), []domain.TransactionItem{{VariantId: 1, Amount: 1}})
 
 		assert.NotNil(t, err)
@@ -110,13 +110,13 @@ func TestAvailabilityReservation_Reserve(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		repo := mock.NewMockAvailabilityReservationRepository(ctrl)
+		repo := mock.NewMockAvailabilityRepository(ctrl)
 		repo.EXPECT().LockVariantById(gomock.Any(), int64(1)).Return(domain.Variant{
 			Id: 1, Name: "Choco", IsAvailable: false,
 			Product: domain.Product{Name: "Soft Cookies", IsAvailable: true, AvailabilityTracking: domain.AvailabilityTrackingVariant},
 		}, nil)
 
-		reservation := domain.NewAvailabilityReservation(repo)
+		reservation := domain.NewAvailabilityService(nil, nil, repo)
 		err := reservation.Reserve(context.Background(), []domain.TransactionItem{{VariantId: 1, Amount: 1}})
 
 		assert.NotNil(t, err)
@@ -128,13 +128,13 @@ func TestAvailabilityReservation_Reserve(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		repo := mock.NewMockAvailabilityReservationRepository(ctrl)
+		repo := mock.NewMockAvailabilityRepository(ctrl)
 		repo.EXPECT().LockVariantById(gomock.Any(), int64(1)).Return(domain.Variant{
 			Id: 1, Name: "Choco", IsAvailable: true, AvailableQuantity: intPtr(2),
 			Product: domain.Product{Name: "Soft Cookies", IsAvailable: true, AvailabilityTracking: domain.AvailabilityTrackingVariant},
 		}, nil)
 
-		reservation := domain.NewAvailabilityReservation(repo)
+		reservation := domain.NewAvailabilityService(nil, nil, repo)
 		err := reservation.Reserve(context.Background(), []domain.TransactionItem{{VariantId: 1, Amount: 3}})
 
 		assert.NotNil(t, err)
@@ -148,12 +148,12 @@ func TestAvailabilityReservation_Reserve(t *testing.T) {
 
 		product := domain.Product{Id: 10, Name: "Pancong", IsAvailable: true, AvailabilityTracking: domain.AvailabilityTrackingProduct, AvailableQuantity: intPtr(3)}
 
-		repo := mock.NewMockAvailabilityReservationRepository(ctrl)
+		repo := mock.NewMockAvailabilityRepository(ctrl)
 		repo.EXPECT().LockVariantById(gomock.Any(), int64(1)).Return(domain.Variant{Id: 1, ProductId: 10, IsAvailable: true, Product: product}, nil)
 		repo.EXPECT().LockVariantById(gomock.Any(), int64(2)).Return(domain.Variant{Id: 2, ProductId: 10, IsAvailable: true, Product: product}, nil)
 		repo.EXPECT().LockProductById(gomock.Any(), int64(10)).Times(1).Return(product, nil)
 
-		reservation := domain.NewAvailabilityReservation(repo)
+		reservation := domain.NewAvailabilityService(nil, nil, repo)
 		err := reservation.Reserve(context.Background(), []domain.TransactionItem{
 			{VariantId: 1, Amount: 2},
 			{VariantId: 2, Amount: 2},
@@ -170,12 +170,12 @@ func TestAvailabilityReservation_Reserve(t *testing.T) {
 
 		product := domain.Product{Id: 10, Name: "Pancong", IsAvailable: true, AvailabilityTracking: domain.AvailabilityTrackingProduct, AvailableQuantity: intPtr(5)}
 
-		repo := mock.NewMockAvailabilityReservationRepository(ctrl)
+		repo := mock.NewMockAvailabilityRepository(ctrl)
 		repo.EXPECT().LockVariantById(gomock.Any(), int64(3)).Return(domain.Variant{
 			Id: 3, Name: "Matcha", ProductId: 10, IsAvailable: false, Product: product,
 		}, nil)
 
-		reservation := domain.NewAvailabilityReservation(repo)
+		reservation := domain.NewAvailabilityService(nil, nil, repo)
 		err := reservation.Reserve(context.Background(), []domain.TransactionItem{{VariantId: 3, Amount: 1}})
 
 		assert.NotNil(t, err)
@@ -187,10 +187,10 @@ func TestAvailabilityReservation_Reserve(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		repo := mock.NewMockAvailabilityReservationRepository(ctrl)
+		repo := mock.NewMockAvailabilityRepository(ctrl)
 		rentalId := int64(7)
 
-		reservation := domain.NewAvailabilityReservation(repo)
+		reservation := domain.NewAvailabilityService(nil, nil, repo)
 		err := reservation.Reserve(context.Background(), []domain.TransactionItem{{VariantId: 1, Amount: 1, RentalId: &rentalId}})
 
 		assert.Nil(t, err)
@@ -200,25 +200,25 @@ func TestAvailabilityReservation_Reserve(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		repo := mock.NewMockAvailabilityReservationRepository(ctrl)
+		repo := mock.NewMockAvailabilityRepository(ctrl)
 		repo.EXPECT().LockVariantById(gomock.Any(), int64(1)).Return(domain.Variant{
 			Id: 1, IsAvailable: true,
 			Product: domain.Product{SaleType: domain.SaleTypeRental, IsAvailable: false, AvailabilityTracking: domain.AvailabilityTrackingProduct, AvailableQuantity: intPtr(0)},
 		}, nil)
 
-		reservation := domain.NewAvailabilityReservation(repo)
+		reservation := domain.NewAvailabilityService(nil, nil, repo)
 		err := reservation.Reserve(context.Background(), []domain.TransactionItem{{VariantId: 1, Amount: 1}})
 
 		assert.Nil(t, err)
 	})
 }
 
-func TestAvailabilityReservation_Release(t *testing.T) {
+func TestAvailabilityService_Release(t *testing.T) {
 	t.Run("restores a variant-level counter without checking the switch", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		repo := mock.NewMockAvailabilityReservationRepository(ctrl)
+		repo := mock.NewMockAvailabilityRepository(ctrl)
 		repo.EXPECT().LockVariantById(gomock.Any(), int64(1)).Return(domain.Variant{
 			Id: 1, IsAvailable: false, AvailableQuantity: intPtr(4),
 			Product: domain.Product{IsAvailable: true, AvailabilityTracking: domain.AvailabilityTrackingVariant},
@@ -226,7 +226,7 @@ func TestAvailabilityReservation_Release(t *testing.T) {
 		repo.EXPECT().UpdateVariantAvailableQuantity(gomock.Any(), int64(1), 6).Return(nil)
 		repo.EXPECT().CreateAvailabilityMovement(gomock.Any(), gomock.Any()).Return(nil)
 
-		reservation := domain.NewAvailabilityReservation(repo)
+		reservation := domain.NewAvailabilityService(nil, nil, repo)
 		err := reservation.Release(context.Background(), []domain.TransactionItem{{VariantId: 1, Amount: 2}})
 
 		assert.Nil(t, err)
@@ -238,14 +238,14 @@ func TestAvailabilityReservation_Release(t *testing.T) {
 
 		product := domain.Product{Id: 10, Name: "Pancong", IsAvailable: true, AvailabilityTracking: domain.AvailabilityTrackingProduct, AvailableQuantity: intPtr(1)}
 
-		repo := mock.NewMockAvailabilityReservationRepository(ctrl)
+		repo := mock.NewMockAvailabilityRepository(ctrl)
 		repo.EXPECT().LockVariantById(gomock.Any(), int64(1)).Return(domain.Variant{Id: 1, ProductId: 10, IsAvailable: true, Product: product}, nil)
 		repo.EXPECT().LockVariantById(gomock.Any(), int64(2)).Return(domain.Variant{Id: 2, ProductId: 10, IsAvailable: true, Product: product}, nil)
 		repo.EXPECT().LockProductById(gomock.Any(), int64(10)).Times(1).Return(product, nil)
 		repo.EXPECT().UpdateProductAvailableQuantity(gomock.Any(), int64(10), 4).Return(nil)
 		repo.EXPECT().CreateAvailabilityMovement(gomock.Any(), gomock.Any()).Return(nil)
 
-		reservation := domain.NewAvailabilityReservation(repo)
+		reservation := domain.NewAvailabilityService(nil, nil, repo)
 		err := reservation.Release(context.Background(), []domain.TransactionItem{
 			{VariantId: 1, Amount: 2},
 			{VariantId: 2, Amount: 1},
@@ -255,12 +255,12 @@ func TestAvailabilityReservation_Release(t *testing.T) {
 	})
 }
 
-func TestAvailabilityReservation_Movements(t *testing.T) {
+func TestAvailabilityService_Movements(t *testing.T) {
 	t.Run("a sale followed by its reversal produces two movements summing to zero with correct resulting quantities", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		repo := mock.NewMockAvailabilityReservationRepository(ctrl)
+		repo := mock.NewMockAvailabilityRepository(ctrl)
 		transactionId := int64(500)
 
 		repo.EXPECT().LockVariantById(gomock.Any(), int64(1)).Return(domain.Variant{
@@ -276,7 +276,7 @@ func TestAvailabilityReservation_Movements(t *testing.T) {
 				return nil
 			})
 
-		reservation := domain.NewAvailabilityReservation(repo)
+		reservation := domain.NewAvailabilityService(nil, nil, repo)
 		err := reservation.Reserve(context.Background(), []domain.TransactionItem{
 			{TransactionId: transactionId, VariantId: 1, Amount: 2},
 		})
@@ -314,7 +314,7 @@ func TestAvailabilityReservation_Movements(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		repo := mock.NewMockAvailabilityReservationRepository(ctrl)
+		repo := mock.NewMockAvailabilityRepository(ctrl)
 		repo.EXPECT().LockVariantById(gomock.Any(), int64(1)).Return(domain.Variant{
 			Id: 1, IsAvailable: true, AvailableQuantity: intPtr(1),
 			Product: domain.Product{IsAvailable: true, AvailabilityTracking: domain.AvailabilityTrackingVariant},
@@ -328,7 +328,7 @@ func TestAvailabilityReservation_Movements(t *testing.T) {
 				return nil
 			})
 
-		reservation := domain.NewAvailabilityReservation(repo)
+		reservation := domain.NewAvailabilityService(nil, nil, repo)
 		err := reservation.ForceReserve(context.Background(), []domain.TransactionItem{{VariantId: 1, Amount: 3}})
 
 		assert.Nil(t, err)

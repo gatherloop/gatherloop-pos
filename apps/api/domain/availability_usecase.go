@@ -12,12 +12,17 @@ type AvailabilityUsecase struct {
 	availabilityService    AvailabilityService
 }
 
-func NewAvailabilityUsecase(availabilityRepository AvailabilityRepository, productRepository ProductRepository, variantRepository VariantRepository) AvailabilityUsecase {
+func NewAvailabilityUsecase(
+	availabilityRepository AvailabilityRepository,
+	productRepository ProductRepository,
+	variantRepository VariantRepository,
+	availabilityService AvailabilityService,
+) AvailabilityUsecase {
 	return AvailabilityUsecase{
 		availabilityRepository: availabilityRepository,
 		productRepository:      productRepository,
 		variantRepository:      variantRepository,
-		availabilityService:    NewAvailabilityService(productRepository, variantRepository, availabilityRepository),
+		availabilityService:    availabilityService,
 	}
 }
 

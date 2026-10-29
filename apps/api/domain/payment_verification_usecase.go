@@ -13,8 +13,8 @@ type PaymentVerificationUsecase struct {
 	paymentVerificationRepository PaymentVerificationRepository
 	transactionRepository         TransactionRepository
 	cartRepository                CartRepository
-	availabilityReservation       AvailabilityReservation
 	kdsNotificationRepository     KdsNotificationRepository
+	availabilityService           AvailabilityService
 	kdsNotificationDispatcher     KdsNotificationDispatcher
 }
 
@@ -23,8 +23,8 @@ func NewPaymentVerificationUsecase(
 	paymentVerificationRepository PaymentVerificationRepository,
 	transactionRepository TransactionRepository,
 	cartRepository CartRepository,
-	availabilityReservation AvailabilityReservation,
 	kdsNotificationRepository KdsNotificationRepository,
+	availabilityService AvailabilityService,
 	kdsNotificationDispatcher KdsNotificationDispatcher,
 ) PaymentVerificationUsecase {
 	return PaymentVerificationUsecase{
@@ -32,8 +32,8 @@ func NewPaymentVerificationUsecase(
 		paymentVerificationRepository: paymentVerificationRepository,
 		transactionRepository:         transactionRepository,
 		cartRepository:                cartRepository,
-		availabilityReservation:       availabilityReservation,
 		kdsNotificationRepository:     kdsNotificationRepository,
+		availabilityService:           availabilityService,
 		kdsNotificationDispatcher:     kdsNotificationDispatcher,
 	}
 }
@@ -169,7 +169,7 @@ func (usecase PaymentVerificationUsecase) Reject(ctx context.Context, transactio
 		payment.VerifiedAt = &now
 
 		reason := PaymentCancelReasonRejected
-		_, finalizeErr := finalizeUncollectedPayment(ctxWithTx, payment, PaymentStateCancelled, &reason, usecase.paymentRepository, usecase.transactionRepository, usecase.availabilityReservation, usecase.kdsNotificationRepository, usecase.paymentVerificationRepository)
+		_, finalizeErr := finalizeUncollectedPayment(ctxWithTx, payment, PaymentStateCancelled, &reason, usecase.paymentRepository, usecase.transactionRepository, usecase.availabilityService, usecase.kdsNotificationRepository, usecase.paymentVerificationRepository)
 		return finalizeErr
 	})
 }

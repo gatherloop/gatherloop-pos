@@ -39,7 +39,7 @@ type paymentUsecaseMocks struct {
 	transactionRepo           *mock.MockTransactionRepository
 	variantRepo               *mock.MockVariantRepository
 	walletRepo                *mock.MockWalletRepository
-	availabilityRepo          *mock.MockAvailabilityReservationRepository
+	availabilityRepo          *mock.MockAvailabilityRepository
 	kdsNotificationRepo       *mock.MockKdsNotificationRepository
 	kdsNotificationDispatcher *mock.MockKdsNotificationDispatcher
 	whatsappNumberVerifier    *mock.MockWhatsappNumberVerifier
@@ -69,7 +69,7 @@ func newPaymentUsecaseMocks(ctrl *gomock.Controller) paymentUsecaseMocks {
 		transactionRepo:           mock.NewMockTransactionRepository(ctrl),
 		variantRepo:               mock.NewMockVariantRepository(ctrl),
 		walletRepo:                mock.NewMockWalletRepository(ctrl),
-		availabilityRepo:          mock.NewMockAvailabilityReservationRepository(ctrl),
+		availabilityRepo:          mock.NewMockAvailabilityRepository(ctrl),
 		kdsNotificationRepo:       mock.NewMockKdsNotificationRepository(ctrl),
 		kdsNotificationDispatcher: kdsNotificationDispatcher,
 		whatsappNumberVerifier:    whatsappNumberVerifier,
@@ -104,23 +104,20 @@ func (m paymentUsecaseMocks) usecaseWithCodEnabled() domain.PaymentUsecase {
 }
 
 func (m paymentUsecaseMocks) usecaseWithDispatcherCancelAndCodEnabled(dispatcher domain.KdsNotificationDispatcher, orderPaymentCancelEnabled bool, orderCodPaymentEnabled bool) domain.PaymentUsecase {
-	availabilityReservation := domain.NewAvailabilityReservation(m.availabilityRepo)
-	return domain.NewPaymentUsecase(m.paymentRepo, m.gatewayRepo, m.customerRepo, m.cartRepo, m.transactionRepo, m.variantRepo, m.walletRepo, availabilityReservation, m.kdsNotificationRepo, dispatcher, m.whatsappNumberVerifier, m.paymentVerificationRepo, checkoutQrisExpirySeconds, checkoutCashExpirySeconds, checkoutCodVerificationExpirySeconds, checkoutOrderPaymentWalletId, orderPaymentCancelEnabled, orderCodPaymentEnabled)
+	return m.build(dispatcher, m.whatsappNumberVerifier, m.paymentVerificationRepo, orderPaymentCancelEnabled, orderCodPaymentEnabled)
 }
 
 // usecaseWithVerifier builds the usecase over a caller-supplied verifier instead of the
 // permissive default, for the tests that assert on EnsureRegistered's own call pattern.
 func (m paymentUsecaseMocks) usecaseWithVerifier(verifier domain.WhatsappNumberVerifier) domain.PaymentUsecase {
-	availabilityReservation := domain.NewAvailabilityReservation(m.availabilityRepo)
-	return domain.NewPaymentUsecase(m.paymentRepo, m.gatewayRepo, m.customerRepo, m.cartRepo, m.transactionRepo, m.variantRepo, m.walletRepo, availabilityReservation, m.kdsNotificationRepo, m.kdsNotificationDispatcher, verifier, m.paymentVerificationRepo, checkoutQrisExpirySeconds, checkoutCashExpirySeconds, checkoutCodVerificationExpirySeconds, checkoutOrderPaymentWalletId, false, false)
+	return m.build(m.kdsNotificationDispatcher, verifier, m.paymentVerificationRepo, false, false)
 }
 
 // usecaseWithCancelEnabledAndPaymentVerificationRepo builds the usecase over a caller-supplied
 // verification repository instead of the permissive default, for the tests that assert on
 // DeleteByPaymentId's own call pattern (FR-6/D5).
 func (m paymentUsecaseMocks) usecaseWithCancelEnabledAndPaymentVerificationRepo(paymentVerificationRepo domain.PaymentVerificationRepository) domain.PaymentUsecase {
-	availabilityReservation := domain.NewAvailabilityReservation(m.availabilityRepo)
-	return domain.NewPaymentUsecase(m.paymentRepo, m.gatewayRepo, m.customerRepo, m.cartRepo, m.transactionRepo, m.variantRepo, m.walletRepo, availabilityReservation, m.kdsNotificationRepo, m.kdsNotificationDispatcher, m.whatsappNumberVerifier, paymentVerificationRepo, checkoutQrisExpirySeconds, checkoutCashExpirySeconds, checkoutCodVerificationExpirySeconds, checkoutOrderPaymentWalletId, true, false)
+	return m.build(m.kdsNotificationDispatcher, m.whatsappNumberVerifier, paymentVerificationRepo, true, false)
 }
 
 func expectAvailableVariant(m paymentUsecaseMocks, variantId int64) {
@@ -3132,4 +3129,10 @@ func TestPaymentUsecase_DeleteOrphanedVerificationPhotos(t *testing.T) {
 
 		assert.NotNil(t, err)
 	})
+}
+
+func (m paymentUsecaseMocks) build(dispatcher domain.KdsNotificationDispatcher, verifier domain.WhatsappNumberVerifier, paymentVerificationRepo domain.PaymentVerificationRepository, orderPaymentCancelEnabled bool, orderCodPaymentEnabled bool) domain.PaymentUsecase {
+	availabilityService := domain.NewAvailabilityService(nil, nil, m.availabilityRepo)
+	paymentService := domain.NewPaymentService(m.transactionRepo, m.paymentRepo, paymentVerificationRepo, m.gatewayRepo, m.cartRepo, m.walletRepo, m.kdsNotificationRepo, availabilityService, checkoutOrderPaymentWalletId, orderPaymentCancelEnabled, dispatcher)
+	return domain.NewPaymentUsecase(m.paymentRepo, m.gatewayRepo, m.customerRepo, m.cartRepo, m.transactionRepo, m.variantRepo, m.walletRepo, m.kdsNotificationRepo, paymentVerificationRepo, paymentService, availabilityService, dispatcher, verifier, checkoutQrisExpirySeconds, checkoutCashExpirySeconds, checkoutCodVerificationExpirySeconds, checkoutOrderPaymentWalletId, orderPaymentCancelEnabled, orderCodPaymentEnabled)
 }

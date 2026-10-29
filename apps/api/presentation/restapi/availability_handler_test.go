@@ -19,7 +19,7 @@ func newAvailabilityHandler(ctrl *gomock.Controller) (restapi.AvailabilityHandle
 	mockAvailabilityRepo := mock.NewMockAvailabilityRepository(ctrl)
 	mockProductRepo := mock.NewMockProductRepository(ctrl)
 	mockVariantRepo := mock.NewMockVariantRepository(ctrl)
-	usecase := domain.NewAvailabilityUsecase(mockAvailabilityRepo, mockProductRepo, mockVariantRepo)
+	usecase := domain.NewAvailabilityUsecase(mockAvailabilityRepo, mockProductRepo, mockVariantRepo, domain.NewAvailabilityService(mockProductRepo, mockVariantRepo, mockAvailabilityRepo))
 	return restapi.NewAvailabilityHandler(usecase), mockAvailabilityRepo, mockProductRepo, mockVariantRepo
 }
 

@@ -26,7 +26,7 @@ type PaymentService struct {
 	cartRepository                CartRepository
 	walletRepository              WalletRepository
 	kdsNotificationRepository     KdsNotificationRepository
-	availabilityReservation       AvailabilityReservation
+	availabilityService           AvailabilityService
 	orderPaymentWalletId          int64
 	orderPaymentCancelEnabled     bool
 	kdsNotificationDispatcher     KdsNotificationDispatcher
@@ -40,7 +40,7 @@ func NewPaymentService(
 	cartRepository CartRepository,
 	walletRepository WalletRepository,
 	kdsNotificationRepository KdsNotificationRepository,
-	availabilityReservation AvailabilityReservation,
+	availabilityService AvailabilityService,
 	orderPaymentWalletId int64,
 	orderPaymentCancelEnabled bool,
 	kdsNotificationDispatcher KdsNotificationDispatcher,
@@ -53,7 +53,7 @@ func NewPaymentService(
 		cartRepository:                cartRepository,
 		walletRepository:              walletRepository,
 		kdsNotificationRepository:     kdsNotificationRepository,
-		availabilityReservation:       availabilityReservation,
+		availabilityService:           availabilityService,
 		orderPaymentWalletId:          orderPaymentWalletId,
 		orderPaymentCancelEnabled:     orderPaymentCancelEnabled,
 		kdsNotificationDispatcher:     kdsNotificationDispatcher,
@@ -93,7 +93,7 @@ func (service PaymentService) applyQrisStatus(ctxWithTx context.Context, payment
 			}
 			transaction.DeletedAt = nil
 
-			if reserveErr := service.availabilityReservation.ForceReserve(ctxWithTx, transaction.TransactionItems); reserveErr != nil {
+			if reserveErr := service.availabilityService.ForceReserve(ctxWithTx, transaction.TransactionItems); reserveErr != nil {
 				return payment, "", reserveErr
 			}
 		}
@@ -125,7 +125,7 @@ func (service PaymentService) applyQrisStatus(ctxWithTx context.Context, payment
 		// D7: the guest may have checked out again on this cart while the first payment sat
 		// cancelled or expired — finalise that newer attempt so the cart never ends up with two
 		// paid orders.
-		if supersedeErr := supersedeLivePayments(ctxWithTx, payment.CartId, payment.Id, service.paymentRepository, service.transactionRepository, service.availabilityReservation, service.kdsNotificationRepository, service.paymentVerificationRepository); supersedeErr != nil {
+		if supersedeErr := supersedeLivePayments(ctxWithTx, payment.CartId, payment.Id, service.paymentRepository, service.transactionRepository, service.availabilityService, service.kdsNotificationRepository, service.paymentVerificationRepository); supersedeErr != nil {
 			return payment, "", supersedeErr
 		}
 
@@ -140,7 +140,7 @@ func (service PaymentService) applyQrisStatus(ctxWithTx context.Context, payment
 			outcome = ConfirmPaymentOutcomeFailed
 		}
 
-		updatedPayment, finalizeErr := finalizeUncollectedPayment(ctxWithTx, payment, terminalStatus, nil, service.paymentRepository, service.transactionRepository, service.availabilityReservation, service.kdsNotificationRepository, service.paymentVerificationRepository)
+		updatedPayment, finalizeErr := finalizeUncollectedPayment(ctxWithTx, payment, terminalStatus, nil, service.paymentRepository, service.transactionRepository, service.availabilityService, service.kdsNotificationRepository, service.paymentVerificationRepository)
 		if finalizeErr != nil {
 			return payment, "", finalizeErr
 		}
@@ -160,7 +160,7 @@ func (service PaymentService) applyQrisStatus(ctxWithTx context.Context, payment
 // the KDS retraction (D16/FR-7). FR-6/D5: the verification photo delete is unconditional — a
 // no-op for every method but cod, and for a cod payment that already lost its photo — so every
 // exit from "cod, pending, awaiting" keeps the storage invariant without a method check here.
-func finalizeUncollectedPayment(ctxWithTx context.Context, payment Payment, terminalStatus PaymentState, reason *PaymentCancelReason, paymentRepository PaymentRepository, transactionRepository TransactionRepository, availabilityReservation AvailabilityReservation, kdsNotificationRepository KdsNotificationRepository, paymentVerificationRepository PaymentVerificationRepository) (Payment, *Error) {
+func finalizeUncollectedPayment(ctxWithTx context.Context, payment Payment, terminalStatus PaymentState, reason *PaymentCancelReason, paymentRepository PaymentRepository, transactionRepository TransactionRepository, availabilityService AvailabilityService, kdsNotificationRepository KdsNotificationRepository, paymentVerificationRepository PaymentVerificationRepository) (Payment, *Error) {
 	now := time.Now()
 	payment.Status = terminalStatus
 	payment.StatusCheckedAt = &now
@@ -184,7 +184,7 @@ func finalizeUncollectedPayment(ctxWithTx context.Context, payment Payment, term
 			return payment, txErr
 		}
 
-		if releaseErr := availabilityReservation.Release(ctxWithTx, transaction.TransactionItems); releaseErr != nil {
+		if releaseErr := availabilityService.Release(ctxWithTx, transaction.TransactionItems); releaseErr != nil {
 			return payment, releaseErr
 		}
 
@@ -222,7 +222,7 @@ func enqueueCashCancelledNotification(ctxWithTx context.Context, transaction Tra
 // one that was just paid late: a cart becomes exactly one paid order, so its current pending
 // payment — if there is one, and it isn't the payment just paid — is finalised as
 // cancelled/superseded instead of staying collectable.
-func supersedeLivePayments(ctxWithTx context.Context, cartId int64, exceptPaymentId int64, paymentRepository PaymentRepository, transactionRepository TransactionRepository, availabilityReservation AvailabilityReservation, kdsNotificationRepository KdsNotificationRepository, paymentVerificationRepository PaymentVerificationRepository) *Error {
+func supersedeLivePayments(ctxWithTx context.Context, cartId int64, exceptPaymentId int64, paymentRepository PaymentRepository, transactionRepository TransactionRepository, availabilityService AvailabilityService, kdsNotificationRepository KdsNotificationRepository, paymentVerificationRepository PaymentVerificationRepository) *Error {
 	pending, err := paymentRepository.GetPendingPaymentByCartId(ctxWithTx, cartId)
 	if err != nil {
 		if err.Type == NotFound {
@@ -240,7 +240,7 @@ func supersedeLivePayments(ctxWithTx context.Context, cartId int64, exceptPaymen
 	)
 
 	reason := PaymentCancelReasonSuperseded
-	if _, finalizeErr := finalizeUncollectedPayment(ctxWithTx, pending, PaymentStateCancelled, &reason, paymentRepository, transactionRepository, availabilityReservation, kdsNotificationRepository, paymentVerificationRepository); finalizeErr != nil {
+	if _, finalizeErr := finalizeUncollectedPayment(ctxWithTx, pending, PaymentStateCancelled, &reason, paymentRepository, transactionRepository, availabilityService, kdsNotificationRepository, paymentVerificationRepository); finalizeErr != nil {
 		return finalizeErr
 	}
 
@@ -250,7 +250,7 @@ func supersedeLivePayments(ctxWithTx context.Context, cartId int64, exceptPaymen
 // expirePayment is FR-4's entry point for giving up on a payment on the clock alone (D7) — used
 // directly by ExpireStalePayments for cash, and by applyQrisStatus's expired branch for QRIS.
 func (service PaymentService) expirePayment(ctxWithTx context.Context, payment Payment) (Payment, *Error) {
-	return finalizeUncollectedPayment(ctxWithTx, payment, PaymentStateExpired, nil, service.paymentRepository, service.transactionRepository, service.availabilityReservation, service.kdsNotificationRepository, service.paymentVerificationRepository)
+	return finalizeUncollectedPayment(ctxWithTx, payment, PaymentStateExpired, nil, service.paymentRepository, service.transactionRepository, service.availabilityService, service.kdsNotificationRepository, service.paymentVerificationRepository)
 }
 
 func (service PaymentService) expireOne(ctx context.Context, payment Payment, now time.Time) {

@@ -30,7 +30,7 @@ func newCartTestHandler(cartRepo *mock.MockCartRepository, variantRepo *mock.Moc
 }
 
 func newCartTestHandlerWithCancelFlag(cartRepo *mock.MockCartRepository, variantRepo *mock.MockVariantRepository, tableRepo *mock.MockTableRepository, paymentRepo *mock.MockPaymentRepository, orderPaymentCancelEnabled bool) restapi.CartHandler {
-	return restapi.NewCartHandler(domain.NewCartUsecase(cartRepo, variantRepo, tableRepo, paymentRepo), orderPaymentCancelEnabled)
+	return restapi.NewCartHandler(domain.NewCartUsecase(cartRepo, tableRepo, domain.NewCartService(cartRepo, paymentRepo, variantRepo)), orderPaymentCancelEnabled)
 }
 
 func unlockedCart(pr *mock.MockPaymentRepository, cartId int64) {

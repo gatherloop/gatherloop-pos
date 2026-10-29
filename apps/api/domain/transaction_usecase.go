@@ -11,30 +11,49 @@ type TransactionUsecase struct {
 	variantRepository             VariantRepository
 	couponRepository              CouponRepository
 	walletRepository              WalletRepository
-	availabilityReservation       AvailabilityReservation
 	kdsNotificationRepository     KdsNotificationRepository
-	kdsNotificationDispatcher     KdsNotificationDispatcher
 	paymentRepository             PaymentRepository
 	guestNotificationRepository   GuestNotificationRepository
-	guestNotificationDispatcher   GuestNotificationDispatcher
 	cartRepository                CartRepository
 	paymentVerificationRepository PaymentVerificationRepository
+
+	availabilityService AvailabilityService
+
+	kdsNotificationDispatcher   KdsNotificationDispatcher
+	guestNotificationDispatcher GuestNotificationDispatcher
 }
 
-func NewTransactionUsecase(transactionRepository TransactionRepository, variantRepository VariantRepository, couponRepository CouponRepository, walletRepository WalletRepository, availabilityReservation AvailabilityReservation, kdsNotificationRepository KdsNotificationRepository, kdsNotificationDispatcher KdsNotificationDispatcher, paymentRepository PaymentRepository, guestNotificationRepository GuestNotificationRepository, guestNotificationDispatcher GuestNotificationDispatcher, cartRepository CartRepository, paymentVerificationRepository PaymentVerificationRepository) TransactionUsecase {
+func NewTransactionUsecase(
+	transactionRepository TransactionRepository,
+	variantRepository VariantRepository,
+	couponRepository CouponRepository,
+	walletRepository WalletRepository,
+	kdsNotificationRepository KdsNotificationRepository,
+	paymentRepository PaymentRepository,
+	guestNotificationRepository GuestNotificationRepository,
+	cartRepository CartRepository,
+	paymentVerificationRepository PaymentVerificationRepository,
+
+	availabilityService AvailabilityService,
+
+	kdsNotificationDispatcher KdsNotificationDispatcher,
+	guestNotificationDispatcher GuestNotificationDispatcher,
+) TransactionUsecase {
 	return TransactionUsecase{
 		transactionRepository:         transactionRepository,
 		variantRepository:             variantRepository,
 		couponRepository:              couponRepository,
 		walletRepository:              walletRepository,
-		availabilityReservation:       availabilityReservation,
 		kdsNotificationRepository:     kdsNotificationRepository,
-		kdsNotificationDispatcher:     kdsNotificationDispatcher,
 		paymentRepository:             paymentRepository,
 		guestNotificationRepository:   guestNotificationRepository,
-		guestNotificationDispatcher:   guestNotificationDispatcher,
 		cartRepository:                cartRepository,
 		paymentVerificationRepository: paymentVerificationRepository,
+
+		availabilityService: availabilityService,
+
+		kdsNotificationDispatcher:   kdsNotificationDispatcher,
+		guestNotificationDispatcher: guestNotificationDispatcher,
 	}
 }
 
@@ -98,7 +117,7 @@ func (usecase TransactionUsecase) CreateTransaction(ctx context.Context, transac
 			return err
 		}
 
-		if err := usecase.availabilityReservation.Reserve(ctxWithTx, transaction.TransactionItems); err != nil {
+		if err := usecase.availabilityService.Reserve(ctxWithTx, transaction.TransactionItems); err != nil {
 			return err
 		}
 
@@ -188,7 +207,7 @@ func (usecase TransactionUsecase) UpdateTransactionById(ctx context.Context, tra
 			return err
 		}
 
-		if err := usecase.availabilityReservation.ApplyDelta(ctxWithTx, existingTransaction.TransactionItems, transaction.TransactionItems); err != nil {
+		if err := usecase.availabilityService.ApplyDelta(ctxWithTx, existingTransaction.TransactionItems, transaction.TransactionItems); err != nil {
 			return err
 		}
 
@@ -215,7 +234,7 @@ func (usecase TransactionUsecase) DeleteTransactionById(ctx context.Context, id 
 			return &Error{Type: BadRequest, Message: "transaction already paid"}
 		}
 
-		if err := usecase.availabilityReservation.Release(ctxWithTx, transaction.TransactionItems); err != nil {
+		if err := usecase.availabilityService.Release(ctxWithTx, transaction.TransactionItems); err != nil {
 			return err
 		}
 
@@ -261,7 +280,7 @@ func (usecase TransactionUsecase) PayTransaction(ctx context.Context, walletId i
 			}
 			transaction.DeletedAt = nil
 
-			if reserveErr := usecase.availabilityReservation.ForceReserve(ctxWithTx, transaction.TransactionItems); reserveErr != nil {
+			if reserveErr := usecase.availabilityService.ForceReserve(ctxWithTx, transaction.TransactionItems); reserveErr != nil {
 				return reserveErr
 			}
 		}
@@ -312,7 +331,7 @@ func (usecase TransactionUsecase) settleOrderPayment(ctx context.Context, paymen
 	// D7/D8: the guest may have checked out again on this cart before the cashier settled this
 	// (expired) order transaction by hand — finalise that newer attempt too, the same as a late
 	// QRIS webhook does, so the cart never ends up with two paid orders.
-	return supersedeLivePayments(ctx, payment.CartId, payment.Id, usecase.paymentRepository, usecase.transactionRepository, usecase.availabilityReservation, usecase.kdsNotificationRepository, usecase.paymentVerificationRepository)
+	return supersedeLivePayments(ctx, payment.CartId, payment.Id, usecase.paymentRepository, usecase.transactionRepository, usecase.availabilityService, usecase.kdsNotificationRepository, usecase.paymentVerificationRepository)
 }
 
 func payTransaction(ctx context.Context, transaction Transaction, transactionRepository TransactionRepository, walletRepository WalletRepository, kdsNotificationRepository KdsNotificationRepository, walletId int64, paidAmount float32) *Error {

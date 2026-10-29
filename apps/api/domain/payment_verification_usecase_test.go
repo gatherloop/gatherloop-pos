@@ -17,7 +17,7 @@ type paymentVerificationUsecaseMocks struct {
 	verificationRepo          *mock.MockPaymentVerificationRepository
 	transactionRepo           *mock.MockTransactionRepository
 	cartRepo                  *mock.MockCartRepository
-	availabilityRepo          *mock.MockAvailabilityReservationRepository
+	availabilityRepo          *mock.MockAvailabilityRepository
 	kdsNotificationRepo       *mock.MockKdsNotificationRepository
 	kdsNotificationDispatcher *mock.MockKdsNotificationDispatcher
 }
@@ -28,15 +28,15 @@ func newPaymentVerificationUsecaseMocks(ctrl *gomock.Controller) paymentVerifica
 		verificationRepo:          mock.NewMockPaymentVerificationRepository(ctrl),
 		transactionRepo:           mock.NewMockTransactionRepository(ctrl),
 		cartRepo:                  mock.NewMockCartRepository(ctrl),
-		availabilityRepo:          mock.NewMockAvailabilityReservationRepository(ctrl),
+		availabilityRepo:          mock.NewMockAvailabilityRepository(ctrl),
 		kdsNotificationRepo:       mock.NewMockKdsNotificationRepository(ctrl),
 		kdsNotificationDispatcher: mock.NewMockKdsNotificationDispatcher(ctrl),
 	}
 }
 
 func (m paymentVerificationUsecaseMocks) usecase() domain.PaymentVerificationUsecase {
-	availabilityReservation := domain.NewAvailabilityReservation(m.availabilityRepo)
-	return domain.NewPaymentVerificationUsecase(m.paymentRepo, m.verificationRepo, m.transactionRepo, m.cartRepo, availabilityReservation, m.kdsNotificationRepo, m.kdsNotificationDispatcher)
+	availabilityService := domain.NewAvailabilityService(nil, nil, m.availabilityRepo)
+	return domain.NewPaymentVerificationUsecase(m.paymentRepo, m.verificationRepo, m.transactionRepo, m.cartRepo, m.kdsNotificationRepo, availabilityService, m.kdsNotificationDispatcher)
 }
 
 func withVerificationPaymentTransactionMock(r *mock.MockPaymentRepository) {

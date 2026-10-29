@@ -14,7 +14,7 @@ func newAvailabilityUsecase(ctrl *gomock.Controller) (domain.AvailabilityUsecase
 	mockAvailabilityRepo := mock.NewMockAvailabilityRepository(ctrl)
 	mockProductRepo := mock.NewMockProductRepository(ctrl)
 	mockVariantRepo := mock.NewMockVariantRepository(ctrl)
-	usecase := domain.NewAvailabilityUsecase(mockAvailabilityRepo, mockProductRepo, mockVariantRepo)
+	usecase := domain.NewAvailabilityUsecase(mockAvailabilityRepo, mockProductRepo, mockVariantRepo, domain.NewAvailabilityService(mockProductRepo, mockVariantRepo, mockAvailabilityRepo))
 	return usecase, mockAvailabilityRepo, mockProductRepo, mockVariantRepo
 }
 

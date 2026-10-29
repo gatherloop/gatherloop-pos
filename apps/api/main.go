@@ -107,6 +107,8 @@ func main() {
 	router.Use(restapi.EnableCORS)
 	router.Use(logger.RequestLogger(rootLogger))
 
+	orderPaymentWalletId, _ := strconv.ParseInt(env.OrderPaymentWalletId, 10, 64)
+
 	walletRepository := mysql.NewWalletRepository(db)
 	variantRepository := mysql.NewVariantRepository(db)
 	productRepository := mysql.NewProductRepository(db)
@@ -129,21 +131,51 @@ func main() {
 	checklistTemplateRepository := mysql.NewChecklistTemplateRepository(db)
 	checklistSessionRepository := mysql.NewChecklistSessionRepository(db)
 	stockCheckRepository := mysql.NewStockCheckRepository(db)
-	availabilityReservationRepository := mysql.NewAvailabilityReservationRepository(db)
 	availabilityRepository := mysql.NewAvailabilityRepository(db)
 	kdsDeviceRepository := mysql.NewKdsDeviceRepository(db)
 	kdsNotificationRepository := mysql.NewKdsNotificationRepository(db)
 	guestNotificationRepository := mysql.NewGuestNotificationRepository(db)
 	paymentVerificationRepository := mysql.NewPaymentVerificationRepository(db)
 
-	orderPaymentWalletId, _ := strconv.ParseInt(env.OrderPaymentWalletId, 10, 64)
-
+	// This is actually a dispatcher
 	kdsNotificationUsecase := domain.NewKdsNotificationUsecase(kdsNotificationRepository, kdsDeviceRepository, transactionRepository, kdsPushGatewayRepository, env.KdsPushSound)
 	guestNotificationUsecase := domain.NewGuestNotificationUsecase(guestNotificationRepository, transactionRepository, paymentRepository, whatsappGatewayRepository, env.OrderWebBaseURL)
 
-	availabilityReservation := domain.NewAvailabilityReservation(availabilityReservationRepository)
+	availabilityService := domain.NewAvailabilityService(productRepository, variantRepository, availabilityRepository)
+	paymentService := domain.NewPaymentService(
+		transactionRepository,
+		paymentRepository,
+		paymentVerificationRepository,
+		paymentGatewayRepository,
+		cartRepository,
+		walletRepository,
+		kdsNotificationRepository,
+		availabilityService,
+		orderPaymentWalletId,
+		env.OrderPaymentCancelEnabled,
+		kdsNotificationUsecase,
+	)
+	cartService := domain.NewCartService(
+		cartRepository,
+		paymentRepository,
+		variantRepository,
+	)
+
 	walletUsecase := domain.NewWalletUsecase(walletRepository)
-	transactionUsecase := domain.NewTransactionUsecase(transactionRepository, variantRepository, couponRepository, walletRepository, availabilityReservation, kdsNotificationRepository, kdsNotificationUsecase, paymentRepository, guestNotificationRepository, guestNotificationUsecase, cartRepository, paymentVerificationRepository)
+	transactionUsecase := domain.NewTransactionUsecase(
+		transactionRepository,
+		variantRepository,
+		couponRepository,
+		walletRepository,
+		kdsNotificationRepository,
+		paymentRepository,
+		guestNotificationRepository,
+		cartRepository,
+		paymentVerificationRepository,
+		availabilityService,
+		kdsNotificationUsecase,
+		guestNotificationUsecase,
+	)
 	variantUsecase := domain.NewVariantUsecase(variantRepository, productRepository, tagRepository)
 	productUsecase := domain.NewProductUsecase(productRepository, variantRepository)
 	materialUsecase := domain.NewMaterialUsecase(materialRepository, supplierRepository)
@@ -154,10 +186,38 @@ func main() {
 	couponUsecase := domain.NewCouponUsecase(couponRepository)
 	ticketUsecase := domain.NewTicketUsecase(ticketRepository)
 	tableUsecase := domain.NewTableUsecase(tableRepository)
-	cartUsecase := domain.NewCartUsecase(cartRepository, variantRepository, tableRepository, paymentRepository)
+	cartUsecase := domain.NewCartUsecase(cartRepository, tableRepository, cartService)
 	customerUsecase := domain.NewCustomerUsecase(customerRepository)
-	paymentUsecase := domain.NewPaymentUsecase(paymentRepository, paymentGatewayRepository, customerRepository, cartRepository, transactionRepository, variantRepository, walletRepository, availabilityReservation, kdsNotificationRepository, kdsNotificationUsecase, whatsappNumberVerifier, paymentVerificationRepository, env.DokuQrisExpirySeconds, env.CashPaymentExpirySeconds, env.CodVerificationExpirySeconds, orderPaymentWalletId, env.OrderPaymentCancelEnabled, env.OrderCodPaymentEnabled)
-	paymentVerificationUsecase := domain.NewPaymentVerificationUsecase(paymentRepository, paymentVerificationRepository, transactionRepository, cartRepository, availabilityReservation, kdsNotificationRepository, kdsNotificationUsecase)
+	paymentUsecase := domain.NewPaymentUsecase(
+		paymentRepository,
+		paymentGatewayRepository,
+		customerRepository,
+		cartRepository,
+		transactionRepository,
+		variantRepository,
+		walletRepository,
+		kdsNotificationRepository,
+		paymentVerificationRepository,
+		paymentService,
+		availabilityService,
+		kdsNotificationUsecase,
+		whatsappNumberVerifier,
+		env.DokuQrisExpirySeconds,
+		env.CashPaymentExpirySeconds,
+		env.CodVerificationExpirySeconds,
+		orderPaymentWalletId,
+		env.OrderPaymentCancelEnabled,
+		env.OrderCodPaymentEnabled,
+	)
+	paymentVerificationUsecase := domain.NewPaymentVerificationUsecase(
+		paymentRepository,
+		paymentVerificationRepository,
+		transactionRepository,
+		cartRepository,
+		kdsNotificationRepository,
+		availabilityService,
+		kdsNotificationUsecase,
+	)
 	budgetUsecase := domain.NewBudgetUsecase(budgetRepository)
 	authUsecase := domain.NewAuthUsecase(authRepository)
 	calculationUsecase := domain.NewCalculationUsecase(calculationRepository, walletRepository)
@@ -165,7 +225,12 @@ func main() {
 	checklistTemplateUsecase := domain.NewChecklistTemplateUsecase(checklistTemplateRepository)
 	checklistSessionUsecase := domain.NewChecklistSessionUsecase(checklistSessionRepository, checklistTemplateRepository)
 	stockCheckUsecase := domain.NewStockCheckUsecase(stockCheckRepository, materialRepository)
-	availabilityUsecase := domain.NewAvailabilityUsecase(availabilityRepository, productRepository, variantRepository)
+	availabilityUsecase := domain.NewAvailabilityUsecase(
+		availabilityRepository,
+		productRepository,
+		variantRepository,
+		availabilityService,
+	)
 	kdsDeviceUsecase := domain.NewKdsDeviceUsecase(kdsDeviceRepository, kdsPushGatewayRepository, env.KdsPushSound)
 
 	walletHandler := restapi.NewWalletHandler(walletUsecase)
