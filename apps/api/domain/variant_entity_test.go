@@ -141,9 +141,9 @@ func TestResolveVariantAvailability(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			isSellable, sellableQuantity := domain.ResolveVariantAvailability(tt.product, tt.variant)
-			assert.Equal(t, tt.expectedSellable, isSellable)
-			assert.Equal(t, tt.expectedSellableQuantity, sellableQuantity)
+			tt.variant.Product = tt.product
+			assert.Equal(t, tt.expectedSellable, tt.variant.IsSellable())
+			assert.Equal(t, tt.expectedSellableQuantity, tt.variant.SellableQuantity())
 		})
 	}
 }

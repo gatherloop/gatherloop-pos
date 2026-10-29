@@ -23,7 +23,7 @@ func ToProductDB(domainProduct domain.Product) Product {
 }
 
 func ToProductDomain(dbProduct Product) domain.Product {
-	return domain.Product{
+	product := domain.Product{
 		Id:                   dbProduct.Id,
 		CategoryId:           dbProduct.CategoryId,
 		Name:                 dbProduct.Name,
@@ -40,6 +40,13 @@ func ToProductDomain(dbProduct Product) domain.Product {
 		AvailabilityTracking: domain.AvailabilityTracking(dbProduct.AvailabilityTracking),
 		AvailableQuantity:    dbProduct.AvailableQuantity,
 	}
+
+	for _, variant := range ToVariantsListDomain(dbProduct.Variants) {
+		variant.Product = product
+		product.Variants = append(product.Variants, variant)
+	}
+
+	return product
 }
 
 func ToProductListDomain(dbProducts []Product) []domain.Product {

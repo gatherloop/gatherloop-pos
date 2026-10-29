@@ -18,6 +18,7 @@ type Product struct {
 	IsAvailable          bool   `gorm:"default:1"`
 	AvailabilityTracking string `gorm:"default:none"`
 	AvailableQuantity    *int
+	Variants             []Variant
 }
 
 type Option struct {

@@ -32,11 +32,11 @@ func (usecase CartUsecase) GetCurrentCart(ctx context.Context, sessionId string)
 	cart, err := usecase.repository.GetActiveCartBySessionId(ctx, sessionId)
 	if err != nil {
 		if err.Type == NotFound {
-			return emptyCart(sessionId), nil
+			return Cart{SessionId: sessionId, Status: CartStatusActive, Items: []CartItem{}}, nil
 		}
 		return Cart{}, err
 	}
-	return usecase.attachPendingPayment(ctx, resolveCartAvailability(cart))
+	return usecase.attachPendingPayment(ctx, cart)
 }
 
 func (usecase CartUsecase) UpdateCartTable(ctx context.Context, sessionId string, tableCode string) (Cart, *Error) {
@@ -64,7 +64,7 @@ func (usecase CartUsecase) UpdateCartTable(ctx context.Context, sessionId string
 		if updateErr != nil {
 			return updateErr
 		}
-		result = resolveCartAvailability(updated)
+		result = updated
 		return nil
 	})
 
@@ -73,7 +73,8 @@ func (usecase CartUsecase) UpdateCartTable(ctx context.Context, sessionId string
 
 func (usecase CartUsecase) AddCartItem(ctx context.Context, sessionId string, variantId int64, amount float32, note string) (Cart, *Error) {
 	note = strings.TrimSpace(note)
-	if err := validateCartItemInput(amount, note); err != nil {
+	item := CartItem{Note: note, Amount: amount, VariantId: variantId}
+	if err := item.Validate(); err != nil {
 		return Cart{}, err
 	}
 
@@ -92,17 +93,17 @@ func (usecase CartUsecase) AddCartItem(ctx context.Context, sessionId string, va
 			return lockErr
 		}
 
-		if capacityErr := checkCartCapacity(cart.Items, variant.Product, variant, 0, amount); capacityErr != nil {
+		if capacityErr := cart.CheckCapacity(variant.Product, variant, 0, amount); capacityErr != nil {
 			return capacityErr
 		}
 
-		if existing, found := findMatchingCartItem(cart.Items, variantId, note); found {
+		if existing, found := cart.FindMatchingCartItem(variantId, note); found {
 			existing.Amount += amount
 			if _, updateErr := usecase.repository.UpdateCartItemById(ctxWithTx, existing, existing.Id); updateErr != nil {
 				return updateErr
 			}
 		} else {
-			item := CartItem{CartId: cart.Id, VariantId: variantId, Amount: amount, Note: note}
+			item.CartId = cart.Id
 			if _, createErr := usecase.repository.CreateCartItem(ctxWithTx, item); createErr != nil {
 				return createErr
 			}
@@ -112,7 +113,7 @@ func (usecase CartUsecase) AddCartItem(ctx context.Context, sessionId string, va
 		if refreshErr != nil {
 			return refreshErr
 		}
-		result = resolveCartAvailability(refreshed)
+		result = refreshed
 		return nil
 	})
 
@@ -121,7 +122,8 @@ func (usecase CartUsecase) AddCartItem(ctx context.Context, sessionId string, va
 
 func (usecase CartUsecase) UpdateCartItem(ctx context.Context, sessionId string, cartItemId int64, amount float32, note string) (Cart, *Error) {
 	note = strings.TrimSpace(note)
-	if err := validateCartItemInput(amount, note); err != nil {
+	item := CartItem{Note: note, Amount: amount}
+	if err := item.Validate(); err != nil {
 		return Cart{}, err
 	}
 
@@ -135,11 +137,10 @@ func (usecase CartUsecase) UpdateCartItem(ctx context.Context, sessionId string,
 			return lockErr
 		}
 
-		if capacityErr := checkCartCapacity(cart.Items, existing.Variant.Product, existing.Variant, cartItemId, amount); capacityErr != nil {
+		if capacityErr := cart.CheckCapacity(existing.Variant.Product, existing.Variant, cartItemId, amount); capacityErr != nil {
 			return capacityErr
 		}
 
-		item := CartItem{Amount: amount, Note: note}
 		if _, updateErr := usecase.repository.UpdateCartItemById(ctxWithTx, item, cartItemId); updateErr != nil {
 			return updateErr
 		}
@@ -148,7 +149,7 @@ func (usecase CartUsecase) UpdateCartItem(ctx context.Context, sessionId string,
 		if refreshErr != nil {
 			return refreshErr
 		}
-		result = resolveCartAvailability(refreshed)
+		result = refreshed
 		return nil
 	})
 
@@ -174,7 +175,7 @@ func (usecase CartUsecase) RemoveCartItem(ctx context.Context, sessionId string,
 		if refreshErr != nil {
 			return refreshErr
 		}
-		result = resolveCartAvailability(refreshed)
+		result = refreshed
 		return nil
 	})
 
@@ -185,7 +186,7 @@ func (usecase CartUsecase) ClearCart(ctx context.Context, sessionId string) (Car
 	cart, err := usecase.repository.GetActiveCartBySessionId(ctx, sessionId)
 	if err != nil {
 		if err.Type == NotFound {
-			return emptyCart(sessionId), nil
+			return Cart{SessionId: sessionId, Status: CartStatusActive, Items: []CartItem{}}, nil
 		}
 		return Cart{}, err
 	}
@@ -203,7 +204,7 @@ func (usecase CartUsecase) ClearCart(ctx context.Context, sessionId string) (Car
 		return Cart{}, clearedErr
 	}
 
-	return resolveCartAvailability(cleared), nil
+	return cleared, nil
 }
 
 // findAwaitingPayment is the single definition of "locked": both ensureCartUnlocked (which
@@ -282,7 +283,7 @@ func (usecase CartUsecase) validatePurchasableVariant(ctx context.Context, varia
 		return Variant{}, &Error{Type: BadRequest, Message: "variant is not available for ordering"}
 	}
 
-	if isSellable, _ := ResolveVariantAvailability(product, variant); !isSellable {
+	if !variant.IsSellable() {
 		return Variant{}, &Error{Type: BadRequest, Message: fmt.Sprintf("%s is sold out", availabilityItemName(product, variant))}
 	}
 

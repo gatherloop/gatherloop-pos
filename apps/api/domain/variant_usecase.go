@@ -24,10 +24,6 @@ func (usecase VariantUsecase) GetVariantList(ctx context.Context, query string, 
 		return []Variant{}, 0, err
 	}
 
-	for i, variant := range variants {
-		variants[i] = resolveVariantAvailability(variant, variant.Product)
-	}
-
 	total, err := usecase.repository.GetVariantListTotal(ctx, query)
 	if err != nil {
 		return []Variant{}, 0, err
@@ -37,12 +33,7 @@ func (usecase VariantUsecase) GetVariantList(ctx context.Context, query string, 
 }
 
 func (usecase VariantUsecase) GetVariantById(ctx context.Context, id int64) (Variant, *Error) {
-	variant, err := usecase.repository.GetVariantById(ctx, id)
-	if err != nil {
-		return Variant{}, err
-	}
-
-	return resolveVariantAvailability(variant, variant.Product), nil
+	return usecase.repository.GetVariantById(ctx, id)
 }
 
 func (usecase VariantUsecase) CreateVariant(ctx context.Context, variant Variant) (Variant, *Error) {
@@ -60,7 +51,9 @@ func (usecase VariantUsecase) CreateVariant(ctx context.Context, variant Variant
 		if err != nil {
 			return Variant{}, err
 		}
-		return resolveVariantAvailability(created, product), nil
+
+		created.Product = product
+		return created, nil
 	}
 
 	var created Variant
@@ -85,7 +78,8 @@ func (usecase VariantUsecase) CreateVariant(ctx context.Context, variant Variant
 		return Variant{}, err
 	}
 
-	return resolveVariantAvailability(created, product), nil
+	created.Product = product
+	return created, nil
 }
 
 func (usecase VariantUsecase) UpdateVariantById(ctx context.Context, variant Variant, id int64) (Variant, *Error) {
@@ -128,7 +122,8 @@ func (usecase VariantUsecase) UpdateVariantById(ctx context.Context, variant Var
 		return Variant{}, err
 	}
 
-	return resolveVariantAvailability(updateResult, product), nil
+	updateResult.Product = product
+	return updateResult, nil
 }
 
 func (usecase VariantUsecase) validateTagIds(ctx context.Context, tagIds []int64) *Error {

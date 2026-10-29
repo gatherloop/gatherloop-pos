@@ -50,3 +50,20 @@ func TestProductTransformerRoundTrip_AvailabilityDefaults(t *testing.T) {
 	assert.Equal(t, domain.AvailabilityTracking(""), roundTripped.AvailabilityTracking)
 	assert.Nil(t, roundTripped.AvailableQuantity)
 }
+
+func TestProductTransformer_NestedVariantsCarryTheirProduct(t *testing.T) {
+	dbProduct := mysql.Product{
+		Id:                   1,
+		Status:               string(domain.ProductStatusPublished),
+		SaleType:             string(domain.SaleTypePurchase),
+		IsAvailable:          true,
+		AvailabilityTracking: string(domain.AvailabilityTrackingNone),
+		Variants:             []mysql.Variant{{Id: 1, ProductId: 1, IsAvailable: true}},
+	}
+
+	product := mysql.ToProductDomain(dbProduct)
+
+	assert.Equal(t, int64(1), product.Variants[0].Product.Id)
+	assert.True(t, product.Variants[0].IsSellable())
+	assert.True(t, product.IsSellable())
+}

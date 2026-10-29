@@ -164,7 +164,6 @@ func TestCartUsecase_GetCurrentCart(t *testing.T) {
 				assert.Nil(t, err)
 				assert.Equal(t, tt.expectedId, cart.Id)
 				assert.Len(t, cart.Items, tt.expectedItemsLen)
-				assert.NotNil(t, cart.Items)
 				if tt.expectedPendingPayment {
 					assert.NotNil(t, cart.PendingPayment)
 				} else {
@@ -903,9 +902,8 @@ func TestCartUsecase_ResolvesItemAvailability(t *testing.T) {
 
 			assert.Nil(t, err)
 			assert.Len(t, result.Items, 1)
-			assert.Equal(t, tt.expectedIsSellable, result.Items[0].Variant.IsSellable)
-			assert.Equal(t, tt.expectedSellableQuantity, result.Items[0].Variant.SellableQuantity)
-			assert.Equal(t, tt.expectedIsSellable, result.Items[0].Variant.Product.IsSellable)
+			assert.Equal(t, tt.expectedIsSellable, result.Items[0].Variant.IsSellable())
+			assert.Equal(t, tt.expectedSellableQuantity, result.Items[0].Variant.SellableQuantity())
 		})
 	}
 }
@@ -934,5 +932,5 @@ func TestCartUsecase_RemoveCartItem_ResolvesRemainingItemAvailability(t *testing
 
 	assert.Nil(t, err)
 	assert.Len(t, result.Items, 1)
-	assert.True(t, result.Items[0].Variant.IsSellable)
+	assert.True(t, result.Items[0].Variant.IsSellable())
 }

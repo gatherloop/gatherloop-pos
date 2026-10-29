@@ -19,6 +19,7 @@ func preloadCart(db *gorm.DB) *gorm.DB {
 		Preload("Items.Variant").
 		Preload("Items.Variant.Product").
 		Preload("Items.Variant.Product.Category").
+		Preload("Items.Variant.Product.Variants").
 		Preload("Items.Variant.VariantValues").
 		Preload("Items.Variant.VariantValues.OptionValue")
 }

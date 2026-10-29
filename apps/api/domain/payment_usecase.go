@@ -152,7 +152,7 @@ func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, cu
 			if err.Type != NotFound {
 				return err
 			}
-			cart = emptyCart(sessionId)
+			cart = Cart{SessionId: sessionId, Status: CartStatusActive, Items: []CartItem{}}
 		}
 		if len(cart.Items) == 0 {
 			return &Error{Type: BadRequest, Message: "cart is empty"}

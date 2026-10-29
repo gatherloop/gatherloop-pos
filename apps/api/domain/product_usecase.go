@@ -5,35 +5,27 @@ import (
 )
 
 type ProductUsecase struct {
-	repository        ProductRepository
+	productRepository ProductRepository
 	variantRepository VariantRepository
 }
 
-func NewProductUsecase(repository ProductRepository, variantRepository VariantRepository) ProductUsecase {
-	return ProductUsecase{repository: repository, variantRepository: variantRepository}
+func NewProductUsecase(
+	productRepository ProductRepository,
+	variantRepository VariantRepository,
+) ProductUsecase {
+	return ProductUsecase{
+		productRepository: productRepository,
+		variantRepository: variantRepository,
+	}
 }
 
 func (usecase ProductUsecase) GetProductList(ctx context.Context, query string, sortBy SortBy, order Order, skip int, limit int, saleType *SaleType, status *ProductStatus) ([]Product, int64, *Error) {
-	products, err := usecase.repository.GetProductList(ctx, query, sortBy, order, skip, limit, saleType, status)
+	products, err := usecase.productRepository.GetProductList(ctx, query, sortBy, order, skip, limit, saleType, status)
 	if err != nil {
 		return []Product{}, 0, err
 	}
 
-	for i, product := range products {
-		productId := int(product.Id)
-		variants, err := usecase.variantRepository.GetVariantList(ctx, "", CreatedAt, Ascending, 0, 0, &productId, []int{})
-		if err != nil {
-			return []Product{}, 0, err
-		}
-
-		resolved, err := resolveProductDerivedFields(product, variants)
-		if err != nil {
-			return []Product{}, 0, err
-		}
-		products[i] = resolved
-	}
-
-	total, err := usecase.repository.GetProductListTotal(ctx, query, saleType, status)
+	total, err := usecase.productRepository.GetProductListTotal(ctx, query, saleType, status)
 	if err != nil {
 		return []Product{}, 0, err
 	}
@@ -42,51 +34,29 @@ func (usecase ProductUsecase) GetProductList(ctx context.Context, query string, 
 }
 
 func (usecase ProductUsecase) GetProductById(ctx context.Context, id int64) (Product, *Error) {
-	product, err := usecase.repository.GetProductById(ctx, id)
-	if err != nil {
-		return Product{}, err
-	}
-
-	productId := int(product.Id)
-	variants, err := usecase.variantRepository.GetVariantList(ctx, "", CreatedAt, Ascending, 0, 0, &productId, []int{})
-	if err != nil {
-		return Product{}, err
-	}
-
-	return resolveProductDerivedFields(product, variants)
+	return usecase.productRepository.GetProductById(ctx, id)
 }
 
 func (usecase ProductUsecase) CreateProduct(ctx context.Context, product Product) (Product, *Error) {
-	created, err := usecase.repository.CreateProduct(ctx, product)
-	if err != nil {
-		return Product{}, err
-	}
-
-	productId := int(created.Id)
-	variants, err := usecase.variantRepository.GetVariantList(ctx, "", CreatedAt, Ascending, 0, 0, &productId, []int{})
-	if err != nil {
-		return Product{}, err
-	}
-
-	return resolveProductDerivedFields(created, variants)
+	return usecase.productRepository.CreateProduct(ctx, product)
 }
 
 func (usecase ProductUsecase) UpdateProductById(ctx context.Context, product Product, id int64) (Product, *Error) {
 	var updateResult Product
-	err := usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
-		existing, err := usecase.repository.GetProductById(ctxWithTx, id)
+	err := usecase.productRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+		existing, err := usecase.productRepository.GetProductById(ctxWithTx, id)
 		if err != nil {
 			return err
 		}
 
-		updated, err := usecase.repository.UpdateProductById(ctxWithTx, product, id)
+		updated, err := usecase.productRepository.UpdateProductById(ctxWithTx, product, id)
 		if err != nil {
 			return err
 		}
 		updateResult = updated
 
 		if product.AvailabilityTracking != "" && product.AvailabilityTracking != existing.AvailabilityTracking {
-			if err := usecase.repository.ClearAvailableQuantity(ctxWithTx, id); err != nil {
+			if err := usecase.productRepository.ClearAvailableQuantity(ctxWithTx, id); err != nil {
 				return err
 			}
 			if err := usecase.variantRepository.ClearAvailableQuantityByProductId(ctxWithTx, id); err != nil {
@@ -102,15 +72,9 @@ func (usecase ProductUsecase) UpdateProductById(ctx context.Context, product Pro
 		return Product{}, err
 	}
 
-	productId := int(updateResult.Id)
-	variants, err := usecase.variantRepository.GetVariantList(ctx, "", CreatedAt, Ascending, 0, 0, &productId, []int{})
-	if err != nil {
-		return Product{}, err
-	}
-
-	return resolveProductDerivedFields(updateResult, variants)
+	return updateResult, nil
 }
 
 func (usecase ProductUsecase) DeleteProductById(ctx context.Context, id int64) *Error {
-	return usecase.repository.DeleteProductById(ctx, id)
+	return usecase.productRepository.DeleteProductById(ctx, id)
 }

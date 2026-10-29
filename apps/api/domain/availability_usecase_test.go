@@ -29,11 +29,12 @@ func TestAvailabilityUsecase_GetAvailabilityList(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	usecase, _, mockProductRepo, mockVariantRepo := newAvailabilityUsecase(ctrl)
+	usecase, _, mockProductRepo, _ := newAvailabilityUsecase(ctrl)
 
 	purchase := domain.SaleTypePurchase
 	published := domain.ProductStatusPublished
 
+	quantity := 3
 	product := domain.Product{
 		Id:                   1,
 		Name:                 "Soft Cookies",
@@ -44,14 +45,10 @@ func TestAvailabilityUsecase_GetAvailabilityList(t *testing.T) {
 		IsAvailable:          true,
 		AvailabilityTracking: domain.AvailabilityTrackingVariant,
 	}
-
-	quantity := 3
-	variant := domain.Variant{Id: 1, ProductId: 1, Name: "Choco", IsAvailable: true, AvailableQuantity: &quantity}
+	product.Variants = []domain.Variant{{Id: 1, ProductId: 1, Name: "Choco", IsAvailable: true, AvailableQuantity: &quantity, Product: product}}
 
 	mockProductRepo.EXPECT().GetProductList(gomock.Any(), "", domain.CreatedAt, domain.Ascending, 0, 0, &purchase, &published).
 		Return([]domain.Product{product}, nil)
-	mockVariantRepo.EXPECT().GetVariantList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-		Return([]domain.Variant{variant}, nil)
 
 	availabilityProducts, err := usecase.GetAvailabilityList(context.Background())
 

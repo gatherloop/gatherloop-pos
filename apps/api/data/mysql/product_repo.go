@@ -17,7 +17,7 @@ func (repo Repository) GetProductList(ctx context.Context, query string, sortBy 
 	db := GetDbFromCtx(ctx, repo.db)
 
 	var products []Product
-	result := db.Table("products").Preload("Category").Preload("Options").Preload("Options.Values").Where("deleted_at", nil).Order(fmt.Sprintf("%s %s", ToSortByColumn(sortBy), ToOrderColumn(order)))
+	result := db.Table("products").Preload("Category").Preload("Options").Preload("Options.Values").Preload("Variants").Preload("Variants.Tags").Preload("Variants.Product").Where("deleted_at", nil).Order(fmt.Sprintf("%s %s", ToSortByColumn(sortBy), ToOrderColumn(order)))
 
 	result = applyProductSearchFilter(result, query)
 
@@ -85,7 +85,7 @@ func (repo Repository) GetProductListTotal(ctx context.Context, query string, sa
 func (repo Repository) GetProductById(ctx context.Context, id int64) (domain.Product, *domain.Error) {
 	db := GetDbFromCtx(ctx, repo.db)
 	var product Product
-	result := db.Table("products").Preload("Category").Preload("Options").Preload("Options.Values").Where("id = ?", id).First(&product)
+	result := db.Table("products").Preload("Category").Preload("Options").Preload("Options.Values").Preload("Variants").Preload("Variants.Tags").Preload("Variants.Product").Where("id = ?", id).First(&product)
 	return ToProductDomain(product), ToErrorCtx(ctx, result.Error, "GetProductById")
 }
 
@@ -97,7 +97,7 @@ func (repo Repository) CreateProduct(ctx context.Context, product domain.Product
 	}
 
 	var createdProduct Product
-	fetchResult := db.Table("products").Preload("Category").Preload("Options").Preload("Options.Values").Where("id = ?", payload.Id).First(&createdProduct)
+	fetchResult := db.Table("products").Preload("Category").Preload("Options").Preload("Options.Values").Preload("Variants").Preload("Variants.Tags").Preload("Variants.Product").Where("id = ?", payload.Id).First(&createdProduct)
 	return ToProductDomain(createdProduct), ToErrorCtx(ctx, fetchResult.Error, "CreateProduct")
 }
 
@@ -144,7 +144,7 @@ func (repo Repository) UpdateProductById(ctx context.Context, product domain.Pro
 	}
 
 	var updatedProduct Product
-	fetchResult := db.Table("products").Preload("Category").Preload("Options").Preload("Options.Values").Where("id = ?", id).First(&updatedProduct)
+	fetchResult := db.Table("products").Preload("Category").Preload("Options").Preload("Options.Values").Preload("Variants").Preload("Variants.Tags").Preload("Variants.Product").Where("id = ?", id).First(&updatedProduct)
 	return ToProductDomain(updatedProduct), ToErrorCtx(ctx, fetchResult.Error, "UpdateProductById")
 }
 

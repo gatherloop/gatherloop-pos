@@ -17,11 +17,6 @@ func newProductUsecase(ctrl *gomock.Controller) (domain.ProductUsecase, *mock.Mo
 	return domain.NewProductUsecase(mockRepo, mockVariantRepo), mockRepo, mockVariantRepo
 }
 
-func expectNoVariants(r *mock.MockVariantRepository, times int) {
-	r.EXPECT().GetVariantList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-		Return([]domain.Variant{}, nil).Times(times)
-}
-
 func TestProductUsecase_GetProductList(t *testing.T) {
 	draft := domain.ProductStatusDraft
 
@@ -40,8 +35,7 @@ func TestProductUsecase_GetProductList(t *testing.T) {
 					Return([]domain.Product{{Id: 1, Name: "Coffee"}, {Id: 2, Name: "Tea"}}, nil)
 				r.EXPECT().GetProductListTotal(gomock.Any(), "", nil, nil).Return(int64(2), nil)
 			},
-			setupVariantsMock: func(r *mock.MockVariantRepository) { expectNoVariants(r, 2) },
-			expectedLen:       2,
+			expectedLen: 2,
 		},
 		{
 			name:   "filters by status",
@@ -51,8 +45,7 @@ func TestProductUsecase_GetProductList(t *testing.T) {
 					Return([]domain.Product{{Id: 1, Name: "Coffee", Status: domain.ProductStatusDraft}}, nil)
 				r.EXPECT().GetProductListTotal(gomock.Any(), "", nil, &draft).Return(int64(1), nil)
 			},
-			setupVariantsMock: func(r *mock.MockVariantRepository) { expectNoVariants(r, 1) },
-			expectedLen:       1,
+			expectedLen: 1,
 		},
 		{
 			name: "error on list",
@@ -92,7 +85,7 @@ func TestProductUsecase_GetProductList_resolvesAvailability(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	usecase, mockRepo, mockVariantRepo := newProductUsecase(ctrl)
+	usecase, mockRepo, _ := newProductUsecase(ctrl)
 
 	product := domain.Product{
 		Id:                   1,
@@ -102,42 +95,39 @@ func TestProductUsecase_GetProductList_resolvesAvailability(t *testing.T) {
 		IsAvailable:          true,
 		AvailabilityTracking: domain.AvailabilityTrackingNone,
 	}
+	product.Variants = []domain.Variant{{Id: 1, ProductId: 1, IsAvailable: true, Product: product}}
 
 	mockRepo.EXPECT().GetProductList(gomock.Any(), "", domain.CreatedAt, domain.Ascending, 0, 10, nil, nil).
 		Return([]domain.Product{product}, nil)
 	mockRepo.EXPECT().GetProductListTotal(gomock.Any(), "", nil, nil).Return(int64(1), nil)
-	mockVariantRepo.EXPECT().GetVariantList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-		Return([]domain.Variant{{Id: 1, ProductId: 1, Product: product, IsAvailable: true}}, nil)
 
 	products, _, err := usecase.GetProductList(context.Background(), "", domain.CreatedAt, domain.Ascending, 0, 10, nil, nil)
 
 	assert.Nil(t, err)
-	assert.True(t, products[0].IsSellable)
-	assert.Nil(t, products[0].SellableQuantity)
+	assert.True(t, products[0].IsSellable())
+	assert.Nil(t, products[0].SellableQuantity())
 }
 
 func TestProductUsecase_GetProductById_resolvesTags(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	usecase, mockRepo, mockVariantRepo := newProductUsecase(ctrl)
+	usecase, mockRepo, _ := newProductUsecase(ctrl)
 
 	newTag := domain.Tag{Id: 1, Name: "New"}
 	taggedAt := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
 
-	mockRepo.EXPECT().GetProductById(gomock.Any(), int64(1)).Return(domain.Product{Id: 1, Name: "Pancong"}, nil)
-	mockVariantRepo.EXPECT().GetVariantList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-		Return([]domain.Variant{
-			{Id: 1, ProductId: 1},
-			{Id: 2, ProductId: 1, Tags: []domain.VariantTag{{Tag: newTag, TaggedAt: taggedAt}}},
-		}, nil)
+	mockRepo.EXPECT().GetProductById(gomock.Any(), int64(1)).Return(domain.Product{Id: 1, Name: "Pancong", Variants: []domain.Variant{
+		{Id: 1, ProductId: 1},
+		{Id: 2, ProductId: 1, Tags: []domain.VariantTag{{Tag: newTag, TaggedAt: taggedAt}}},
+	}}, nil)
 
 	product, err := usecase.GetProductById(context.Background(), 1)
 
 	assert.Nil(t, err)
 	assert.Equal(t, []domain.ProductTag{
 		{Tag: newTag, Scope: domain.ProductTagScopeVariant, VariantIds: []int64{2}, TaggedAt: taggedAt},
-	}, product.Tags)
+	}, product.Tags())
 }
 
 func TestProductUsecase_GetProductById(t *testing.T) {
@@ -155,8 +145,7 @@ func TestProductUsecase_GetProductById(t *testing.T) {
 			setupMock: func(r *mock.MockProductRepository) {
 				r.EXPECT().GetProductById(gomock.Any(), int64(1)).Return(domain.Product{Id: 1, Name: "Coffee"}, nil)
 			},
-			setupVariantsMock: func(r *mock.MockVariantRepository) { expectNoVariants(r, 1) },
-			expectedName:      "Coffee",
+			expectedName: "Coffee",
 		},
 		{
 			name: "not found",
@@ -207,8 +196,7 @@ func TestProductUsecase_CreateProduct(t *testing.T) {
 			setupMock: func(r *mock.MockProductRepository) {
 				r.EXPECT().CreateProduct(gomock.Any(), gomock.Any()).Return(domain.Product{Id: 1, Name: "Espresso"}, nil)
 			},
-			setupVariantsMock: func(r *mock.MockVariantRepository) { expectNoVariants(r, 1) },
-			expectedName:      "Espresso",
+			expectedName: "Espresso",
 		},
 	}
 
@@ -257,8 +245,7 @@ func TestProductUsecase_UpdateProductById(t *testing.T) {
 					Return(domain.Product{Id: 1, Name: "Old Name", AvailabilityTracking: domain.AvailabilityTrackingNone}, nil)
 				r.EXPECT().UpdateProductById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Product{Id: 1, Name: "Espresso"}, nil)
 			},
-			setupVariantsMock: func(r *mock.MockVariantRepository) { expectNoVariants(r, 1) },
-			expectedName:      "Espresso",
+			expectedName: "Espresso",
 		},
 		{
 			name:  "not found inside transaction",
@@ -291,7 +278,6 @@ func TestProductUsecase_UpdateProductById(t *testing.T) {
 			},
 			setupVariantsMock: func(r *mock.MockVariantRepository) {
 				r.EXPECT().ClearAvailableQuantityByProductId(gomock.Any(), int64(1)).Return(nil)
-				expectNoVariants(r, 1)
 			},
 			expectedName: "Pancong",
 		},
@@ -311,8 +297,7 @@ func TestProductUsecase_UpdateProductById(t *testing.T) {
 				r.EXPECT().UpdateProductById(gomock.Any(), gomock.Any(), int64(1)).
 					Return(domain.Product{Id: 1, Name: "Pancong", AvailabilityTracking: domain.AvailabilityTrackingProduct, AvailableQuantity: &availableQuantity}, nil)
 			},
-			setupVariantsMock: func(r *mock.MockVariantRepository) { expectNoVariants(r, 1) },
-			expectedName:      "Pancong",
+			expectedName: "Pancong",
 		},
 	}
 

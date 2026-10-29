@@ -110,8 +110,8 @@ func ToApiVariant(variant domain.Variant) apiContract.Variant {
 		Tags:              apiTags,
 		IsAvailable:       variant.IsAvailable,
 		AvailableQuantity: ToApiQuantity(variant.AvailableQuantity),
-		IsSellable:        variant.IsSellable,
-		SellableQuantity:  ToApiQuantity(variant.SellableQuantity),
+		IsSellable:        variant.IsSellable(),
+		SellableQuantity:  ToApiQuantity(variant.SellableQuantity()),
 	}
 }
 

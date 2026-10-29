@@ -6,44 +6,23 @@ import (
 )
 
 type AvailabilityUsecase struct {
-	repository        AvailabilityRepository
-	productRepository ProductRepository
-	variantRepository VariantRepository
+	availabilityRepository AvailabilityRepository
+	productRepository      ProductRepository
+	variantRepository      VariantRepository
+	availabilityService    AvailabilityService
 }
 
-func NewAvailabilityUsecase(repository AvailabilityRepository, productRepository ProductRepository, variantRepository VariantRepository) AvailabilityUsecase {
+func NewAvailabilityUsecase(availabilityRepository AvailabilityRepository, productRepository ProductRepository, variantRepository VariantRepository) AvailabilityUsecase {
 	return AvailabilityUsecase{
-		repository:        repository,
-		productRepository: productRepository,
-		variantRepository: variantRepository,
+		availabilityRepository: availabilityRepository,
+		productRepository:      productRepository,
+		variantRepository:      variantRepository,
+		availabilityService:    NewAvailabilityService(productRepository, variantRepository, availabilityRepository),
 	}
 }
 
 func (usecase AvailabilityUsecase) GetAvailabilityList(ctx context.Context) ([]AvailabilityProduct, *Error) {
-	return usecase.buildAvailabilityList(ctx)
-}
-
-func (usecase AvailabilityUsecase) buildAvailabilityList(ctx context.Context) ([]AvailabilityProduct, *Error) {
-	purchase := SaleTypePurchase
-	published := ProductStatusPublished
-
-	products, err := usecase.productRepository.GetProductList(ctx, "", CreatedAt, Ascending, 0, 0, &purchase, &published)
-	if err != nil {
-		return []AvailabilityProduct{}, err
-	}
-
-	availabilityProducts := make([]AvailabilityProduct, 0, len(products))
-	for _, product := range products {
-		productId := int(product.Id)
-		variants, err := usecase.variantRepository.GetVariantList(ctx, "", CreatedAt, Ascending, 0, 0, &productId, []int{})
-		if err != nil {
-			return []AvailabilityProduct{}, err
-		}
-
-		availabilityProducts = append(availabilityProducts, ToAvailabilityProduct(product, variants))
-	}
-
-	return availabilityProducts, nil
+	return usecase.availabilityService.BuildAvailabilityList(ctx)
 }
 
 func (usecase AvailabilityUsecase) UpdateAvailability(ctx context.Context, productUpdates []AvailabilityProductUpdate, variantUpdates []AvailabilityVariantUpdate) ([]AvailabilityProduct, *Error) {
@@ -83,23 +62,23 @@ func (usecase AvailabilityUsecase) UpdateAvailability(ctx context.Context, produ
 		variants[variantUpdate.VariantId] = variant
 	}
 
-	err := usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+	err := usecase.availabilityRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
 		for _, productUpdate := range productUpdates {
-			if err := usecase.repository.UpdateProductAvailability(ctxWithTx, productUpdate.ProductId, productUpdate.IsAvailable, productUpdate.AvailableQuantity); err != nil {
+			if err := usecase.availabilityRepository.UpdateProductAvailability(ctxWithTx, productUpdate.ProductId, productUpdate.IsAvailable, productUpdate.AvailableQuantity); err != nil {
 				return err
 			}
 
-			if err := usecase.recordProductAvailabilityMovements(ctxWithTx, products[productUpdate.ProductId], productUpdate); err != nil {
+			if err := usecase.availabilityService.RecordProductAvailabilityMovements(ctxWithTx, products[productUpdate.ProductId], productUpdate); err != nil {
 				return err
 			}
 		}
 
 		for _, variantUpdate := range variantUpdates {
-			if err := usecase.repository.UpdateVariantAvailability(ctxWithTx, variantUpdate.VariantId, variantUpdate.IsAvailable, variantUpdate.AvailableQuantity); err != nil {
+			if err := usecase.availabilityRepository.UpdateVariantAvailability(ctxWithTx, variantUpdate.VariantId, variantUpdate.IsAvailable, variantUpdate.AvailableQuantity); err != nil {
 				return err
 			}
 
-			if err := usecase.recordVariantAvailabilityMovements(ctxWithTx, variants[variantUpdate.VariantId], variantUpdate); err != nil {
+			if err := usecase.availabilityService.RecordVariantAvailabilityMovements(ctxWithTx, variants[variantUpdate.VariantId], variantUpdate); err != nil {
 				return err
 			}
 		}
@@ -110,73 +89,7 @@ func (usecase AvailabilityUsecase) UpdateAvailability(ctx context.Context, produ
 		return []AvailabilityProduct{}, err
 	}
 
-	return usecase.buildAvailabilityList(ctx)
-}
-
-func (usecase AvailabilityUsecase) recordProductAvailabilityMovements(ctx context.Context, product Product, update AvailabilityProductUpdate) *Error {
-	if update.AvailableQuantity != nil {
-		previous := 0
-		if product.AvailableQuantity != nil {
-			previous = *product.AvailableQuantity
-		}
-		delta := *update.AvailableQuantity - previous
-		resultingQuantity := *update.AvailableQuantity
-
-		if err := usecase.repository.CreateAvailabilityMovement(ctx, AvailabilityMovement{
-			ProductId: &product.Id, Delta: &delta, ResultingQuantity: &resultingQuantity,
-			Reason: AvailabilityMovementReasonManualSet,
-		}); err != nil {
-			return err
-		}
-	}
-
-	if update.IsAvailable != nil && *update.IsAvailable != product.IsAvailable {
-		reason := AvailabilityMovementReasonSwitchedOn
-		if !*update.IsAvailable {
-			reason = AvailabilityMovementReasonSwitchedOff
-		}
-
-		if err := usecase.repository.CreateAvailabilityMovement(ctx, AvailabilityMovement{
-			ProductId: &product.Id, Reason: reason,
-		}); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (usecase AvailabilityUsecase) recordVariantAvailabilityMovements(ctx context.Context, variant Variant, update AvailabilityVariantUpdate) *Error {
-	if update.AvailableQuantity != nil {
-		previous := 0
-		if variant.AvailableQuantity != nil {
-			previous = *variant.AvailableQuantity
-		}
-		delta := *update.AvailableQuantity - previous
-		resultingQuantity := *update.AvailableQuantity
-
-		if err := usecase.repository.CreateAvailabilityMovement(ctx, AvailabilityMovement{
-			VariantId: &variant.Id, Delta: &delta, ResultingQuantity: &resultingQuantity,
-			Reason: AvailabilityMovementReasonManualSet,
-		}); err != nil {
-			return err
-		}
-	}
-
-	if update.IsAvailable != nil && *update.IsAvailable != variant.IsAvailable {
-		reason := AvailabilityMovementReasonSwitchedOn
-		if !*update.IsAvailable {
-			reason = AvailabilityMovementReasonSwitchedOff
-		}
-
-		if err := usecase.repository.CreateAvailabilityMovement(ctx, AvailabilityMovement{
-			VariantId: &variant.Id, Reason: reason,
-		}); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return usecase.availabilityService.BuildAvailabilityList(ctx)
 }
 
 func (usecase AvailabilityUsecase) GetAvailabilityMovementList(ctx context.Context, level AvailabilityMovementLevel, id int64, skip int, limit int) ([]AvailabilityMovement, int64, *Error) {
@@ -184,12 +97,12 @@ func (usecase AvailabilityUsecase) GetAvailabilityMovementList(ctx context.Conte
 		return []AvailabilityMovement{}, 0, &Error{Type: BadRequest, Message: "level must be product or variant"}
 	}
 
-	movements, err := usecase.repository.GetAvailabilityMovementList(ctx, level, id, skip, limit)
+	movements, err := usecase.availabilityRepository.GetAvailabilityMovementList(ctx, level, id, skip, limit)
 	if err != nil {
 		return []AvailabilityMovement{}, 0, err
 	}
 
-	total, err := usecase.repository.GetAvailabilityMovementListTotal(ctx, level, id)
+	total, err := usecase.availabilityRepository.GetAvailabilityMovementListTotal(ctx, level, id)
 	if err != nil {
 		return []AvailabilityMovement{}, 0, err
 	}

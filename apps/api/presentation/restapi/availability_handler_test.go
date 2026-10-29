@@ -36,8 +36,6 @@ func TestAvailabilityHandler_GetAvailabilityList(t *testing.T) {
 				published := domain.ProductStatusPublished
 				productRepo.EXPECT().GetProductList(gomock.Any(), "", domain.CreatedAt, domain.Ascending, 0, 0, &purchase, &published).
 					Return([]domain.Product{{Id: 1, Name: "Pancong"}}, nil)
-				variantRepo.EXPECT().GetVariantList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-					Return([]domain.Variant{}, nil)
 			},
 			expectedStatus: http.StatusOK,
 		},

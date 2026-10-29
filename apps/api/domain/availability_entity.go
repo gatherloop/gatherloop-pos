@@ -34,12 +34,10 @@ type AvailabilityVariantUpdate struct {
 	AvailableQuantity *int
 }
 
-func ToAvailabilityProduct(product Product, variants []Variant) AvailabilityProduct {
-	isSellable, sellableQuantity := ResolveProductAvailability(product, variants)
-
-	availabilityVariants := make([]AvailabilityVariant, 0, len(variants))
-	for _, variant := range variants {
-		availabilityVariants = append(availabilityVariants, toAvailabilityVariant(product, variant))
+func ToAvailabilityProduct(product Product) AvailabilityProduct {
+	availabilityVariants := make([]AvailabilityVariant, 0, len(product.Variants))
+	for _, variant := range product.Variants {
+		availabilityVariants = append(availabilityVariants, toAvailabilityVariant(variant))
 	}
 
 	return AvailabilityProduct{
@@ -50,21 +48,19 @@ func ToAvailabilityProduct(product Product, variants []Variant) AvailabilityProd
 		AvailabilityTracking: product.AvailabilityTracking,
 		IsAvailable:          product.IsAvailable,
 		AvailableQuantity:    product.AvailableQuantity,
-		IsSellable:           isSellable,
-		SellableQuantity:     sellableQuantity,
+		IsSellable:           product.IsSellable(),
+		SellableQuantity:     product.SellableQuantity(),
 		Variants:             availabilityVariants,
 	}
 }
 
-func toAvailabilityVariant(product Product, variant Variant) AvailabilityVariant {
-	isSellable, sellableQuantity := ResolveVariantAvailability(product, variant)
-
+func toAvailabilityVariant(variant Variant) AvailabilityVariant {
 	return AvailabilityVariant{
 		VariantId:         variant.Id,
 		VariantName:       variant.Name,
 		IsAvailable:       variant.IsAvailable,
 		AvailableQuantity: variant.AvailableQuantity,
-		IsSellable:        isSellable,
-		SellableQuantity:  sellableQuantity,
+		IsSellable:        variant.IsSellable(),
+		SellableQuantity:  variant.SellableQuantity(),
 	}
 }

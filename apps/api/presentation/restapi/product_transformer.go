@@ -69,7 +69,7 @@ func ToApiProduct(product domain.Product) apiContract.Product {
 	}
 
 	apiTags := []apiContract.ProductTag{}
-	for _, productTag := range product.Tags {
+	for _, productTag := range product.Tags() {
 		apiTags = append(apiTags, ToApiProductTag(productTag))
 	}
 
@@ -89,8 +89,8 @@ func ToApiProduct(product domain.Product) apiContract.Product {
 		IsAvailable:          product.IsAvailable,
 		AvailabilityTracking: string(product.AvailabilityTracking),
 		AvailableQuantity:    ToApiQuantity(product.AvailableQuantity),
-		IsSellable:           product.IsSellable,
-		SellableQuantity:     ToApiQuantity(product.SellableQuantity),
+		IsSellable:           product.IsSellable(),
+		SellableQuantity:     ToApiQuantity(product.SellableQuantity()),
 		Tags:                 apiTags,
 	}
 }

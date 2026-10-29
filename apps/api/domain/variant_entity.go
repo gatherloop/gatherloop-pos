@@ -45,6 +45,25 @@ type Variant struct {
 	TagIds            []int64
 	IsAvailable       bool
 	AvailableQuantity *int
-	IsSellable        bool
-	SellableQuantity  *int
+}
+
+func (variant Variant) IsSellable() bool {
+	return variant.Product.DeletedAt == nil &&
+		variant.DeletedAt == nil &&
+		variant.Product.Status == ProductStatusPublished &&
+		variant.Product.SaleType == SaleTypePurchase &&
+		variant.Product.IsAvailable &&
+		variant.IsAvailable &&
+		(variant.SellableQuantity() == nil || *variant.SellableQuantity() > 0)
+}
+
+func (variant Variant) SellableQuantity() *int {
+	switch variant.Product.AvailabilityTracking {
+	case AvailabilityTrackingProduct:
+		return variant.Product.AvailableQuantity
+	case AvailabilityTrackingVariant:
+		return variant.AvailableQuantity
+	default:
+		return nil
+	}
 }
