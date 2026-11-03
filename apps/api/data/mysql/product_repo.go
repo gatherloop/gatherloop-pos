@@ -4,6 +4,7 @@ import (
 	"apps/api/domain"
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"gorm.io/gorm"
@@ -179,4 +180,41 @@ func (repo Repository) DeleteUnusedOptionValues(ctx context.Context, optionId in
 	} else {
 		return nil
 	}
+}
+
+const (
+	MaxSearchQueryTokens = 8
+	MaxSearchQueryLength = 100
+)
+
+// EXISTS, not JOIN, so a product can never fan out into more than one row here.
+// Every token must match some field (AND-of-ORs); tokens are matched independently of each other.
+func applyProductSearchFilter(db *gorm.DB, query string) *gorm.DB {
+	for _, token := range tokenizeSearchQuery(query) {
+		like := "%" + token + "%"
+		db = db.Where(
+			`(
+				products.name LIKE ?
+				OR EXISTS (SELECT 1 FROM categories c WHERE c.id = products.category_id AND c.name LIKE ?)
+				OR EXISTS (SELECT 1 FROM options o JOIN option_values ov ON ov.option_id = o.id WHERE o.product_id = products.id AND ov.name LIKE ?)
+			)`,
+			like, like, like,
+		)
+	}
+
+	return db
+}
+
+// Runes, not bytes, so truncation never splits a multi-byte character.
+func tokenizeSearchQuery(query string) []string {
+	if runes := []rune(query); len(runes) > MaxSearchQueryLength {
+		query = string(runes[:MaxSearchQueryLength])
+	}
+
+	tokens := strings.Fields(query)
+	if len(tokens) > MaxSearchQueryTokens {
+		tokens = tokens[:MaxSearchQueryTokens]
+	}
+
+	return tokens
 }
