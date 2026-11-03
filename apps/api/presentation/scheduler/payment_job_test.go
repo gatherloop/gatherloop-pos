@@ -25,7 +25,7 @@ func newPaymentUsecase(paymentRepository domain.PaymentRepository, paymentVerifi
 		domain.PaymentService{},
 		domain.AvailabilityService{},
 		nil,
-		domain.NoopWhatsappNumberVerifier{},
+		domain.WhatsappNumberVerificationService{},
 		300,
 		600,
 		900,

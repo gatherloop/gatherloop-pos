@@ -1,4 +1,4 @@
-package domain
+package utils
 
 import "strings"
 
@@ -6,7 +6,7 @@ var whatsappNumberSeparators = strings.NewReplacer(" ", "", "-", "", ".", "", "(
 
 // NormalizeWhatsappNumber reduces a guest-typed number to digits only, so the
 // stored customer number, the payment snapshot and the Fonnte target match byte for byte.
-func NormalizeWhatsappNumber(raw string) (string, *Error) {
+func NormalizeWhatsappNumber(raw string) (string, bool) {
 	stripped := whatsappNumberSeparators.Replace(raw)
 
 	var normalized string
@@ -22,28 +22,28 @@ func NormalizeWhatsappNumber(raw string) (string, *Error) {
 	}
 
 	if normalized == "" || !isDigitsOnly(normalized) {
-		return "", invalidWhatsappNumberError()
+		return "", false
 	}
 
 	if strings.HasPrefix(normalized, "62") {
 		if len(normalized) < 3 || normalized[2] != '8' {
-			return "", invalidWhatsappNumberError()
+			return "", false
 		}
 		if len(normalized) < 10 || len(normalized) > 15 {
-			return "", invalidWhatsappNumberError()
+			return "", false
 		}
-		return normalized, nil
+		return normalized, true
 	}
 
 	if !hasExplicitCountryCode {
-		return "", invalidWhatsappNumberError()
+		return "", false
 	}
 
 	if len(normalized) < 8 || len(normalized) > 15 {
-		return "", invalidWhatsappNumberError()
+		return "", false
 	}
 
-	return normalized, nil
+	return normalized, true
 }
 
 func isDigitsOnly(s string) bool {
@@ -53,12 +53,4 @@ func isDigitsOnly(s string) bool {
 		}
 	}
 	return true
-}
-
-func invalidWhatsappNumberError() *Error {
-	return &Error{
-		Type:    BadRequest,
-		Message: "customerWhatsappNumber must be a valid WhatsApp number",
-		Reason:  ErrorReasonWhatsappNumberInvalid,
-	}
 }

@@ -42,7 +42,7 @@ type paymentUsecaseMocks struct {
 	availabilityRepo          *mock.MockAvailabilityRepository
 	kdsNotificationRepo       *mock.MockKdsNotificationRepository
 	kdsNotificationDispatcher *mock.MockKdsNotificationDispatcher
-	whatsappNumberVerifier    *mock.MockWhatsappNumberVerifier
+	whatsappNumberVerifier    domain.WhatsappNumberVerificationService
 	paymentVerificationRepo   *mock.MockPaymentVerificationRepository
 }
 
@@ -53,8 +53,9 @@ func newPaymentUsecaseMocks(ctrl *gomock.Controller) paymentUsecaseMocks {
 	// A permissive default (never rejects, whatever number it is asked about) so every existing
 	// test that isn't about the verifier itself keeps behaving exactly as it did before this
 	// dependency was added; tests that care replace this expectation.
-	whatsappNumberVerifier := mock.NewMockWhatsappNumberVerifier(ctrl)
-	whatsappNumberVerifier.EXPECT().EnsureRegistered(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	whatsappNumberVerificationRepo := mock.NewMockWhatsappNumberVerificationRepository(ctrl)
+	whatsappNumberVerificationRepo.EXPECT().IsWhatsappNumberVerified(gomock.Any(), gomock.Any()).Return(true, nil).AnyTimes()
+	whatsappNumberVerifier := domain.NewWhatsappNumberVerificationUsecase(whatsappNumberVerificationRepo, mock.NewMockWhatsAppGatewayRepository(ctrl))
 
 	// FR-6: finalizeUncollectedPayment's unconditional photo delete is a no-op for every test
 	// that isn't about the photo store itself; tests that care replace this expectation.
@@ -109,7 +110,7 @@ func (m paymentUsecaseMocks) usecaseWithDispatcherCancelAndCodEnabled(dispatcher
 
 // usecaseWithVerifier builds the usecase over a caller-supplied verifier instead of the
 // permissive default, for the tests that assert on EnsureRegistered's own call pattern.
-func (m paymentUsecaseMocks) usecaseWithVerifier(verifier domain.WhatsappNumberVerifier) domain.PaymentUsecase {
+func (m paymentUsecaseMocks) usecaseWithVerifier(verifier domain.WhatsappNumberVerificationService) domain.PaymentUsecase {
 	return m.build(m.kdsNotificationDispatcher, verifier, m.paymentVerificationRepo, false, false)
 }
 
@@ -221,9 +222,12 @@ func TestPaymentUsecase_Checkout(t *testing.T) {
 
 		// D5: the verifier call also runs before BeginTransaction, for the same reason.
 		m := newPaymentUsecaseMocks(ctrl)
-		verifier := mock.NewMockWhatsappNumberVerifier(ctrl)
-		verifier.EXPECT().EnsureRegistered(gomock.Any(), "6281234567890").
-			Return(&domain.Error{Type: domain.BadRequest, Reason: domain.ErrorReasonWhatsappNumberNotRegistered, Message: "customerWhatsappNumber is not registered on WhatsApp"})
+		verificationRepo := mock.NewMockWhatsappNumberVerificationRepository(ctrl)
+		gateway := mock.NewMockWhatsAppGatewayRepository(ctrl)
+		verificationRepo.EXPECT().IsWhatsappNumberVerified(gomock.Any(), "6281234567890").Return(false, nil)
+		gateway.EXPECT().ValidateNumber(gomock.Any(), "6281234567890").
+			Return(domain.WhatsAppNumberValidationResult{Status: domain.WhatsAppNumberStatusNotRegistered}, nil)
+		verifier := domain.NewWhatsappNumberVerificationUsecase(verificationRepo, gateway)
 
 		_, _, _, err := m.usecaseWithVerifier(verifier).Checkout(context.Background(), "session-1", "Budi", "0812-3456-7890", domain.PaymentMethodQris, "", "")
 
@@ -240,8 +244,9 @@ func TestPaymentUsecase_Checkout(t *testing.T) {
 		withPaymentTransactionMock(m.paymentRepo)
 		expectValidWallet(m)
 		expectNameUpsert(m, "session-1", "Budi")
-		verifier := mock.NewMockWhatsappNumberVerifier(ctrl)
-		verifier.EXPECT().EnsureRegistered(gomock.Any(), gomock.Any()).Times(0)
+		verificationRepo := mock.NewMockWhatsappNumberVerificationRepository(ctrl)
+		verificationRepo.EXPECT().IsWhatsappNumberVerified(gomock.Any(), gomock.Any()).Times(0)
+		verifier := domain.NewWhatsappNumberVerificationUsecase(verificationRepo, mock.NewMockWhatsAppGatewayRepository(ctrl))
 
 		cart := cartWithOneItem(1, 5)
 		m.cartRepo.EXPECT().GetActiveCartBySessionId(gomock.Any(), "session-1").Return(cart, nil)
@@ -279,8 +284,9 @@ func TestPaymentUsecase_Checkout(t *testing.T) {
 		withPaymentTransactionMock(m.paymentRepo)
 		expectValidWallet(m)
 
-		verifier := mock.NewMockWhatsappNumberVerifier(ctrl)
-		verifier.EXPECT().EnsureRegistered(gomock.Any(), "6282222222222").Times(1).Return(nil)
+		verificationRepo := mock.NewMockWhatsappNumberVerificationRepository(ctrl)
+		verificationRepo.EXPECT().IsWhatsappNumberVerified(gomock.Any(), "6282222222222").Times(1).Return(true, nil)
+		verifier := domain.NewWhatsappNumberVerificationUsecase(verificationRepo, mock.NewMockWhatsAppGatewayRepository(ctrl))
 
 		m.customerRepo.EXPECT().UpsertCustomerBySessionId(gomock.Any(), "session-1", "Budi Santoso", gomock.Not(gomock.Nil())).
 			DoAndReturn(func(_ context.Context, sessionId, name string, whatsappNumber *string) (domain.Customer, *domain.Error) {
@@ -3131,7 +3137,7 @@ func TestPaymentUsecase_DeleteOrphanedVerificationPhotos(t *testing.T) {
 	})
 }
 
-func (m paymentUsecaseMocks) build(dispatcher domain.KdsNotificationDispatcher, verifier domain.WhatsappNumberVerifier, paymentVerificationRepo domain.PaymentVerificationRepository, orderPaymentCancelEnabled bool, orderCodPaymentEnabled bool) domain.PaymentUsecase {
+func (m paymentUsecaseMocks) build(dispatcher domain.KdsNotificationDispatcher, verifier domain.WhatsappNumberVerificationService, paymentVerificationRepo domain.PaymentVerificationRepository, orderPaymentCancelEnabled bool, orderCodPaymentEnabled bool) domain.PaymentUsecase {
 	availabilityService := domain.NewAvailabilityService(nil, nil, m.availabilityRepo)
 	paymentService := domain.NewPaymentService(m.transactionRepo, m.paymentRepo, paymentVerificationRepo, m.gatewayRepo, m.cartRepo, m.walletRepo, m.kdsNotificationRepo, availabilityService, checkoutOrderPaymentWalletId, orderPaymentCancelEnabled, dispatcher)
 	return domain.NewPaymentUsecase(m.paymentRepo, m.gatewayRepo, m.customerRepo, m.cartRepo, m.transactionRepo, m.variantRepo, m.walletRepo, m.kdsNotificationRepo, paymentVerificationRepo, paymentService, availabilityService, dispatcher, verifier, checkoutQrisExpirySeconds, checkoutCashExpirySeconds, checkoutCodVerificationExpirySeconds, checkoutOrderPaymentWalletId, orderPaymentCancelEnabled, orderCodPaymentEnabled)

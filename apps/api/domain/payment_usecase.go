@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"apps/api/utils"
 	"context"
 	"encoding/base64"
 	"log/slog"
@@ -26,7 +27,7 @@ type PaymentUsecase struct {
 
 	kdsNotificationDispatcher KdsNotificationDispatcher
 
-	whatsappNumberVerifier       WhatsappNumberVerifier
+	whatsappNumberVerifier       WhatsappNumberVerificationService
 	qrisExpirySeconds            int
 	cashExpirySeconds            int
 	codVerificationExpirySeconds int
@@ -51,7 +52,7 @@ func NewPaymentUsecase(
 
 	kdsNotificationDispatcher KdsNotificationDispatcher,
 
-	whatsappNumberVerifier WhatsappNumberVerifier,
+	whatsappNumberVerifier WhatsappNumberVerificationService,
 	qrisExpirySeconds int,
 	cashExpirySeconds int,
 	codVerificationExpirySeconds int,
@@ -110,9 +111,13 @@ func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, cu
 
 	var whatsappNumber *string
 	if trimmed := strings.TrimSpace(customerWhatsappNumber); trimmed != "" {
-		normalized, normErr := NormalizeWhatsappNumber(trimmed)
-		if normErr != nil {
-			return Payment{}, Transaction{}, false, normErr
+		normalized, isValid := utils.NormalizeWhatsappNumber(trimmed)
+		if !isValid {
+			return Payment{}, Transaction{}, false, &Error{
+				Type:    BadRequest,
+				Message: "customerWhatsappNumber must be a valid WhatsApp number",
+				Reason:  ErrorReasonWhatsappNumberInvalid,
+			}
 		}
 		if verifyErr := usecase.whatsappNumberVerifier.EnsureRegistered(ctx, normalized); verifyErr != nil {
 			return Payment{}, Transaction{}, false, verifyErr

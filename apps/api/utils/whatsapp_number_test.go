@@ -1,7 +1,7 @@
-package domain_test
+package utils_test
 
 import (
-	"apps/api/domain"
+	"apps/api/utils"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -42,14 +42,12 @@ func TestNormalizeWhatsappNumber(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			normalized, err := domain.NormalizeWhatsappNumber(tt.raw)
+			normalized, ok := utils.NormalizeWhatsappNumber(tt.raw)
 
 			if tt.expectsErr {
-				assert.NotNil(t, err)
-				assert.Equal(t, domain.BadRequest, err.Type)
-				assert.Equal(t, domain.ErrorReasonWhatsappNumberInvalid, err.Reason)
+				assert.False(t, ok)
 			} else {
-				assert.Nil(t, err)
+				assert.True(t, ok)
 				assert.Equal(t, tt.expected, normalized)
 			}
 		})
