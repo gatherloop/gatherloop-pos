@@ -6,7 +6,6 @@ import (
 	apiContract "libs/api-contract"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/gorilla/mux"
 )
@@ -50,20 +49,6 @@ func ToApiRental(rental domain.Rental) apiContract.Rental {
 		apiPricingTiers = append(apiPricingTiers, ToApiPricingTier(tier))
 	}
 
-	total := float32(0)
-	if len(rental.PricingTiers) > 0 {
-		var duration time.Duration
-		if rental.CheckoutAt != nil {
-			duration = rental.CheckoutAt.Sub(rental.CheckinAt)
-		} else {
-			duration = time.Since(rental.CheckinAt)
-		}
-		result, err := domain.CalculatePrice(rental.PricingTiers, duration)
-		if err == nil {
-			total = result.Price
-		}
-	}
-
 	return apiContract.Rental{
 		Id:           rental.Id,
 		Code:         rental.Code,
@@ -74,7 +59,7 @@ func ToApiRental(rental domain.Rental) apiContract.Rental {
 		CheckoutAt:   rental.CheckoutAt,
 		CreatedAt:    rental.CreatedAt,
 		PricingTiers: apiPricingTiers,
-		Total:        total,
+		Total:        rental.Total(),
 		TicketId:     rental.TicketId,
 		TicketName:   rental.TicketName,
 	}

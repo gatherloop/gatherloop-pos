@@ -29,93 +29,102 @@ var hourlyTiers = []domain.PricingTier{
 var allDayWeekdayTiers = []domain.PricingTier{{UpToMinutes: 840, Price: 50000}}
 var allDayWeekendTiers = []domain.PricingTier{{UpToMinutes: 840, Price: 60000}}
 
-func TestCalculatePrice(t *testing.T) {
+func TestRentalTotal(t *testing.T) {
+	checkinAt := time.Date(2025, 1, 1, 10, 0, 0, 0, time.UTC)
+
 	tests := []struct {
 		name          string
 		tiers         []domain.PricingTier
 		duration      time.Duration
-		expectedPrice float32
-		expectedError *domain.Error
+		expectedTotal float32
 	}{
 		{
 			name:          "row1: 120min exactly on tier boundary",
 			tiers:         hourlyTiers,
 			duration:      120 * time.Minute,
-			expectedPrice: 30000,
+			expectedTotal: 30000,
 		},
 		{
 			name:          "row3: 75min rounds up to 90min tier",
 			tiers:         hourlyTiers,
 			duration:      75 * time.Minute,
-			expectedPrice: 20000,
+			expectedTotal: 20000,
 		},
 		{
 			name:          "row4: 95min rounds up to 120min tier",
 			tiers:         hourlyTiers,
 			duration:      95 * time.Minute,
-			expectedPrice: 30000,
+			expectedTotal: 30000,
 		},
 		{
 			name:          "row5: 420min exactly on tier boundary",
 			tiers:         hourlyTiers,
 			duration:      420 * time.Minute,
-			expectedPrice: 105000,
+			expectedTotal: 105000,
 		},
 		{
 			name:          "row6: 540min exceeds all tiers, capped at last (120,000)",
 			tiers:         hourlyTiers,
 			duration:      540 * time.Minute,
-			expectedPrice: 120000,
+			expectedTotal: 120000,
 		},
 		{
 			name:          "row7: all day weekday single-tier variant",
 			tiers:         allDayWeekdayTiers,
 			duration:      300 * time.Minute,
-			expectedPrice: 50000,
+			expectedTotal: 50000,
 		},
 		{
 			name:          "row9: all day weekend single-tier variant",
 			tiers:         allDayWeekendTiers,
 			duration:      500 * time.Minute,
-			expectedPrice: 60000,
+			expectedTotal: 60000,
 		},
 		{
 			name:          "60min exactly on first tier",
 			tiers:         hourlyTiers,
 			duration:      60 * time.Minute,
-			expectedPrice: 15000,
+			expectedTotal: 15000,
 		},
 		{
 			name:          "481min above last tier, capped",
 			tiers:         hourlyTiers,
 			duration:      481 * time.Minute,
-			expectedPrice: 120000,
+			expectedTotal: 120000,
 		},
 		{
 			name:          "30 second duration rounds up to 1 minute, matches first tier",
 			tiers:         hourlyTiers,
 			duration:      30 * time.Second,
-			expectedPrice: 15000,
+			expectedTotal: 15000,
 		},
 		{
-			name:          "empty tier list returns error",
+			name:          "empty tier list returns zero",
 			tiers:         []domain.PricingTier{},
 			duration:      60 * time.Minute,
-			expectedError: &domain.Error{Type: domain.BadRequest},
+			expectedTotal: 0,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := domain.CalculatePrice(tt.tiers, tt.duration)
-
-			if tt.expectedError != nil {
-				assert.NotNil(t, err)
-				assert.Equal(t, tt.expectedError.Type, err.Type)
-			} else {
-				assert.Nil(t, err)
-				assert.Equal(t, tt.expectedPrice, result.Price)
+			checkoutAt := checkinAt.Add(tt.duration)
+			rental := domain.Rental{
+				PricingTiers: tt.tiers,
+				CheckinAt:    checkinAt,
+				CheckoutAt:   &checkoutAt,
 			}
+
+			assert.Equal(t, tt.expectedTotal, rental.Total())
 		})
 	}
+
+	t.Run("not yet checked out uses time elapsed since checkin", func(t *testing.T) {
+		rental := domain.Rental{
+			PricingTiers: hourlyTiers,
+			CheckinAt:    time.Now().Add(-75 * time.Minute),
+		}
+
+		assert.Equal(t, float32(20000), rental.Total())
+	})
 }

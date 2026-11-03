@@ -115,12 +115,14 @@ func (usecase RentalUsecase) CheckoutRentals(ctx context.Context, rentalIds []in
 				return err
 			}
 
-			duration := checkoutAt.Sub(existingRental.CheckinAt)
-			result, calcErr := CalculatePrice(existingRental.PricingTiers, duration)
-			if calcErr != nil {
-				return calcErr
+			if len(existingRental.PricingTiers) == 0 {
+				return &Error{Type: BadRequest, Message: "snapshot has no tiers"}
 			}
-			total += float64(result.Price)
+
+			duration := checkoutAt.Sub(existingRental.CheckinAt)
+
+			rentalTotal := existingRental.Total()
+			total += float64(rentalTotal)
 
 			variant, err := usecase.variantRepository.GetVariantById(ctxWithTx, existingRental.VariantId)
 			if err != nil {
@@ -147,9 +149,9 @@ func (usecase RentalUsecase) CheckoutRentals(ctx context.Context, rentalIds []in
 			transactionItems = append(transactionItems, TransactionItem{
 				VariantId:      existingRental.VariantId,
 				Amount:         1,
-				Price:          result.Price,
+				Price:          rentalTotal,
 				DiscountAmount: 0,
-				Subtotal:       result.Price,
+				Subtotal:       rentalTotal,
 				RentalId:       &existingRental.Id,
 				Note:           note,
 				ProductName:    variant.Product.Name,
