@@ -162,7 +162,7 @@ func main() {
 		variantRepository,
 	)
 	tagService := domain.NewTagService(tagRepository)
-	variantService := domain.NewVariantService(tagRepository)
+	variantService := domain.NewVariantService(tagRepository, tagService)
 	transactionService := domain.NewTransactionService(
 		couponRepository,
 		paymentRepository,

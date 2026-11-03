@@ -18,7 +18,7 @@ import (
 )
 
 func newTestVariantHandler(ctrl *gomock.Controller, variantRepo *mock.MockVariantRepository, productRepo *mock.MockProductRepository) restapi.VariantHandler {
-	return restapi.NewVariantHandler(domain.NewVariantUsecase(variantRepo, productRepo, domain.NewVariantService(mock.NewMockTagRepository(ctrl))))
+	return restapi.NewVariantHandler(domain.NewVariantUsecase(variantRepo, productRepo, newTestVariantService(ctrl)))
 }
 
 func TestVariantHandler_GetVariantList(t *testing.T) {
@@ -377,7 +377,7 @@ func TestVariantHandler_UpdateVariantById_TagIds(t *testing.T) {
 					return variant, nil
 				})
 
-			handler := restapi.NewVariantHandler(domain.NewVariantUsecase(variantRepo, productRepo, domain.NewVariantService(tagRepo)))
+			handler := restapi.NewVariantHandler(domain.NewVariantUsecase(variantRepo, productRepo, domain.NewVariantService(tagRepo, domain.NewTagService(tagRepo))))
 			req := httptest.NewRequest(http.MethodPut, "/variants/1", bytes.NewBufferString(tt.body))
 			req.Header.Set("Content-Type", "application/json")
 			req = mux.SetURLVars(req, map[string]string{"variantId": "1"})
@@ -401,4 +401,9 @@ func TestVariantHandler_UpdateVariantById_TagIds(t *testing.T) {
 			assert.True(t, taggedAt.Equal(response.Data.Tags[0].TaggedAt))
 		})
 	}
+}
+
+func newTestVariantService(ctrl *gomock.Controller) domain.VariantService {
+	tagRepo := mock.NewMockTagRepository(ctrl)
+	return domain.NewVariantService(tagRepo, domain.NewTagService(tagRepo))
 }

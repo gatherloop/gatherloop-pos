@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"apps/api/utils"
 	"context"
 	"strings"
 )
@@ -48,7 +49,7 @@ func (usecase TagUsecase) DeleteTagById(ctx context.Context, id int64) *Error {
 }
 
 func (usecase TagUsecase) SetTagVariants(ctx context.Context, tagId int64, variantIds []int64) (Tag, *Error) {
-	variantIds = uniqueInt64s(variantIds)
+	variantIds = utils.UniqueInt64s(variantIds)
 
 	err := usecase.tagRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
 		if _, err := usecase.tagRepository.GetTagById(ctxWithTx, tagId); err != nil {
@@ -68,7 +69,7 @@ func (usecase TagUsecase) SetTagVariants(ctx context.Context, tagId int64, varia
 			return err
 		}
 
-		return applyVariantTagPairs(ctxWithTx, usecase.tagRepository,
+		return usecase.tagService.ApplyVariantTagPairs(ctxWithTx,
 			tagVariantPairs(tagId, existingVariantIds),
 			tagVariantPairs(tagId, variantIds),
 		)

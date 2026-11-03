@@ -1,14 +1,19 @@
 package domain
 
-import "context"
+import (
+	"apps/api/utils"
+	"context"
+)
 
 type VariantService struct {
 	tagRepository TagRepository
+	tagService    TagService
 }
 
-func NewVariantService(tagRepository TagRepository) VariantService {
+func NewVariantService(tagRepository TagRepository, tagService TagService) VariantService {
 	return VariantService{
 		tagRepository: tagRepository,
+		tagService:    tagService,
 	}
 }
 
@@ -37,13 +42,13 @@ func (service VariantService) ReplaceVariantTags(ctx context.Context, variantId 
 
 	toVariantPairs := func(ids []int64) []VariantTagPair {
 		pairs := []VariantTagPair{}
-		for _, tagId := range uniqueInt64s(ids) {
+		for _, tagId := range utils.UniqueInt64s(ids) {
 			pairs = append(pairs, VariantTagPair{VariantId: variantId, TagId: tagId})
 		}
 		return pairs
 	}
 
-	return applyVariantTagPairs(ctx, service.tagRepository, toVariantPairs(existingTagIds), toVariantPairs(tagIds))
+	return service.tagService.ApplyVariantTagPairs(ctx, toVariantPairs(existingTagIds), toVariantPairs(tagIds))
 }
 
 func (service VariantService) ValidateVariantForSaleType(saleType SaleType, variant *Variant) *Error {

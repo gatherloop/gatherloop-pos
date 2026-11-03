@@ -11,7 +11,7 @@ import (
 )
 
 func newVariantUsecase(ctrl *gomock.Controller, variantRepo *mock.MockVariantRepository, productRepo *mock.MockProductRepository) domain.VariantUsecase {
-	return domain.NewVariantUsecase(variantRepo, productRepo, domain.NewVariantService(mock.NewMockTagRepository(ctrl)))
+	return domain.NewVariantUsecase(variantRepo, productRepo, newVariantService(ctrl))
 }
 
 func TestVariantUsecase_GetVariantList(t *testing.T) {
@@ -475,7 +475,7 @@ func TestVariantUsecase_UpdateVariantById_Tags(t *testing.T) {
 			productRepo.EXPECT().GetProductById(gomock.Any(), int64(10)).Return(domain.Product{Id: 10, SaleType: domain.SaleTypePurchase}, nil)
 			tt.setupMock(variantRepo, tagRepo)
 
-			usecase := domain.NewVariantUsecase(variantRepo, productRepo, domain.NewVariantService(tagRepo))
+			usecase := domain.NewVariantUsecase(variantRepo, productRepo, domain.NewVariantService(tagRepo, domain.NewTagService(tagRepo)))
 			_, err := usecase.UpdateVariantById(context.Background(), domain.Variant{Name: "Hot", Price: 8000, TagIds: tt.tagIds}, 1)
 
 			if tt.expectedError != nil {
@@ -509,7 +509,7 @@ func TestVariantUsecase_CreateVariant_Tags(t *testing.T) {
 		tagRepo.EXPECT().InsertVariantTags(gomock.Any(), tagPairs(5, 2)).Return(nil)
 		variantRepo.EXPECT().GetVariantById(gomock.Any(), int64(5)).Return(domain.Variant{Id: 5, ProductId: 10, Name: "Hot", Tags: []domain.VariantTag{{Tag: knownTags[1]}}}, nil)
 
-		created, err := domain.NewVariantUsecase(variantRepo, productRepo, domain.NewVariantService(tagRepo)).CreateVariant(context.Background(), withTags)
+		created, err := domain.NewVariantUsecase(variantRepo, productRepo, domain.NewVariantService(tagRepo, domain.NewTagService(tagRepo))).CreateVariant(context.Background(), withTags)
 
 		assert.Nil(t, err)
 		assert.Len(t, created.Tags, 1)
@@ -525,7 +525,7 @@ func TestVariantUsecase_CreateVariant_Tags(t *testing.T) {
 		productRepo.EXPECT().GetProductById(gomock.Any(), int64(10)).Return(product, nil)
 		variantRepo.EXPECT().CreateVariant(gomock.Any(), input).Return(domain.Variant{Id: 5, ProductId: 10, Name: "Hot"}, nil)
 
-		_, err := domain.NewVariantUsecase(variantRepo, productRepo, domain.NewVariantService(tagRepo)).CreateVariant(context.Background(), input)
+		_, err := domain.NewVariantUsecase(variantRepo, productRepo, domain.NewVariantService(tagRepo, domain.NewTagService(tagRepo))).CreateVariant(context.Background(), input)
 
 		assert.Nil(t, err)
 	})
@@ -543,9 +543,14 @@ func TestVariantUsecase_CreateVariant_Tags(t *testing.T) {
 		runVariantTransactionCallback(variantRepo)
 		tagRepo.EXPECT().GetTagList(gomock.Any()).Return(knownTags, nil)
 
-		_, err := domain.NewVariantUsecase(variantRepo, productRepo, domain.NewVariantService(tagRepo)).CreateVariant(context.Background(), withTags)
+		_, err := domain.NewVariantUsecase(variantRepo, productRepo, domain.NewVariantService(tagRepo, domain.NewTagService(tagRepo))).CreateVariant(context.Background(), withTags)
 
 		assert.NotNil(t, err)
 		assert.Equal(t, domain.BadRequest, err.Type)
 	})
+}
+
+func newVariantService(ctrl *gomock.Controller) domain.VariantService {
+	tagRepo := mock.NewMockTagRepository(ctrl)
+	return domain.NewVariantService(tagRepo, domain.NewTagService(tagRepo))
 }
