@@ -1,13 +1,16 @@
 package domain_test
 
 import (
+	"apps/api/data/mock"
 	"apps/api/domain"
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
-func TestApplyCouponToBase(t *testing.T) {
+func TestTransactionService_ApplyTransactionCoupons(t *testing.T) {
 	tests := []struct {
 		name             string
 		base             float32
@@ -51,7 +54,6 @@ func TestApplyCouponToBase(t *testing.T) {
 			coupon:           domain.Coupon{Type: domain.Percentage, Amount: 40},
 			expectedDiscount: 8000,
 		},
-
 		{
 			name:             "fixed exactly equal to base",
 			base:             30000,
@@ -74,15 +76,36 @@ func TestApplyCouponToBase(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			discount, err := domain.ApplyCouponToBase(tt.base, tt.coupon)
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			couponRepository := mock.NewMockCouponRepository(ctrl)
+			couponRepository.EXPECT().GetCouponById(gomock.Any(), int64(1)).Return(tt.coupon, nil)
+
+			service := domain.NewTransactionService(couponRepository, nil, nil, domain.PaymentService{})
+
+			itemId := int64(10)
+			transaction := domain.Transaction{
+				Total: tt.base,
+				TransactionItems: []domain.TransactionItem{
+					{Id: itemId, Price: tt.base, Amount: 1, Subtotal: tt.base},
+				},
+				TransactionCoupons: []domain.TransactionCoupon{
+					{CouponId: 1, TransactionItemId: &itemId},
+				},
+			}
+
+			err := service.ApplyTransactionCoupons(context.Background(), &transaction, 99)
 
 			if tt.expectError {
 				assert.NotNil(t, err)
 				assert.Equal(t, domain.BadRequest, err.Type)
-				assert.Equal(t, float32(0), discount)
+				assert.Equal(t, float32(0), transaction.TransactionItems[0].DiscountAmount)
 			} else {
 				assert.Nil(t, err)
-				assert.Equal(t, tt.expectedDiscount, discount)
+				assert.Equal(t, tt.expectedDiscount, transaction.TransactionItems[0].DiscountAmount)
+				assert.Equal(t, tt.base-tt.expectedDiscount, transaction.TransactionItems[0].Subtotal)
+				assert.Equal(t, tt.base-tt.expectedDiscount, transaction.Total)
 			}
 		})
 	}

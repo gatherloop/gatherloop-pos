@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"apps/api/utils"
 	"context"
 	"time"
 )
@@ -59,7 +60,7 @@ func (service TransactionService) ApplyTransactionCoupons(ctx context.Context, t
 			item := &transaction.TransactionItems[itemIndex]
 			base := item.Price * item.Amount
 
-			discount, err := ApplyCouponToBase(base, coupon)
+			discount, err := service.applyCouponToBase(base, coupon)
 			if err != nil {
 				return err
 			}
@@ -81,7 +82,7 @@ func (service TransactionService) ApplyTransactionCoupons(ctx context.Context, t
 	}
 
 	for _, coupon := range wholeBillCoupons {
-		discount, err := ApplyCouponToBase(transaction.Total, coupon)
+		discount, err := service.applyCouponToBase(transaction.Total, coupon)
 		if err != nil {
 			return err
 		}
@@ -122,4 +123,18 @@ func (service TransactionService) SettleOrderPayment(ctx context.Context, paymen
 	// (expired) order transaction by hand — finalise that newer attempt too, the same as a late
 	// QRIS webhook does, so the cart never ends up with two paid orders.
 	return service.paymentService.SupersedeLivePayments(ctx, payment.CartId, payment.Id)
+}
+
+func (service TransactionService) applyCouponToBase(base float32, coupon Coupon) (float32, *Error) {
+	switch coupon.Type {
+	case Fixed:
+		d := float32(coupon.Amount)
+		if d > base {
+			d = base
+		}
+		return d, nil
+	case Percentage:
+		return float32(utils.RoundToNearest500(int(base) * int(coupon.Amount) / 100)), nil
+	}
+	return 0, &Error{Type: BadRequest, Message: "unsupported coupon type"}
 }
