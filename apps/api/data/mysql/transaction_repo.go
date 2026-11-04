@@ -85,8 +85,6 @@ func (repo Repository) GetTransactionListTotal(ctx context.Context, query string
 	return count, ToErrorCtx(ctx, result.Error, "GetTransactionListTotal")
 }
 
-// D5/D22: a non-all fulfillment value implies source = 'order', server-side, so the
-// filter can't be used to ask the ambiguous "which POS row is unfulfilled" question.
 func whereTransactionFulfillmentQuery(db *gorm.DB, fulfillment *domain.TransactionFulfillment) *gorm.DB {
 	if fulfillment == nil {
 		return db
@@ -102,7 +100,6 @@ func whereTransactionFulfillmentQuery(db *gorm.DB, fulfillment *domain.Transacti
 	}
 }
 
-// Shared by GetTransactionList and GetTransactionListTotal so the page and its total agree.
 func whereTransactionSearchQuery(db *gorm.DB, query string) *gorm.DB {
 	if query == "" {
 		return db
@@ -134,7 +131,6 @@ func (repo Repository) CreateTransaction(ctx context.Context, transaction domain
 		transaction.CreatedAt = time.Now()
 	}
 
-	// D5: the one repository method every creation path funnels through, so none can forget.
 	if transaction.DiningOption == "" {
 		transaction.DiningOption = domain.DiningOptionDineIn
 	}
@@ -155,8 +151,6 @@ func (repo Repository) CreateTransaction(ctx context.Context, transaction domain
 	return ToTransactionDomain(created), ToErrorCtx(ctx, fetch.Error, "CreateTransaction")
 }
 
-// D4/D6: one atomic statement per business day, on the same connection as the
-// enclosing transaction, so the returned number belongs to this create alone.
 func allocateTransactionNumber(db *gorm.DB, createdAt time.Time) (int64, error) {
 	businessDate := createdAt.Format("2006-01-02")
 

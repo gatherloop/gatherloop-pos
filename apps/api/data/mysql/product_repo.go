@@ -187,8 +187,6 @@ const (
 	MaxSearchQueryLength = 100
 )
 
-// EXISTS, not JOIN, so a product can never fan out into more than one row here.
-// Every token must match some field (AND-of-ORs); tokens are matched independently of each other.
 func applyProductSearchFilter(db *gorm.DB, query string) *gorm.DB {
 	for _, token := range tokenizeSearchQuery(query) {
 		like := "%" + token + "%"
@@ -205,7 +203,6 @@ func applyProductSearchFilter(db *gorm.DB, query string) *gorm.DB {
 	return db
 }
 
-// Runes, not bytes, so truncation never splits a multi-byte character.
 func tokenizeSearchQuery(query string) []string {
 	if runes := []rune(query); len(runes) > MaxSearchQueryLength {
 		query = string(runes[:MaxSearchQueryLength])

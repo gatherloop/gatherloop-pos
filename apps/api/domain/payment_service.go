@@ -146,15 +146,6 @@ func (service PaymentService) ApplyQrisStatus(ctxWithTx context.Context, payment
 	return payment, ConfirmPaymentOutcomeIgnored, nil
 }
 
-// finalizeUncollectedPayment is the shared tail of giving up on a payment that will never be
-// collected: the payment moves to its terminal state, its transaction's availability reservation
-// is released, and the transaction itself is soft-deleted — which is what unfreezes the cart.
-// reason is non-nil only when terminalStatus is PaymentStateCancelled (D9); it is a free function,
-// not a PaymentUsecase method, so TransactionUsecase's settleOrderPayment can share it too. A cash
-// payment that lands in cancelled — whether the guest's own cancel or a supersede (D7) — also gets
-// the KDS retraction (D16/FR-7). FR-6/D5: the verification photo delete is unconditional — a
-// no-op for every method but cod, and for a cod payment that already lost its photo — so every
-// exit from "cod, pending, awaiting" keeps the storage invariant without a method check here.
 func (service PaymentService) FinalizeUncollectedPayment(ctxWithTx context.Context, payment Payment, terminalStatus PaymentState, reason *PaymentCancelReason) (Payment, *Error) {
 	now := time.Now()
 	payment.Status = terminalStatus
@@ -197,10 +188,6 @@ func (service PaymentService) FinalizeUncollectedPayment(ctxWithTx context.Conte
 	return updatedPayment, nil
 }
 
-// enqueueCashCancelledNotification is FR-7: a cash order retracted before it ever sent
-// cash_pending (the transaction was deleted before Checkout's enqueue landed, in a scenario this
-// codebase does not currently produce) has nothing to retract, so it is skipped rather than
-// buzzing a KDS device that was never told to expect it.
 func (service PaymentService) EnqueueCashCancelledNotification(ctxWithTx context.Context, transaction Transaction) *Error {
 	hasCashPending, err := service.kdsNotificationRepository.HasNotificationForTransaction(ctxWithTx, transaction.Id, KdsNotificationKindCashPending)
 	if err != nil {

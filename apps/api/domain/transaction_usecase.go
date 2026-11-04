@@ -353,9 +353,6 @@ func (usecase TransactionUsecase) CompleteTransaction(ctx context.Context, id in
 			return &Error{Type: BadRequest, Message: "transaction already completed"}
 		}
 
-		// FR-2: no payment for the transaction is tolerated as a skipped notification, not a
-		// failed completion the barista already performed. FR-5/D9: an awaiting COD payment
-		// refuses the completion outright — nothing should be made before a barista approves it.
 		var sessionId *string
 		var whatsappNumber *string
 		payment, paymentErr := usecase.paymentRepository.GetPaymentByTransactionId(ctxWithTx, id)
@@ -377,7 +374,6 @@ func (usecase TransactionUsecase) CompleteTransaction(ctx context.Context, id in
 
 		return usecase.guestNotificationRepository.EnqueueForCompletedTransaction(ctxWithTx, transaction, sessionId, whatsappNumber)
 	})
-	// FR-4/Phase 5: kicked after the commit so the barista's HTTP response never waits on a push service.
 	if err == nil {
 		usecase.guestNotificationDispatcher.TriggerDispatch()
 	}
@@ -403,10 +399,6 @@ func (usecase TransactionUsecase) UncompleteTransaction(ctx context.Context, id 
 			return &Error{Type: BadRequest, Message: "transaction is not completed"}
 		}
 
-		// D6: the outbox row is left in place. UNIQUE (transaction_id) makes a later
-		// re-completion's enqueue a no-op, so an order is messaged at most once, ever. The claim
-		// only picks rows whose transaction is currently completed (D7), so a row that is still
-		// pending here simply waits until the order is re-marked ready.
 		return usecase.transactionRepository.UncompleteTransaction(ctxWithTx, id)
 	})
 }
