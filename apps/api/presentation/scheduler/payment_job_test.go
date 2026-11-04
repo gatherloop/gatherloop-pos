@@ -30,8 +30,6 @@ func newPaymentUsecase(paymentRepository domain.PaymentRepository, paymentVerifi
 		600,
 		900,
 		1,
-		false,
-		false,
 	)
 }
 

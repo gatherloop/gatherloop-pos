@@ -23,8 +23,7 @@ type PaymentService struct {
 	availabilityService    AvailabilityService
 	kdsNotificationService KdsNotificationService
 
-	orderPaymentWalletId      int64
-	orderPaymentCancelEnabled bool
+	orderPaymentWalletId int64
 }
 
 func NewPaymentService(
@@ -40,7 +39,6 @@ func NewPaymentService(
 	kdsNotificationService KdsNotificationService,
 
 	orderPaymentWalletId int64,
-	orderPaymentCancelEnabled bool,
 ) PaymentService {
 	return PaymentService{
 		transactionRepository:         transactionRepository,
@@ -53,7 +51,6 @@ func NewPaymentService(
 		availabilityService:           availabilityService,
 		kdsNotificationService:        kdsNotificationService,
 		orderPaymentWalletId:          orderPaymentWalletId,
-		orderPaymentCancelEnabled:     orderPaymentCancelEnabled,
 	}
 }
 
@@ -313,7 +310,7 @@ func (service PaymentService) LoadPaymentTransaction(ctxWithTx context.Context, 
 }
 
 func (service PaymentService) CanCancel(payment Payment, sessionId string) bool {
-	return service.orderPaymentCancelEnabled && payment.CanBeCancelledBy(sessionId, time.Now())
+	return payment.CanBeCancelledBy(sessionId, time.Now())
 }
 
 func (service PaymentService) AuthorizePaymentAccess(payment Payment, sessionId string, accessKey string) bool {

@@ -26,11 +26,7 @@ func withCartTransactionMock(r *mock.MockCartRepository) {
 }
 
 func newCartTestHandler(cartRepo *mock.MockCartRepository, variantRepo *mock.MockVariantRepository, tableRepo *mock.MockTableRepository, paymentRepo *mock.MockPaymentRepository) restapi.CartHandler {
-	return newCartTestHandlerWithCancelFlag(cartRepo, variantRepo, tableRepo, paymentRepo, false)
-}
-
-func newCartTestHandlerWithCancelFlag(cartRepo *mock.MockCartRepository, variantRepo *mock.MockVariantRepository, tableRepo *mock.MockTableRepository, paymentRepo *mock.MockPaymentRepository, orderPaymentCancelEnabled bool) restapi.CartHandler {
-	return restapi.NewCartHandler(domain.NewCartUsecase(cartRepo, tableRepo, domain.NewCartService(cartRepo, paymentRepo, variantRepo)), orderPaymentCancelEnabled)
+	return restapi.NewCartHandler(domain.NewCartUsecase(cartRepo, tableRepo, domain.NewCartService(cartRepo, paymentRepo, variantRepo)))
 }
 
 func unlockedCart(pr *mock.MockPaymentRepository, cartId int64) {
@@ -91,7 +87,7 @@ func TestCartHandler_GetCurrentCart(t *testing.T) {
 					assert.Equal(t, "ORD1234567890AB", resp.Data.PendingPayment.PartnerReferenceNo)
 					assert.Equal(t, "qris", resp.Data.PendingPayment.Method)
 					assert.Equal(t, float32(45000), resp.Data.PendingPayment.Amount)
-					assert.False(t, resp.Data.PendingPayment.CanCancel)
+					assert.True(t, resp.Data.PendingPayment.CanCancel)
 				}
 			},
 		},
@@ -151,7 +147,7 @@ func TestCartHandler_GetCurrentCart_PendingPaymentCanCancelFollowsTheFlag(t *tes
 		Amount: 45000, Status: domain.PaymentStatePending, ExpiredAt: time.Now().Add(5 * time.Minute),
 	}, nil)
 
-	handler := newCartTestHandlerWithCancelFlag(cartRepo, variantRepo, tableRepo, paymentRepo, true)
+	handler := newCartTestHandler(cartRepo, variantRepo, tableRepo, paymentRepo)
 	req := httptest.NewRequest(http.MethodGet, "/carts/current", nil)
 	req.Header.Set("X-Session-Id", testSessionId)
 	w := httptest.NewRecorder()

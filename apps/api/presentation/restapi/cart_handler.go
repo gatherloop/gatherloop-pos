@@ -10,12 +10,11 @@ import (
 )
 
 type CartHandler struct {
-	usecase                   domain.CartUsecase
-	orderPaymentCancelEnabled bool
+	usecase domain.CartUsecase
 }
 
-func NewCartHandler(usecase domain.CartUsecase, orderPaymentCancelEnabled bool) CartHandler {
-	return CartHandler{usecase: usecase, orderPaymentCancelEnabled: orderPaymentCancelEnabled}
+func NewCartHandler(usecase domain.CartUsecase) CartHandler {
+	return CartHandler{usecase: usecase}
 }
 
 func (handler CartHandler) GetCurrentCart(w http.ResponseWriter, r *http.Request) {
@@ -28,7 +27,7 @@ func (handler CartHandler) GetCurrentCart(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	WriteResponse(w, apiContract.CartResponse{Data: ToApiCart(cart, handler.orderPaymentCancelEnabled)})
+	WriteResponse(w, apiContract.CartResponse{Data: ToApiCart(cart)})
 }
 
 func (handler CartHandler) UpdateCartTable(w http.ResponseWriter, r *http.Request) {
@@ -49,7 +48,7 @@ func (handler CartHandler) UpdateCartTable(w http.ResponseWriter, r *http.Reques
 
 	logCartMutation(ctx, "cart table updated", sessionId, cart.TableId)
 
-	WriteResponse(w, apiContract.CartResponse{Data: ToApiCart(cart, handler.orderPaymentCancelEnabled)})
+	WriteResponse(w, apiContract.CartResponse{Data: ToApiCart(cart)})
 }
 
 func (handler CartHandler) AddCartItem(w http.ResponseWriter, r *http.Request) {
@@ -70,7 +69,7 @@ func (handler CartHandler) AddCartItem(w http.ResponseWriter, r *http.Request) {
 
 	logCartMutation(ctx, "cart item added", sessionId, cart.TableId)
 
-	WriteResponse(w, apiContract.CartResponse{Data: ToApiCart(cart, handler.orderPaymentCancelEnabled)})
+	WriteResponse(w, apiContract.CartResponse{Data: ToApiCart(cart)})
 }
 
 func (handler CartHandler) UpdateCartItem(w http.ResponseWriter, r *http.Request) {
@@ -97,7 +96,7 @@ func (handler CartHandler) UpdateCartItem(w http.ResponseWriter, r *http.Request
 
 	logCartMutation(ctx, "cart item updated", sessionId, cart.TableId)
 
-	WriteResponse(w, apiContract.CartResponse{Data: ToApiCart(cart, handler.orderPaymentCancelEnabled)})
+	WriteResponse(w, apiContract.CartResponse{Data: ToApiCart(cart)})
 }
 
 func (handler CartHandler) RemoveCartItem(w http.ResponseWriter, r *http.Request) {
@@ -118,7 +117,7 @@ func (handler CartHandler) RemoveCartItem(w http.ResponseWriter, r *http.Request
 
 	logCartMutation(ctx, "cart item removed", sessionId, cart.TableId)
 
-	WriteResponse(w, apiContract.CartResponse{Data: ToApiCart(cart, handler.orderPaymentCancelEnabled)})
+	WriteResponse(w, apiContract.CartResponse{Data: ToApiCart(cart)})
 }
 
 func (handler CartHandler) ClearCart(w http.ResponseWriter, r *http.Request) {
@@ -133,7 +132,7 @@ func (handler CartHandler) ClearCart(w http.ResponseWriter, r *http.Request) {
 
 	logCartMutation(ctx, "cart cleared", sessionId, cart.TableId)
 
-	WriteResponse(w, apiContract.CartResponse{Data: ToApiCart(cart, handler.orderPaymentCancelEnabled)})
+	WriteResponse(w, apiContract.CartResponse{Data: ToApiCart(cart)})
 }
 
 func noteOrEmpty(note *string) string {

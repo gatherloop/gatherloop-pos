@@ -38,7 +38,7 @@ func newPaymentVerificationUsecaseMocks(ctrl *gomock.Controller) paymentVerifica
 func (m paymentVerificationUsecaseMocks) usecase() domain.PaymentVerificationUsecase {
 	paymentVerificationService := domain.NewPaymentVerificationService(m.paymentRepo)
 	availabilityService := domain.NewAvailabilityService(nil, nil, m.availabilityRepo)
-	paymentService := domain.NewPaymentService(m.transactionRepo, m.paymentRepo, m.verificationRepo, nil, m.cartRepo, nil, m.kdsNotificationRepo, availabilityService, m.kdsNotificationDispatcher, 0, false)
+	paymentService := domain.NewPaymentService(m.transactionRepo, m.paymentRepo, m.verificationRepo, nil, m.cartRepo, nil, m.kdsNotificationRepo, availabilityService, m.kdsNotificationDispatcher, 0)
 	return domain.NewPaymentVerificationUsecase(m.paymentRepo, m.verificationRepo, m.transactionRepo, m.cartRepo, m.kdsNotificationRepo, paymentVerificationService, paymentService, m.kdsNotificationDispatcher)
 }
 

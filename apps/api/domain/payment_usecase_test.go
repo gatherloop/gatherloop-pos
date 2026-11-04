@@ -84,40 +84,20 @@ func (m paymentUsecaseMocks) usecase() domain.PaymentUsecase {
 // usecaseWithDispatcher builds the usecase over a caller-supplied dispatcher instead of the
 // permissive default, for the tests that assert on the FR-4 post-commit dispatch trigger itself.
 func (m paymentUsecaseMocks) usecaseWithDispatcher(dispatcher domain.KdsNotificationService) domain.PaymentUsecase {
-	return m.usecaseWithDispatcherAndCancelEnabled(dispatcher, false)
-}
-
-// usecaseWithCancelEnabled builds the usecase with ORDER_PAYMENT_CANCEL_ENABLED on, for
-// CancelPayment's and CanCancel's own tests (D11).
-func (m paymentUsecaseMocks) usecaseWithCancelEnabled() domain.PaymentUsecase {
-	return m.usecaseWithDispatcherAndCancelEnabled(m.kdsNotificationDispatcher, true)
-}
-
-func (m paymentUsecaseMocks) usecaseWithDispatcherAndCancelEnabled(dispatcher domain.KdsNotificationService, orderPaymentCancelEnabled bool) domain.PaymentUsecase {
-	return m.usecaseWithDispatcherCancelAndCodEnabled(dispatcher, orderPaymentCancelEnabled, false)
-}
-
-// usecaseWithCodEnabled builds the usecase with ORDER_COD_PAYMENT_ENABLED on, for Checkout's cod
-// branch tests (FR-2/D12).
-func (m paymentUsecaseMocks) usecaseWithCodEnabled() domain.PaymentUsecase {
-	return m.usecaseWithDispatcherCancelAndCodEnabled(m.kdsNotificationDispatcher, false, true)
-}
-
-func (m paymentUsecaseMocks) usecaseWithDispatcherCancelAndCodEnabled(dispatcher domain.KdsNotificationService, orderPaymentCancelEnabled bool, orderCodPaymentEnabled bool) domain.PaymentUsecase {
-	return m.build(dispatcher, m.whatsappNumberVerifier, m.paymentVerificationRepo, orderPaymentCancelEnabled, orderCodPaymentEnabled)
+	return m.build(dispatcher, m.whatsappNumberVerifier, m.paymentVerificationRepo)
 }
 
 // usecaseWithVerifier builds the usecase over a caller-supplied verifier instead of the
 // permissive default, for the tests that assert on EnsureRegistered's own call pattern.
 func (m paymentUsecaseMocks) usecaseWithVerifier(verifier domain.WhatsappNumberVerificationService) domain.PaymentUsecase {
-	return m.build(m.kdsNotificationDispatcher, verifier, m.paymentVerificationRepo, false, false)
+	return m.build(m.kdsNotificationDispatcher, verifier, m.paymentVerificationRepo)
 }
 
-// usecaseWithCancelEnabledAndPaymentVerificationRepo builds the usecase over a caller-supplied
+// usecaseWithPaymentVerificationRepo builds the usecase over a caller-supplied
 // verification repository instead of the permissive default, for the tests that assert on
 // DeleteByPaymentId's own call pattern (FR-6/D5).
-func (m paymentUsecaseMocks) usecaseWithCancelEnabledAndPaymentVerificationRepo(paymentVerificationRepo domain.PaymentVerificationRepository) domain.PaymentUsecase {
-	return m.build(m.kdsNotificationDispatcher, m.whatsappNumberVerifier, paymentVerificationRepo, true, false)
+func (m paymentUsecaseMocks) usecaseWithPaymentVerificationRepo(paymentVerificationRepo domain.PaymentVerificationRepository) domain.PaymentUsecase {
+	return m.build(m.kdsNotificationDispatcher, m.whatsappNumberVerifier, paymentVerificationRepo)
 }
 
 func expectAvailableVariant(m paymentUsecaseMocks, variantId int64) {
@@ -918,26 +898,13 @@ func TestPaymentUsecase_Checkout(t *testing.T) {
 		assert.Nil(t, err)
 	})
 
-	t.Run("the cod flag off is a 400, and nothing is written", func(t *testing.T) {
+	t.Run("an invalid verification photo is a 400 before BeginTransaction, even", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
 		m := newPaymentUsecaseMocks(ctrl)
 
-		_, _, _, err := m.usecase().Checkout(context.Background(), "session-1", "Budi", "", domain.PaymentMethodCod, "", codPhotoBase64())
-
-		require.NotNil(t, err)
-		assert.Equal(t, domain.BadRequest, err.Type)
-		assert.Equal(t, "payment method is not available", err.Message)
-	})
-
-	t.Run("an invalid verification photo is a 400 before BeginTransaction, even with the flag on", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
-
-		m := newPaymentUsecaseMocks(ctrl)
-
-		_, _, _, err := m.usecaseWithCodEnabled().Checkout(context.Background(), "session-1", "Budi", "", domain.PaymentMethodCod, "", base64.StdEncoding.EncodeToString([]byte("not a real photo")))
+		_, _, _, err := m.usecase().Checkout(context.Background(), "session-1", "Budi", "", domain.PaymentMethodCod, "", base64.StdEncoding.EncodeToString([]byte("not a real photo")))
 
 		require.NotNil(t, err)
 		assert.Equal(t, domain.BadRequest, err.Type)
@@ -949,7 +916,7 @@ func TestPaymentUsecase_Checkout(t *testing.T) {
 
 		m := newPaymentUsecaseMocks(ctrl)
 
-		_, _, _, err := m.usecaseWithCodEnabled().Checkout(context.Background(), "session-1", "Budi", "", domain.PaymentMethodCod, "", "not-base64-!!!")
+		_, _, _, err := m.usecase().Checkout(context.Background(), "session-1", "Budi", "", domain.PaymentMethodCod, "", "not-base64-!!!")
 
 		require.NotNil(t, err)
 		assert.Equal(t, domain.BadRequest, err.Type)
@@ -1008,7 +975,7 @@ func TestPaymentUsecase_Checkout(t *testing.T) {
 				return nil
 			})
 
-		payment, transaction, _, err := m.usecaseWithCodEnabled().Checkout(context.Background(), "session-1", "Budi", "", domain.PaymentMethodCod, "", codPhotoBase64())
+		payment, transaction, _, err := m.usecase().Checkout(context.Background(), "session-1", "Budi", "", domain.PaymentMethodCod, "", codPhotoBase64())
 
 		assert.Nil(t, err)
 		assert.Equal(t, domain.PaymentMethodCod, payment.Method)
@@ -1047,7 +1014,7 @@ func TestPaymentUsecase_Checkout(t *testing.T) {
 
 		dispatcher := newKdsServiceExpectingDispatches(t, 1)
 
-		_, _, _, err := m.usecaseWithDispatcherCancelAndCodEnabled(dispatcher, false, true).Checkout(context.Background(), "session-1", "Budi", "", domain.PaymentMethodCod, "", codPhotoBase64())
+		_, _, _, err := m.usecaseWithDispatcher(dispatcher).Checkout(context.Background(), "session-1", "Budi", "", domain.PaymentMethodCod, "", codPhotoBase64())
 
 		assert.Nil(t, err)
 	})
@@ -1083,7 +1050,7 @@ func TestPaymentUsecase_Checkout(t *testing.T) {
 		m.paymentVerificationRepo.EXPECT().Create(gomock.Any(), gomock.Any()).Times(0)
 		m.kdsNotificationRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
 
-		payment, _, _, err := m.usecaseWithCodEnabled().Checkout(context.Background(), "session-1", "Budi", "", domain.PaymentMethodCod, "", codPhotoBase64())
+		payment, _, _, err := m.usecase().Checkout(context.Background(), "session-1", "Budi", "", domain.PaymentMethodCod, "", codPhotoBase64())
 
 		assert.Nil(t, err)
 		assert.Equal(t, existingPayment.Id, payment.Id)
@@ -1830,18 +1797,6 @@ func TestPaymentUsecase_ConfirmPayment(t *testing.T) {
 }
 
 func TestPaymentUsecase_CancelPayment(t *testing.T) {
-	t.Run("the flag off is a 400 before any repository access", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
-
-		m := newPaymentUsecaseMocks(ctrl)
-
-		_, _, _, err := m.usecase().CancelPayment(context.Background(), "session-1", "ORD1234567890AB")
-
-		require.NotNil(t, err)
-		assert.Equal(t, domain.BadRequest, err.Type)
-	})
-
 	t.Run("an unknown reference is 404", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
@@ -1851,7 +1806,7 @@ func TestPaymentUsecase_CancelPayment(t *testing.T) {
 		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNoForUpdate(gomock.Any(), "ORDUNKNOWN000AB").
 			Return(domain.Payment{}, &domain.Error{Type: domain.NotFound})
 
-		_, _, _, err := m.usecaseWithCancelEnabled().CancelPayment(context.Background(), "session-1", "ORDUNKNOWN000AB")
+		_, _, _, err := m.usecase().CancelPayment(context.Background(), "session-1", "ORDUNKNOWN000AB")
 
 		require.NotNil(t, err)
 		assert.Equal(t, domain.NotFound, err.Type)
@@ -1868,7 +1823,7 @@ func TestPaymentUsecase_CancelPayment(t *testing.T) {
 		payment.SessionId = "session-owner"
 		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNoForUpdate(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
 
-		_, _, _, err := m.usecaseWithCancelEnabled().CancelPayment(context.Background(), "session-thief", payment.PartnerReferenceNo)
+		_, _, _, err := m.usecase().CancelPayment(context.Background(), "session-thief", payment.PartnerReferenceNo)
 
 		require.NotNil(t, err)
 		assert.Equal(t, domain.NotFound, err.Type)
@@ -1888,7 +1843,7 @@ func TestPaymentUsecase_CancelPayment(t *testing.T) {
 		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNoForUpdate(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
 		// No UpdatePaymentById, gateway call, or transaction write past the guard.
 
-		_, _, _, err := m.usecaseWithCancelEnabled().CancelPayment(context.Background(), payment.SessionId, payment.PartnerReferenceNo)
+		_, _, _, err := m.usecase().CancelPayment(context.Background(), payment.SessionId, payment.PartnerReferenceNo)
 
 		require.NotNil(t, err)
 		assert.Equal(t, domain.BadRequest, err.Type)
@@ -1914,7 +1869,7 @@ func TestPaymentUsecase_CancelPayment(t *testing.T) {
 		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), int64(99)).Return(domain.Transaction{Id: 99}, nil).Times(2)
 		m.transactionRepo.EXPECT().DeleteTransactionById(gomock.Any(), int64(99)).Return(nil)
 
-		_, _, _, err := m.usecaseWithCancelEnabledAndPaymentVerificationRepo(paymentVerificationRepo).
+		_, _, _, err := m.usecaseWithPaymentVerificationRepo(paymentVerificationRepo).
 			CancelPayment(context.Background(), payment.SessionId, payment.PartnerReferenceNo)
 
 		assert.Nil(t, err)
@@ -1942,7 +1897,7 @@ func TestPaymentUsecase_CancelPayment(t *testing.T) {
 		m.kdsNotificationRepo.EXPECT().HasNotificationForTransaction(gomock.Any(), int64(99), domain.KdsNotificationKindCashPending).Return(true, nil)
 		m.kdsNotificationRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any(), domain.KdsNotificationKindCashCancelled).Return(nil)
 
-		result, transaction, _, err := m.usecaseWithCancelEnabled().CancelPayment(context.Background(), payment.SessionId, payment.PartnerReferenceNo)
+		result, transaction, _, err := m.usecase().CancelPayment(context.Background(), payment.SessionId, payment.PartnerReferenceNo)
 
 		assert.Nil(t, err)
 		assert.Equal(t, domain.PaymentStateCancelled, result.Status)
@@ -1970,7 +1925,7 @@ func TestPaymentUsecase_CancelPayment(t *testing.T) {
 				return nil
 			})
 
-		_, _, _, err := m.usecaseWithDispatcherAndCancelEnabled(dispatcher, true).CancelPayment(context.Background(), payment.SessionId, payment.PartnerReferenceNo)
+		_, _, _, err := m.usecaseWithDispatcher(dispatcher).CancelPayment(context.Background(), payment.SessionId, payment.PartnerReferenceNo)
 
 		assert.Nil(t, err)
 	})
@@ -1991,7 +1946,7 @@ func TestPaymentUsecase_CancelPayment(t *testing.T) {
 		m.kdsNotificationRepo.EXPECT().HasNotificationForTransaction(gomock.Any(), int64(99), domain.KdsNotificationKindCashPending).Return(false, nil)
 		m.kdsNotificationRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
 
-		_, _, _, err := m.usecaseWithCancelEnabled().CancelPayment(context.Background(), payment.SessionId, payment.PartnerReferenceNo)
+		_, _, _, err := m.usecase().CancelPayment(context.Background(), payment.SessionId, payment.PartnerReferenceNo)
 
 		assert.Nil(t, err)
 	})
@@ -2016,7 +1971,7 @@ func TestPaymentUsecase_CancelPayment(t *testing.T) {
 		m.kdsNotificationRepo.EXPECT().HasNotificationForTransaction(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
 		m.kdsNotificationRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
 
-		result, _, _, err := m.usecaseWithCancelEnabled().CancelPayment(context.Background(), payment.SessionId, payment.PartnerReferenceNo)
+		result, _, _, err := m.usecase().CancelPayment(context.Background(), payment.SessionId, payment.PartnerReferenceNo)
 
 		assert.Nil(t, err)
 		assert.Equal(t, domain.PaymentStateCancelled, result.Status)
@@ -2043,7 +1998,7 @@ func TestPaymentUsecase_CancelPayment(t *testing.T) {
 		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), int64(99)).Return(domain.Transaction{Id: 99}, nil).Times(2)
 		m.transactionRepo.EXPECT().DeleteTransactionById(gomock.Any(), int64(99)).Return(nil)
 
-		result, _, _, err := m.usecaseWithCancelEnabled().CancelPayment(context.Background(), payment.SessionId, payment.PartnerReferenceNo)
+		result, _, _, err := m.usecase().CancelPayment(context.Background(), payment.SessionId, payment.PartnerReferenceNo)
 
 		assert.Nil(t, err)
 		assert.Equal(t, domain.PaymentStateCancelled, result.Status)
@@ -2070,7 +2025,7 @@ func TestPaymentUsecase_CancelPayment(t *testing.T) {
 		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), int64(99)).Return(domain.Transaction{Id: 99}, nil).Times(2)
 		m.transactionRepo.EXPECT().DeleteTransactionById(gomock.Any(), int64(99)).Return(nil)
 
-		result, _, _, err := m.usecaseWithCancelEnabled().CancelPayment(context.Background(), payment.SessionId, payment.PartnerReferenceNo)
+		result, _, _, err := m.usecase().CancelPayment(context.Background(), payment.SessionId, payment.PartnerReferenceNo)
 
 		assert.Nil(t, err)
 		assert.Equal(t, domain.PaymentStateCancelled, result.Status)
@@ -2106,7 +2061,7 @@ func TestPaymentUsecase_CancelPayment(t *testing.T) {
 		m.paymentRepo.EXPECT().GetPendingPaymentByCartId(gomock.Any(), payment.CartId).
 			Return(domain.Payment{}, &domain.Error{Type: domain.NotFound})
 
-		result, _, _, err := m.usecaseWithCancelEnabled().CancelPayment(context.Background(), payment.SessionId, payment.PartnerReferenceNo)
+		result, _, _, err := m.usecase().CancelPayment(context.Background(), payment.SessionId, payment.PartnerReferenceNo)
 
 		assert.Nil(t, err)
 		assert.Equal(t, domain.PaymentStatePaid, result.Status)
@@ -2133,7 +2088,7 @@ func TestPaymentUsecase_CancelPayment(t *testing.T) {
 		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), int64(99)).Return(domain.Transaction{Id: 99}, nil).Times(2)
 		m.transactionRepo.EXPECT().DeleteTransactionById(gomock.Any(), int64(99)).Return(nil)
 
-		result, _, _, err := m.usecaseWithCancelEnabled().CancelPayment(context.Background(), payment.SessionId, payment.PartnerReferenceNo)
+		result, _, _, err := m.usecase().CancelPayment(context.Background(), payment.SessionId, payment.PartnerReferenceNo)
 
 		assert.Nil(t, err)
 		assert.Equal(t, domain.PaymentStateCancelled, result.Status)
@@ -2160,7 +2115,7 @@ func TestPaymentUsecase_CancelPayment(t *testing.T) {
 			m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNoForUpdate(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
 			m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), int64(99)).Return(domain.Transaction{Id: 99}, nil)
 
-			result, _, _, err := m.usecaseWithCancelEnabled().CancelPayment(context.Background(), payment.SessionId, payment.PartnerReferenceNo)
+			result, _, _, err := m.usecase().CancelPayment(context.Background(), payment.SessionId, payment.PartnerReferenceNo)
 
 			assert.Nil(t, err)
 			assert.Equal(t, payment, result)
@@ -2185,7 +2140,7 @@ func TestPaymentUsecase_CancelPayment(t *testing.T) {
 		m.cartRepo.EXPECT().GetCartById(gomock.Any(), gomock.Any()).Times(0)
 		m.cartRepo.EXPECT().UpdateCartById(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
 
-		_, _, _, err := m.usecaseWithCancelEnabled().CancelPayment(context.Background(), payment.SessionId, payment.PartnerReferenceNo)
+		_, _, _, err := m.usecase().CancelPayment(context.Background(), payment.SessionId, payment.PartnerReferenceNo)
 
 		assert.Nil(t, err)
 	})
@@ -2194,15 +2149,13 @@ func TestPaymentUsecase_CancelPayment(t *testing.T) {
 func TestPaymentUsecase_GetPaymentStatus_CanCancel(t *testing.T) {
 	cases := []struct {
 		name      string
-		enabled   bool
 		sessionId func(domain.Payment) string
 		status    domain.PaymentState
 		expected  bool
 	}{
-		{"false when the flag is off even for the owner of a pending payment", false, func(p domain.Payment) string { return p.SessionId }, domain.PaymentStatePending, false},
-		{"true for the owner of a pending payment when the flag is on", true, func(p domain.Payment) string { return p.SessionId }, domain.PaymentStatePending, true},
-		{"false for a foreign session even when the flag is on", true, func(domain.Payment) string { return "someone-elses-session" }, domain.PaymentStatePending, false},
-		{"false for a payment that already left pending, even for the owner with the flag on", true, func(p domain.Payment) string { return p.SessionId }, domain.PaymentStatePaid, false},
+		{"true for the owner of a pending payment", func(p domain.Payment) string { return p.SessionId }, domain.PaymentStatePending, true},
+		{"false for a foreign session even", func(domain.Payment) string { return "someone-elses-session" }, domain.PaymentStatePending, false},
+		{"false for a payment that already left pending, even for the owner", func(p domain.Payment) string { return p.SessionId }, domain.PaymentStatePaid, false},
 	}
 
 	for _, tc := range cases {
@@ -2222,12 +2175,7 @@ func TestPaymentUsecase_GetPaymentStatus_CanCancel(t *testing.T) {
 			m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNo(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
 			m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), int64(99)).Return(domain.Transaction{Id: 99}, nil)
 
-			usecase := m.usecase()
-			if tc.enabled {
-				usecase = m.usecaseWithCancelEnabled()
-			}
-
-			_, _, canCancel, err := usecase.GetPaymentStatus(context.Background(), tc.sessionId(payment), payment.PartnerReferenceNo, accessKey)
+			_, _, canCancel, err := m.usecase().GetPaymentStatus(context.Background(), tc.sessionId(payment), payment.PartnerReferenceNo, accessKey)
 
 			assert.Nil(t, err)
 			assert.Equal(t, tc.expected, canCancel)
@@ -2932,7 +2880,7 @@ func TestPaymentUsecase_ExpireStalePayments(t *testing.T) {
 		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), int64(99)).Return(domain.Transaction{Id: 99}, nil)
 		m.transactionRepo.EXPECT().DeleteTransactionById(gomock.Any(), int64(99)).Return(nil)
 
-		err := m.usecaseWithCancelEnabledAndPaymentVerificationRepo(paymentVerificationRepo).ExpireStalePayments(context.Background())
+		err := m.usecaseWithPaymentVerificationRepo(paymentVerificationRepo).ExpireStalePayments(context.Background())
 
 		assert.Nil(t, err)
 	})
@@ -3094,7 +3042,7 @@ func TestPaymentUsecase_DeleteOrphanedVerificationPhotos(t *testing.T) {
 		paymentVerificationRepo := mock.NewMockPaymentVerificationRepository(ctrl)
 		paymentVerificationRepo.EXPECT().DeleteOrphaned(gomock.Any(), 50).Return(int64(0), nil)
 
-		err := m.usecaseWithCancelEnabledAndPaymentVerificationRepo(paymentVerificationRepo).DeleteOrphanedVerificationPhotos(context.Background())
+		err := m.usecaseWithPaymentVerificationRepo(paymentVerificationRepo).DeleteOrphanedVerificationPhotos(context.Background())
 
 		assert.Nil(t, err)
 	})
@@ -3107,7 +3055,7 @@ func TestPaymentUsecase_DeleteOrphanedVerificationPhotos(t *testing.T) {
 		paymentVerificationRepo := mock.NewMockPaymentVerificationRepository(ctrl)
 		paymentVerificationRepo.EXPECT().DeleteOrphaned(gomock.Any(), gomock.Any()).Return(int64(3), nil)
 
-		err := m.usecaseWithCancelEnabledAndPaymentVerificationRepo(paymentVerificationRepo).DeleteOrphanedVerificationPhotos(context.Background())
+		err := m.usecaseWithPaymentVerificationRepo(paymentVerificationRepo).DeleteOrphanedVerificationPhotos(context.Background())
 
 		assert.Nil(t, err)
 	})
@@ -3121,14 +3069,14 @@ func TestPaymentUsecase_DeleteOrphanedVerificationPhotos(t *testing.T) {
 		paymentVerificationRepo.EXPECT().DeleteOrphaned(gomock.Any(), gomock.Any()).
 			Return(int64(0), &domain.Error{Type: domain.InternalServerError})
 
-		err := m.usecaseWithCancelEnabledAndPaymentVerificationRepo(paymentVerificationRepo).DeleteOrphanedVerificationPhotos(context.Background())
+		err := m.usecaseWithPaymentVerificationRepo(paymentVerificationRepo).DeleteOrphanedVerificationPhotos(context.Background())
 
 		assert.NotNil(t, err)
 	})
 }
 
-func (m paymentUsecaseMocks) build(dispatcher domain.KdsNotificationService, whatsappNumberVerificationService domain.WhatsappNumberVerificationService, paymentVerificationRepo domain.PaymentVerificationRepository, orderPaymentCancelEnabled bool, orderCodPaymentEnabled bool) domain.PaymentUsecase {
+func (m paymentUsecaseMocks) build(dispatcher domain.KdsNotificationService, whatsappNumberVerificationService domain.WhatsappNumberVerificationService, paymentVerificationRepo domain.PaymentVerificationRepository) domain.PaymentUsecase {
 	availabilityService := domain.NewAvailabilityService(nil, nil, m.availabilityRepo)
-	paymentService := domain.NewPaymentService(m.transactionRepo, m.paymentRepo, paymentVerificationRepo, m.gatewayRepo, m.cartRepo, m.walletRepo, m.kdsNotificationRepo, availabilityService, dispatcher, checkoutOrderPaymentWalletId, orderPaymentCancelEnabled)
-	return domain.NewPaymentUsecase(m.paymentRepo, m.gatewayRepo, m.customerRepo, m.cartRepo, m.transactionRepo, m.variantRepo, m.walletRepo, m.kdsNotificationRepo, paymentVerificationRepo, paymentService, availabilityService, whatsappNumberVerificationService, dispatcher, checkoutQrisExpirySeconds, checkoutCashExpirySeconds, checkoutCodVerificationExpirySeconds, checkoutOrderPaymentWalletId, orderPaymentCancelEnabled, orderCodPaymentEnabled)
+	paymentService := domain.NewPaymentService(m.transactionRepo, m.paymentRepo, paymentVerificationRepo, m.gatewayRepo, m.cartRepo, m.walletRepo, m.kdsNotificationRepo, availabilityService, dispatcher, checkoutOrderPaymentWalletId)
+	return domain.NewPaymentUsecase(m.paymentRepo, m.gatewayRepo, m.customerRepo, m.cartRepo, m.transactionRepo, m.variantRepo, m.walletRepo, m.kdsNotificationRepo, paymentVerificationRepo, paymentService, availabilityService, whatsappNumberVerificationService, dispatcher, checkoutQrisExpirySeconds, checkoutCashExpirySeconds, checkoutCodVerificationExpirySeconds, checkoutOrderPaymentWalletId)
 }

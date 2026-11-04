@@ -108,15 +108,12 @@ jobs:
             CASH_PAYMENT_EXPIRY_SECONDS=${{ secrets.CASH_PAYMENT_EXPIRY_SECONDS }}
             ORDER_PAYMENT_WALLET_ID=${{ secrets.ORDER_PAYMENT_WALLET_ID }}
             ORDER_WEB_BASE_URL=${{ secrets.ORDER_WEB_BASE_URL }}
-            ORDER_PAYMENT_CANCEL_ENABLED=${{ secrets.ORDER_PAYMENT_CANCEL_ENABLED }}
-            ORDER_COD_PAYMENT_ENABLED=${{ secrets.ORDER_COD_PAYMENT_ENABLED }}
             COD_VERIFICATION_EXPIRY_SECONDS=${{ secrets.COD_VERIFICATION_EXPIRY_SECONDS }}
             EXPO_PUSH_ACCESS_TOKEN=${{ secrets.EXPO_PUSH_ACCESS_TOKEN }}
             KDS_PUSH_SOUND=default
             KDS_DISPATCH_INTERVAL_SECONDS=15
             FONNTE_BASE_URL=${{ secrets.FONNTE_BASE_URL }}
             FONNTE_TOKEN=${{ secrets.FONNTE_TOKEN }}
-            WHATSAPP_NUMBER_VALIDATION_ENABLED=${{ secrets.WHATSAPP_NUMBER_VALIDATION_ENABLED }}
             APP_ENV=production
             ENV_EOF
             sudo cp apps/api/gatherloop-pos-api.service /etc/systemd/system/

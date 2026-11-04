@@ -39,8 +39,6 @@ type Env struct {
 	CodVerificationExpirySeconds int
 	OrderPaymentWalletId         string
 	OrderWebBaseURL              string
-	OrderPaymentCancelEnabled    bool
-	OrderCodPaymentEnabled       bool
 
 	ExpoPushAccessToken        string
 	KdsPushSound               string
@@ -48,8 +46,6 @@ type Env struct {
 
 	FonnteToken   string
 	FonnteBaseURL string
-
-	WhatsappNumberValidationEnabled bool
 }
 
 func GetEnv() Env {
@@ -95,8 +91,6 @@ func GetEnv() Env {
 		CodVerificationExpirySeconds: parseIntWithDefault(os.Getenv("COD_VERIFICATION_EXPIRY_SECONDS"), 900),
 		OrderPaymentWalletId:         os.Getenv("ORDER_PAYMENT_WALLET_ID"),
 		OrderWebBaseURL:              os.Getenv("ORDER_WEB_BASE_URL"),
-		OrderPaymentCancelEnabled:    parseBoolWithDefault(os.Getenv("ORDER_PAYMENT_CANCEL_ENABLED"), false),
-		OrderCodPaymentEnabled:       parseBoolWithDefault(os.Getenv("ORDER_COD_PAYMENT_ENABLED"), false),
 
 		ExpoPushAccessToken:        getCredential("EXPO_PUSH_ACCESS_TOKEN"),
 		KdsPushSound:               stringWithDefault(os.Getenv("KDS_PUSH_SOUND"), "order_alert.wav"),
@@ -104,12 +98,9 @@ func GetEnv() Env {
 
 		FonnteToken:   getCredential("FONNTE_TOKEN"),
 		FonnteBaseURL: getCredential("FONNTE_BASE_URL"),
-
-		WhatsappNumberValidationEnabled: parseBoolWithDefault(os.Getenv("WHATSAPP_NUMBER_VALIDATION_ENABLED"), false),
 	}
 }
 
-// A CI-written .env can leave a credential quoted or newline-terminated, which DOKU rejects as an unknown client.
 func getCredential(name string) string {
 	return strings.Trim(strings.TrimSpace(os.Getenv(name)), `"'`)
 }
@@ -121,8 +112,6 @@ func stringWithDefault(raw string, def string) string {
 	return raw
 }
 
-// parseBoolWithDefault backs the ORDER_PAYMENT_CANCEL_ENABLED kill switch (D11): unset or
-// unparseable is left off rather than defaulting to on.
 func parseBoolWithDefault(raw string, def bool) bool {
 	if raw == "" {
 		return def

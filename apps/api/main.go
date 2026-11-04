@@ -82,8 +82,6 @@ func main() {
 
 	kdsPushGatewayRepository := expopush.NewKdsPushGatewayRepository(expoPushConfig)
 
-	// D10/D11: an unconfigured token or a missing ORDER_WEB_BASE_URL both boot a disabled
-	// gateway, which records every guest notification 'skipped' rather than failing to send.
 	fonnteConfig := fonnte.Config{Token: env.FonnteToken, BaseURL: env.FonnteBaseURL}
 	var whatsappGatewayRepository domain.WhatsAppGatewayRepository
 	if err := fonnteConfig.Validate(); err != nil {
@@ -146,7 +144,6 @@ func main() {
 		availabilityService,
 		kdsNotificationService,
 		orderPaymentWalletId,
-		env.OrderPaymentCancelEnabled,
 	)
 	paymentVerificationService := domain.NewPaymentVerificationService(paymentRepository)
 	cartService := domain.NewCartService(
@@ -210,8 +207,6 @@ func main() {
 		env.CashPaymentExpirySeconds,
 		env.CodVerificationExpirySeconds,
 		orderPaymentWalletId,
-		env.OrderPaymentCancelEnabled,
-		env.OrderCodPaymentEnabled,
 	)
 	paymentVerificationUsecase := domain.NewPaymentVerificationUsecase(
 		paymentRepository,
@@ -250,7 +245,7 @@ func main() {
 	couponHandler := restapi.NewCouponHandler(couponUsecase)
 	ticketHandler := restapi.NewTicketHandler(ticketUsecase)
 	tableHandler := restapi.NewTableHandler(tableUsecase)
-	cartHandler := restapi.NewCartHandler(cartUsecase, env.OrderPaymentCancelEnabled)
+	cartHandler := restapi.NewCartHandler(cartUsecase)
 	customerHandler := restapi.NewCustomerHandler(customerUsecase)
 	paymentHandler := restapi.NewPaymentHandler(paymentUsecase)
 	paymentVerificationHandler := restapi.NewPaymentVerificationHandler(paymentVerificationUsecase)

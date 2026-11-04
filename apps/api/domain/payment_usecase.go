@@ -31,8 +31,6 @@ type PaymentUsecase struct {
 	cashExpirySeconds            int
 	codVerificationExpirySeconds int
 	orderPaymentWalletId         int64
-	orderPaymentCancelEnabled    bool
-	orderCodPaymentEnabled       bool
 }
 
 func NewPaymentUsecase(
@@ -55,8 +53,6 @@ func NewPaymentUsecase(
 	cashExpirySeconds int,
 	codVerificationExpirySeconds int,
 	orderPaymentWalletId int64,
-	orderPaymentCancelEnabled bool,
-	orderCodPaymentEnabled bool,
 ) PaymentUsecase {
 	return PaymentUsecase{
 		paymentRepository:                 paymentRepository,
@@ -76,8 +72,6 @@ func NewPaymentUsecase(
 		cashExpirySeconds:                 cashExpirySeconds,
 		codVerificationExpirySeconds:      codVerificationExpirySeconds,
 		orderPaymentWalletId:              orderPaymentWalletId,
-		orderPaymentCancelEnabled:         orderPaymentCancelEnabled,
-		orderCodPaymentEnabled:            orderCodPaymentEnabled,
 	}
 }
 
@@ -89,10 +83,6 @@ func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, cu
 	var verificationPhotoBytes []byte
 	var verificationPhotoContentType string
 	if method == PaymentMethodCod {
-		if !usecase.orderCodPaymentEnabled {
-			return Payment{}, Transaction{}, false, &Error{Type: BadRequest, Message: "payment method is not available"}
-		}
-
 		decoded, decodeErr := base64.StdEncoding.DecodeString(verificationPhoto)
 		if decodeErr != nil {
 			return Payment{}, Transaction{}, false, &Error{Type: BadRequest, Message: "verification photo must be valid base64"}
@@ -459,10 +449,6 @@ func (usecase PaymentUsecase) GetPaymentList(ctx context.Context, sessionId stri
 }
 
 func (usecase PaymentUsecase) CancelPayment(ctx context.Context, sessionId string, partnerReferenceNo string) (Payment, Transaction, bool, *Error) {
-	if !usecase.orderPaymentCancelEnabled {
-		return Payment{}, Transaction{}, false, &Error{Type: BadRequest, Message: "payment cancellation is not available"}
-	}
-
 	var resultPayment Payment
 	var resultTransaction Transaction
 	outcome := ConfirmPaymentOutcomeIgnored

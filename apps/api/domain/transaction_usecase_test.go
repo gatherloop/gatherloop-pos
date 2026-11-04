@@ -2459,7 +2459,7 @@ func buildTransactionUsecase(
 	cartRepo domain.CartRepository,
 	paymentVerificationRepo domain.PaymentVerificationRepository,
 ) domain.TransactionUsecase {
-	paymentService := domain.NewPaymentService(txRepo, paymentRepo, paymentVerificationRepo, nil, cartRepo, walletRepo, kdsNotificationRepo, availabilityService, kdsNotificationService, 0, false)
+	paymentService := domain.NewPaymentService(txRepo, paymentRepo, paymentVerificationRepo, nil, cartRepo, walletRepo, kdsNotificationRepo, availabilityService, kdsNotificationService, 0)
 	transactionService := domain.NewTransactionService(couponRepo, paymentRepo, cartRepo, paymentService)
 	return domain.NewTransactionUsecase(txRepo, variantRepo, walletRepo, paymentRepo, guestNotificationRepo, transactionService, paymentService, availabilityService, kdsNotificationService, guestNotificationService)
 }
