@@ -3137,8 +3137,8 @@ func TestPaymentUsecase_DeleteOrphanedVerificationPhotos(t *testing.T) {
 	})
 }
 
-func (m paymentUsecaseMocks) build(dispatcher domain.KdsNotificationDispatcher, verifier domain.WhatsappNumberVerificationService, paymentVerificationRepo domain.PaymentVerificationRepository, orderPaymentCancelEnabled bool, orderCodPaymentEnabled bool) domain.PaymentUsecase {
+func (m paymentUsecaseMocks) build(dispatcher domain.KdsNotificationDispatcher, whatsappNumberVerificationService domain.WhatsappNumberVerificationService, paymentVerificationRepo domain.PaymentVerificationRepository, orderPaymentCancelEnabled bool, orderCodPaymentEnabled bool) domain.PaymentUsecase {
 	availabilityService := domain.NewAvailabilityService(nil, nil, m.availabilityRepo)
 	paymentService := domain.NewPaymentService(m.transactionRepo, m.paymentRepo, paymentVerificationRepo, m.gatewayRepo, m.cartRepo, m.walletRepo, m.kdsNotificationRepo, availabilityService, checkoutOrderPaymentWalletId, orderPaymentCancelEnabled, dispatcher)
-	return domain.NewPaymentUsecase(m.paymentRepo, m.gatewayRepo, m.customerRepo, m.cartRepo, m.transactionRepo, m.variantRepo, m.walletRepo, m.kdsNotificationRepo, paymentVerificationRepo, paymentService, availabilityService, dispatcher, verifier, checkoutQrisExpirySeconds, checkoutCashExpirySeconds, checkoutCodVerificationExpirySeconds, checkoutOrderPaymentWalletId, orderPaymentCancelEnabled, orderCodPaymentEnabled)
+	return domain.NewPaymentUsecase(m.paymentRepo, m.gatewayRepo, m.customerRepo, m.cartRepo, m.transactionRepo, m.variantRepo, m.walletRepo, m.kdsNotificationRepo, paymentVerificationRepo, paymentService, availabilityService, whatsappNumberVerificationService, dispatcher, checkoutQrisExpirySeconds, checkoutCashExpirySeconds, checkoutCodVerificationExpirySeconds, checkoutOrderPaymentWalletId, orderPaymentCancelEnabled, orderCodPaymentEnabled)
 }

@@ -22,12 +22,12 @@ type PaymentUsecase struct {
 	kdsNotificationRepository     KdsNotificationRepository
 	paymentVerificationRepository PaymentVerificationRepository
 
-	paymentService      PaymentService
-	availabilityService AvailabilityService
+	paymentService                    PaymentService
+	availabilityService               AvailabilityService
+	whatsappNumberVerivicationService WhatsappNumberVerificationService
 
 	kdsNotificationDispatcher KdsNotificationDispatcher
 
-	whatsappNumberVerifier       WhatsappNumberVerificationService
 	qrisExpirySeconds            int
 	cashExpirySeconds            int
 	codVerificationExpirySeconds int
@@ -49,10 +49,10 @@ func NewPaymentUsecase(
 
 	paymentService PaymentService,
 	availabilityService AvailabilityService,
+	whatsappNumberVerivicationService WhatsappNumberVerificationService,
 
 	kdsNotificationDispatcher KdsNotificationDispatcher,
 
-	whatsappNumberVerifier WhatsappNumberVerificationService,
 	qrisExpirySeconds int,
 	cashExpirySeconds int,
 	codVerificationExpirySeconds int,
@@ -61,25 +61,25 @@ func NewPaymentUsecase(
 	orderCodPaymentEnabled bool,
 ) PaymentUsecase {
 	return PaymentUsecase{
-		paymentRepository:             paymentRepository,
-		paymentGatewayRepository:      paymentGatewayRepository,
-		customerRepository:            customerRepository,
-		cartRepository:                cartRepository,
-		transactionRepository:         transactionRepository,
-		variantRepository:             variantRepository,
-		walletRepository:              walletRepository,
-		kdsNotificationRepository:     kdsNotificationRepository,
-		paymentVerificationRepository: paymentVerificationRepository,
-		paymentService:                paymentService,
-		availabilityService:           availabilityService,
-		kdsNotificationDispatcher:     kdsNotificationDispatcher,
-		whatsappNumberVerifier:        whatsappNumberVerifier,
-		qrisExpirySeconds:             qrisExpirySeconds,
-		cashExpirySeconds:             cashExpirySeconds,
-		codVerificationExpirySeconds:  codVerificationExpirySeconds,
-		orderPaymentWalletId:          orderPaymentWalletId,
-		orderPaymentCancelEnabled:     orderPaymentCancelEnabled,
-		orderCodPaymentEnabled:        orderCodPaymentEnabled,
+		paymentRepository:                 paymentRepository,
+		paymentGatewayRepository:          paymentGatewayRepository,
+		customerRepository:                customerRepository,
+		cartRepository:                    cartRepository,
+		transactionRepository:             transactionRepository,
+		variantRepository:                 variantRepository,
+		walletRepository:                  walletRepository,
+		kdsNotificationRepository:         kdsNotificationRepository,
+		paymentVerificationRepository:     paymentVerificationRepository,
+		paymentService:                    paymentService,
+		availabilityService:               availabilityService,
+		whatsappNumberVerivicationService: whatsappNumberVerivicationService,
+		kdsNotificationDispatcher:         kdsNotificationDispatcher,
+		qrisExpirySeconds:                 qrisExpirySeconds,
+		cashExpirySeconds:                 cashExpirySeconds,
+		codVerificationExpirySeconds:      codVerificationExpirySeconds,
+		orderPaymentWalletId:              orderPaymentWalletId,
+		orderPaymentCancelEnabled:         orderPaymentCancelEnabled,
+		orderCodPaymentEnabled:            orderCodPaymentEnabled,
 	}
 }
 
@@ -119,7 +119,7 @@ func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, cu
 				Reason:  ErrorReasonWhatsappNumberInvalid,
 			}
 		}
-		if verifyErr := usecase.whatsappNumberVerifier.EnsureRegistered(ctx, normalized); verifyErr != nil {
+		if verifyErr := usecase.whatsappNumberVerivicationService.EnsureRegistered(ctx, normalized); verifyErr != nil {
 			return Payment{}, Transaction{}, false, verifyErr
 		}
 		whatsappNumber = &normalized
@@ -264,9 +264,6 @@ func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, cu
 
 		expiredAt := time.Now().Add(time.Duration(expirySeconds) * time.Second)
 
-		// D2: verification is the presence axis, orthogonal to status — a cod payment starts
-		// pending + awaiting, exactly like every other axis pairing this domain snapshots at
-		// creation.
 		var verificationStatus *PaymentVerificationStatus
 		if method == PaymentMethodCod {
 			awaiting := PaymentVerificationStatusAwaiting
@@ -294,8 +291,6 @@ func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, cu
 		resultTransaction = createdTransaction
 
 		if method == PaymentMethodCod {
-			// FR-3: the photo row is created in the same transaction as the payment, keeping D5's
-			// invariant true from the instant the payment exists.
 			if createErr := usecase.paymentVerificationRepository.Create(ctxWithTx, PaymentVerificationPhoto{
 				PaymentId:   createdPayment.Id,
 				ContentType: verificationPhotoContentType,
@@ -307,8 +302,6 @@ func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, cu
 		}
 
 		if !createdPayment.RequiresGateway() {
-			// FR-5/FR-9: buzzes the KDS before any money moves, so a barista walks to the till (cash)
-			// or looks at the photo (cod) rather than the guest arriving to nothing happening.
 			kind := KdsNotificationKindCashPending
 			if method == PaymentMethodCod {
 				kind = KdsNotificationKindCodVerification
@@ -341,8 +334,6 @@ func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, cu
 		return nil
 	})
 
-	// FR-5: kicked after the commit, exactly as PayTransaction and ConfirmPayment already do —
-	// the guest's HTTP response never waits on Expo.
 	if err == nil && enqueuedNonGatewayNotification {
 		usecase.kdsNotificationDispatcher.TriggerDispatch()
 	}
@@ -356,8 +347,6 @@ func (usecase PaymentUsecase) ConfirmPayment(ctx context.Context, status QrisSta
 	var outcome ConfirmPaymentOutcome
 
 	err := usecase.paymentRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
-		// D6: locks the row so a concurrent guest cancel or cashier settle serialises against this
-		// webhook instead of racing it to a terminal state.
 		payment, err := usecase.paymentRepository.GetPaymentByPartnerReferenceNoForUpdate(ctxWithTx, status.PartnerReferenceNo)
 		if err != nil {
 			if err.Type == NotFound {
@@ -377,7 +366,6 @@ func (usecase PaymentUsecase) ConfirmPayment(ctx context.Context, status QrisSta
 		return nil
 	})
 
-	// FR-4: kicked after the commit — this is the DOKU webhook path into payTransaction.
 	if err == nil && (outcome == ConfirmPaymentOutcomePaid || outcome == ConfirmPaymentOutcomePaidLate) {
 		usecase.kdsNotificationDispatcher.TriggerDispatch()
 	}
@@ -424,8 +412,6 @@ func (usecase PaymentUsecase) GetPaymentStatus(ctx context.Context, sessionId st
 		return nil
 	})
 
-	// FR-4: kicked after the commit — this is the guest's status page re-querying DOKU and
-	// observing the payment before the webhook does (System Design Overview, "the path").
 	if err == nil && (outcome == ConfirmPaymentOutcomePaid || outcome == ConfirmPaymentOutcomePaidLate) {
 		usecase.kdsNotificationDispatcher.TriggerDispatch()
 	}
@@ -501,9 +487,6 @@ func (usecase PaymentUsecase) CancelPayment(ctx context.Context, sessionId strin
 			return usecase.paymentService.LoadPaymentTransaction(ctxWithTx, payment, &resultTransaction)
 		}
 
-		// FR-5/D10: an approved COD order is being made — the guest may no longer cancel it
-		// themselves. Session ownership and pending-ness are already established above, so this
-		// is exactly CanBeCancelledBy's remaining condition.
 		if !payment.CanBeCancelledBy(sessionId, time.Now()) {
 			return &Error{Type: BadRequest, Message: "order cannot be cancelled once approved"}
 		}
@@ -528,8 +511,6 @@ func (usecase PaymentUsecase) CancelPayment(ctx context.Context, sessionId strin
 				return usecase.paymentService.LoadPaymentTransaction(ctxWithTx, updatedPayment, &resultTransaction)
 			}
 
-			// Best-effort: cancelling the QR at DOKU (D5, phase 9) shrinks D7's late-payment window,
-			// but nothing here depends on it succeeding.
 			if cancelErr := usecase.paymentGatewayRepository.CancelQris(ctxWithTx, CancelQrisInput{
 				PartnerReferenceNo: payment.PartnerReferenceNo,
 				GatewayReferenceNo: payment.GatewayReferenceNo,
@@ -552,9 +533,6 @@ func (usecase PaymentUsecase) CancelPayment(ctx context.Context, sessionId strin
 		return usecase.paymentService.LoadPaymentTransaction(ctxWithTx, updatedPayment, &resultTransaction)
 	})
 
-	// FR-4: a cancel that discovers the payment was already paid at DOKU (D4) triggers the KDS
-	// exactly as ConfirmPayment and GetPaymentStatus do. FR-7: so does a cash cancel that may have
-	// just enqueued cash_cancelled — the guest's HTTP response must not wait on Expo either way.
 	if err == nil && (outcome == ConfirmPaymentOutcomePaid || outcome == ConfirmPaymentOutcomePaidLate || cancelledCash) {
 		usecase.kdsNotificationDispatcher.TriggerDispatch()
 	}

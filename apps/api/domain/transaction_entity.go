@@ -57,7 +57,6 @@ const (
 	DiningOptionTakeaway DiningOption = "takeaway"
 )
 
-// D9: "" is valid — it means "default" on create and "unchanged" on update.
 func (o DiningOption) IsValid() bool {
 	switch o {
 	case "", DiningOptionDineIn, DiningOptionTakeaway:

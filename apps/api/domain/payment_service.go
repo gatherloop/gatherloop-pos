@@ -65,8 +65,6 @@ func (service PaymentService) ApplyQrisStatus(ctxWithTx context.Context, payment
 		return payment, ConfirmPaymentOutcomeAlreadyPaid, nil
 	}
 
-	// D7: a payment the guest cancelled, or that already expired, can still be paid late from a
-	// saved QR. Both take the same un-delete + force-reserve route as a plain expired payment.
 	payable := payment.Status == PaymentStatePending || payment.Status == PaymentStateExpired || payment.Status == PaymentStateCancelled
 	if status.Status == PaymentGatewayStatusPaid && payable {
 		if status.PaidAmount != payment.Amount {
@@ -122,9 +120,6 @@ func (service PaymentService) ApplyQrisStatus(ctxWithTx context.Context, payment
 			return payment, "", updateCartErr
 		}
 
-		// D7: the guest may have checked out again on this cart while the first payment sat
-		// cancelled or expired — finalise that newer attempt so the cart never ends up with two
-		// paid orders.
 		if supersedeErr := service.SupersedeLivePayments(ctxWithTx, payment.CartId, payment.Id); supersedeErr != nil {
 			return payment, "", supersedeErr
 		}
@@ -337,9 +332,6 @@ func (service PaymentService) CanCancel(payment Payment, sessionId string) bool 
 	return service.orderPaymentCancelEnabled && payment.CanBeCancelledBy(sessionId, time.Now())
 }
 
-// authorizePaymentAccess is FR-9/D4: the session that paid always has access, and a payment
-// carrying an access key also grants access to whoever holds that key — the guest's own phone,
-// via the WhatsApp link, whatever browser it is opened in.
 func (service PaymentService) AuthorizePaymentAccess(payment Payment, sessionId string, accessKey string) bool {
 	if payment.SessionId == sessionId {
 		return true
@@ -380,11 +372,6 @@ func (service PaymentService) RefreshPendingPaymentStatus(ctxWithTx context.Cont
 	return updated, ConfirmPaymentOutcomeIgnored, err
 }
 
-// refreshPendingCashPaymentStatus is FR-3/D7: cash has no gateway to ask, so the server clock is
-// the whole truth. Past expired_at it shares expirePayment with applyQrisStatus's expired branch
-// and the sweeper (FR-4) — one definition of what giving up on a payment does. FR-5: an approved
-// COD payment is left untouched, even past its own expired_at — the guest's own status poll must
-// never expire an order the bar has started making.
 func (service PaymentService) RefreshPendingCashPaymentStatus(ctxWithTx context.Context, payment Payment, now time.Time) (Payment, ConfirmPaymentOutcome, *Error) {
 	if !payment.IsExpirable() {
 		return payment, ConfirmPaymentOutcomeIgnored, nil

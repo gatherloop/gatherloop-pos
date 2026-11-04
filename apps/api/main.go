@@ -96,7 +96,7 @@ func main() {
 		whatsappGatewayRepository = fonnte.NewWhatsAppGatewayRepository(fonnteConfig)
 	}
 
-	whatsappNumberVerifier := domain.NewWhatsappNumberVerificationUsecase(mysql.NewWhatsappNumberVerificationRepository(db), whatsappGatewayRepository)
+	whatsappNumberVerificationService := domain.NewWhatsappNumberVerificationUsecase(mysql.NewWhatsappNumberVerificationRepository(db), whatsappGatewayRepository)
 
 	router := mux.NewRouter().StrictSlash(true)
 	router.Use(restapi.EnableCORS)
@@ -204,8 +204,8 @@ func main() {
 		paymentVerificationRepository,
 		paymentService,
 		availabilityService,
+		whatsappNumberVerificationService,
 		kdsNotificationUsecase,
-		whatsappNumberVerifier,
 		env.DokuQrisExpirySeconds,
 		env.CashPaymentExpirySeconds,
 		env.CodVerificationExpirySeconds,

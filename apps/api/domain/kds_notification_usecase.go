@@ -7,7 +7,6 @@ import (
 	"strings"
 )
 
-// FR-4: a bounded batch per sweep so one dispatcher tick cannot run unbounded.
 const kdsDispatchBatchSize = 50
 
 type KdsNotificationUsecase struct {
@@ -34,9 +33,6 @@ func NewKdsNotificationUsecase(
 	}
 }
 
-// TriggerDispatch runs DispatchPending in the background (FR-4) so payTransaction's callers never
-// wait on Expo; the periodic ticker in presentation/scheduler is what catches this goroutine if it
-// is lost to a crash or a deploy mid-flight.
 func (usecase KdsNotificationUsecase) TriggerDispatch() {
 	go func() {
 		if err := usecase.DispatchPending(context.Background()); err != nil {
@@ -45,9 +41,6 @@ func (usecase KdsNotificationUsecase) TriggerDispatch() {
 	}()
 }
 
-// DispatchPending claims up to kdsDispatchBatchSize pending rows, oldest first, and delivers each
-// to every registered device (D24). Called immediately after a payment commits and on every
-// KDS_DISPATCH_INTERVAL_SECONDS tick from presentation/scheduler (FR-4).
 func (usecase KdsNotificationUsecase) DispatchPending(ctx context.Context) *Error {
 	notifications, err := usecase.repository.ClaimPendingKdsNotifications(ctx, kdsDispatchBatchSize)
 	if err != nil {

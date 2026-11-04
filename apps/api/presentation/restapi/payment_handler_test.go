@@ -80,7 +80,7 @@ func (m paymentHandlerMocks) handlerWithCodEnabled() restapi.PaymentHandler {
 func (m paymentHandlerMocks) handlerWithCancelAndCodEnabled(orderPaymentCancelEnabled bool, orderCodPaymentEnabled bool) restapi.PaymentHandler {
 	availabilityService := domain.NewAvailabilityService(nil, nil, m.availabilityRepo)
 	paymentService := domain.NewPaymentService(m.transactionRepo, m.paymentRepo, m.paymentVerificationRepo, m.gatewayRepo, m.cartRepo, m.walletRepo, m.kdsNotificationRepo, availabilityService, paymentHandlerOrderPaymentWalletId, orderPaymentCancelEnabled, m.kdsNotificationDispatcher)
-	usecase := domain.NewPaymentUsecase(m.paymentRepo, m.gatewayRepo, m.customerRepo, m.cartRepo, m.transactionRepo, m.variantRepo, m.walletRepo, m.kdsNotificationRepo, m.paymentVerificationRepo, paymentService, availabilityService, m.kdsNotificationDispatcher, domain.WhatsappNumberVerificationService{}, 300, 600, 900, paymentHandlerOrderPaymentWalletId, orderPaymentCancelEnabled, orderCodPaymentEnabled)
+	usecase := domain.NewPaymentUsecase(m.paymentRepo, m.gatewayRepo, m.customerRepo, m.cartRepo, m.transactionRepo, m.variantRepo, m.walletRepo, m.kdsNotificationRepo, m.paymentVerificationRepo, paymentService, availabilityService, domain.WhatsappNumberVerificationService{}, m.kdsNotificationDispatcher, 300, 600, 900, paymentHandlerOrderPaymentWalletId, orderPaymentCancelEnabled, orderCodPaymentEnabled)
 	return restapi.NewPaymentHandler(usecase)
 }
 

@@ -135,9 +135,6 @@ func (payment Payment) IsAwaitingPayment(now time.Time) bool {
 	return payment.Status == PaymentStatePending && now.Before(payment.ExpiredAt)
 }
 
-// CanBeCancelledBy reports only the payment's own eligibility (pending, owned by sessionId, and
-// not an approved COD order the bar has already started making); the feature flag is applied by
-// the use case, not here (D10).
 func (payment Payment) CanBeCancelledBy(sessionId string, now time.Time) bool {
 	return payment.Status == PaymentStatePending && payment.SessionId == sessionId && !payment.isVerificationApproved()
 }
@@ -199,7 +196,6 @@ func ToPaymentSummary(payment Payment, transaction TransactionSummary) PaymentSu
 
 const partnerReferenceNoRandomLength = 13
 
-// TODO: move to utils
 func GeneratePartnerReferenceNo() (string, error) {
 	randomBytes := make([]byte, partnerReferenceNoRandomLength)
 	if _, err := rand.Read(randomBytes); err != nil {
@@ -216,9 +212,6 @@ func GeneratePartnerReferenceNo() (string, error) {
 
 const orderAccessKeyRandomBytes = 16
 
-// GenerateOrderAccessKey is the per-payment credential carried in the WhatsApp link's ?k=
-// query parameter (D4): it grants GetPaymentStatus read access to a payment's status page from
-// any browser, not just the session that paid.
 func GenerateOrderAccessKey() (string, error) {
 	randomBytes := make([]byte, orderAccessKeyRandomBytes)
 	if _, err := rand.Read(randomBytes); err != nil {

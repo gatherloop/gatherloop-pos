@@ -107,8 +107,6 @@ func (service AvailabilityService) RecordVariantAvailabilityMovements(ctx contex
 	return nil
 }
 
-// Reserve decrements availability for the given items, summed per counting unit, and rejects the
-// whole batch with the offending item's name on a shortfall or a switched-off item.
 func (service AvailabilityService) Reserve(ctx context.Context, items []TransactionItem) *Error {
 	return service.adjust(ctx, items, -1, true, AvailabilityMovementReasonSale)
 }
