@@ -25,8 +25,7 @@ type PaymentUsecase struct {
 	paymentService                    PaymentService
 	availabilityService               AvailabilityService
 	whatsappNumberVerivicationService WhatsappNumberVerificationService
-
-	kdsNotificationDispatcher KdsNotificationDispatcher
+	kdsNotificationService            KdsNotificationService
 
 	qrisExpirySeconds            int
 	cashExpirySeconds            int
@@ -50,8 +49,7 @@ func NewPaymentUsecase(
 	paymentService PaymentService,
 	availabilityService AvailabilityService,
 	whatsappNumberVerivicationService WhatsappNumberVerificationService,
-
-	kdsNotificationDispatcher KdsNotificationDispatcher,
+	kdsNotificationService KdsNotificationService,
 
 	qrisExpirySeconds int,
 	cashExpirySeconds int,
@@ -73,7 +71,7 @@ func NewPaymentUsecase(
 		paymentService:                    paymentService,
 		availabilityService:               availabilityService,
 		whatsappNumberVerivicationService: whatsappNumberVerivicationService,
-		kdsNotificationDispatcher:         kdsNotificationDispatcher,
+		kdsNotificationService:            kdsNotificationService,
 		qrisExpirySeconds:                 qrisExpirySeconds,
 		cashExpirySeconds:                 cashExpirySeconds,
 		codVerificationExpirySeconds:      codVerificationExpirySeconds,
@@ -335,7 +333,7 @@ func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, cu
 	})
 
 	if err == nil && enqueuedNonGatewayNotification {
-		usecase.kdsNotificationDispatcher.TriggerDispatch()
+		usecase.kdsNotificationService.TriggerDispatch()
 	}
 
 	canCancel := usecase.paymentService.CanCancel(resultPayment, sessionId)
@@ -367,7 +365,7 @@ func (usecase PaymentUsecase) ConfirmPayment(ctx context.Context, status QrisSta
 	})
 
 	if err == nil && (outcome == ConfirmPaymentOutcomePaid || outcome == ConfirmPaymentOutcomePaidLate) {
-		usecase.kdsNotificationDispatcher.TriggerDispatch()
+		usecase.kdsNotificationService.TriggerDispatch()
 	}
 
 	return resultPayment, outcome, err
@@ -413,7 +411,7 @@ func (usecase PaymentUsecase) GetPaymentStatus(ctx context.Context, sessionId st
 	})
 
 	if err == nil && (outcome == ConfirmPaymentOutcomePaid || outcome == ConfirmPaymentOutcomePaidLate) {
-		usecase.kdsNotificationDispatcher.TriggerDispatch()
+		usecase.kdsNotificationService.TriggerDispatch()
 	}
 
 	canCancel := usecase.paymentService.CanCancel(resultPayment, sessionId)
@@ -534,7 +532,7 @@ func (usecase PaymentUsecase) CancelPayment(ctx context.Context, sessionId strin
 	})
 
 	if err == nil && (outcome == ConfirmPaymentOutcomePaid || outcome == ConfirmPaymentOutcomePaidLate || cancelledCash) {
-		usecase.kdsNotificationDispatcher.TriggerDispatch()
+		usecase.kdsNotificationService.TriggerDispatch()
 	}
 
 	canCancel := usecase.paymentService.CanCancel(resultPayment, sessionId)

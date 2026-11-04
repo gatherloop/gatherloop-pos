@@ -24,7 +24,7 @@ func TestKdsNotificationDispatchJob_RunClaimsPendingNotifications(t *testing.T) 
 	repository.EXPECT().ClaimPendingKdsNotifications(gomock.Any(), gomock.Any()).Return(nil, nil)
 
 	job := KdsNotificationDispatchJob{
-		usecase: domain.NewKdsNotificationUsecase(repository, nil, nil, nil, "default"),
+		usecase: domain.NewKdsNotificationUsecase(domain.NewKdsNotificationService(repository, nil, nil, nil, "default")),
 	}
 
 	if err := job.Run(context.Background()); err != nil {

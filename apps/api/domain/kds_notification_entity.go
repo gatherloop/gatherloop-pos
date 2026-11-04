@@ -17,7 +17,6 @@ const (
 	KdsNotificationStatusSkipped KdsNotificationStatus = "skipped"
 )
 
-// FR-4: a pending row that never gets a device to accept it stops retrying and becomes failed.
 const KdsNotificationMaxAttempts = 5
 
 type KdsNotificationKind string
@@ -36,7 +35,6 @@ const (
 	KdsStationKitchen KdsStation = "KITCHEN"
 )
 
-// The fixed display order for every station line in a notification body (FR-6).
 var kdsStationOrder = []KdsStation{KdsStationBar, KdsStationKitchen}
 
 type KdsStationLine struct {
@@ -57,11 +55,6 @@ type KdsNotification struct {
 
 const kdsNotificationBodyItemLimit = 4
 
-// BuildKdsPushMessage is pure and re-derived at send time (FR-6): a paid transaction cannot be
-// edited, so there is nothing to snapshot against. The kind picks the title/body pair (FR-7):
-// order_paid gains a pay-at-pickup line for an unpaid COD transaction (FR-9) but is otherwise
-// unchanged, cash_pending leads with the amount to collect, cash_cancelled retracts it, and
-// cod_verification asks a barista to look at the photo before anything is made.
 func BuildKdsPushMessage(transaction Transaction, kind KdsNotificationKind, sound string) KdsPushMessage {
 	lines := StationLines(transaction)
 
@@ -108,9 +101,6 @@ func buildCashPendingNotificationTitle(transaction Transaction) string {
 	return fmt.Sprintf("Cash order #%d — %s", transaction.TransactionNumber, kdsOrderSubject(transaction))
 }
 
-// buildCashPendingNotificationBody leads with the amount to collect, since the point of this
-// notification is a barista walking to the till, not making a drink (D9) — a transaction with no
-// station items (a board-game ticket paid in cash) still renders the amount line alone.
 func buildCashPendingNotificationBody(transaction Transaction, lines []KdsStationLine) string {
 	amountLine := fmt.Sprintf("Collect %s at the counter", formatRupiah(transaction.Total))
 
@@ -125,24 +115,16 @@ func buildCashCancelledNotificationTitle(transaction Transaction) string {
 	return fmt.Sprintf("Cash order #%d cancelled — %s", transaction.TransactionNumber, kdsOrderSubject(transaction))
 }
 
-// cashCancelledNotificationBody is a fixed retraction, not a description of items (D16): its only
-// job is telling a barista who may already be walking to the till to stand down.
 const cashCancelledNotificationBody = "Guest cancelled. Don't wait at the till."
 
 func buildCodVerificationNotificationTitle(transaction Transaction) string {
 	return fmt.Sprintf("Verify COD order #%d — %s", transaction.TransactionNumber, kdsOrderSubject(transaction))
 }
 
-// buildCodVerificationNotificationBody leads with the instruction to check the photo, not the
-// items (D15): this push asks for a presence decision, not preparation — nothing is made until
-// order_paid follows approval.
 func buildCodVerificationNotificationBody(transaction Transaction) string {
 	return fmt.Sprintf("Check the photo in the POS · %s", formatRupiah(transaction.Total))
 }
 
-// buildOrderPaidNotificationBody appends a pay-at-pickup reminder for a still-unpaid COD
-// transaction (FR-9): order_paid is the "start making it" signal for every method, but COD is the
-// only one where approval, not payment, triggers it.
 func buildOrderPaidNotificationBody(transaction Transaction, lines []KdsStationLine) string {
 	body := buildKdsNotificationBody(lines)
 	if !isUnpaidCod(transaction) {
@@ -214,8 +196,6 @@ func formatKdsItemAmount(amount float32) string {
 	return strconv.FormatFloat(float64(amount), 'f', 2, 32)
 }
 
-// formatRupiah mirrors libs/ui/src/utils/currency.ts's formatRupiah: whole rupiah, dot-grouped
-// thousands, no decimals — the same money format the order slip renders.
 func formatRupiah(amount float32) string {
 	rounded := int64(math.Round(float64(amount)))
 
@@ -234,4 +214,60 @@ func formatRupiah(amount float32) string {
 	groups = append([]string{digits}, groups...)
 
 	return sign + "Rp " + strings.Join(groups, ".")
+}
+
+func StationLines(transaction Transaction) []KdsStationLine {
+	type productAmount struct {
+		productName string
+		amount      float32
+	}
+
+	amountsByStation := map[KdsStation][]*productAmount{}
+	indexByStation := map[KdsStation]map[string]int{}
+
+	for _, item := range transaction.TransactionItems {
+		station := KdsStation(item.Variant.Product.Category.Station)
+		if station != KdsStationBar && station != KdsStationKitchen {
+			continue
+		}
+
+		if indexByStation[station] == nil {
+			indexByStation[station] = map[string]int{}
+		}
+
+		if index, ok := indexByStation[station][item.ProductName]; ok {
+			amountsByStation[station][index].amount += item.Amount
+			continue
+		}
+
+		indexByStation[station][item.ProductName] = len(amountsByStation[station])
+		amountsByStation[station] = append(amountsByStation[station], &productAmount{
+			productName: item.ProductName,
+			amount:      item.Amount,
+		})
+	}
+
+	var lines []KdsStationLine
+	for _, station := range kdsStationOrder {
+		products, ok := amountsByStation[station]
+		if !ok {
+			continue
+		}
+
+		items := make([]string, len(products))
+		for i, product := range products {
+			items[i] = formatKdsItemAmount(product.amount) + "× " + product.productName
+		}
+		lines = append(lines, KdsStationLine{Station: station, Items: items})
+	}
+	return lines
+}
+
+func ShouldNotify(transaction Transaction) bool {
+	return len(StationLines(transaction)) > 0
+}
+
+func IsStaleForNotification(transaction Transaction, now time.Time) bool {
+	const businessDayFormat = "2006-01-02"
+	return transaction.CreatedAt.Format(businessDayFormat) != now.Format(businessDayFormat)
 }

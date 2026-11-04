@@ -24,14 +24,13 @@ func newPaymentVerificationHandler(t *testing.T, setupMocks func(paymentRepo *mo
 	availabilityRepo := mock.NewMockAvailabilityRepository(ctrl)
 	kdsNotificationRepo := mock.NewMockKdsNotificationRepository(ctrl)
 	kdsNotificationRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-	kdsNotificationDispatcher := mock.NewMockKdsNotificationDispatcher(ctrl)
-	kdsNotificationDispatcher.EXPECT().TriggerDispatch().AnyTimes()
+	kdsNotificationDispatcher := permissiveKdsNotificationService(ctrl)
 	paymentRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 		func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) }).AnyTimes()
 
 	setupMocks(paymentRepo, verificationRepo, transactionRepo, cartRepo)
 
-	paymentService := domain.NewPaymentService(transactionRepo, paymentRepo, verificationRepo, nil, cartRepo, nil, kdsNotificationRepo, domain.NewAvailabilityService(nil, nil, availabilityRepo), 0, false, kdsNotificationDispatcher)
+	paymentService := domain.NewPaymentService(transactionRepo, paymentRepo, verificationRepo, nil, cartRepo, nil, kdsNotificationRepo, domain.NewAvailabilityService(nil, nil, availabilityRepo), kdsNotificationDispatcher, 0, false)
 	usecase := domain.NewPaymentVerificationUsecase(paymentRepo, verificationRepo, transactionRepo, cartRepo, kdsNotificationRepo, domain.NewPaymentVerificationService(paymentRepo), paymentService, kdsNotificationDispatcher)
 	return restapi.NewPaymentVerificationHandler(usecase), ctrl
 }
@@ -227,8 +226,8 @@ func TestPaymentVerificationRoutes_RequireAuth(t *testing.T) {
 	transactionRepo := mock.NewMockTransactionRepository(ctrl)
 	cartRepo := mock.NewMockCartRepository(ctrl)
 	kdsNotificationRepo := mock.NewMockKdsNotificationRepository(ctrl)
-	kdsNotificationDispatcher := mock.NewMockKdsNotificationDispatcher(ctrl)
-	paymentService := domain.NewPaymentService(transactionRepo, paymentRepo, verificationRepo, nil, cartRepo, nil, kdsNotificationRepo, domain.NewAvailabilityService(nil, nil, mock.NewMockAvailabilityRepository(ctrl)), 0, false, kdsNotificationDispatcher)
+	kdsNotificationDispatcher := permissiveKdsNotificationService(ctrl)
+	paymentService := domain.NewPaymentService(transactionRepo, paymentRepo, verificationRepo, nil, cartRepo, nil, kdsNotificationRepo, domain.NewAvailabilityService(nil, nil, mock.NewMockAvailabilityRepository(ctrl)), kdsNotificationDispatcher, 0, false)
 	usecase := domain.NewPaymentVerificationUsecase(
 		paymentRepo,
 		verificationRepo,

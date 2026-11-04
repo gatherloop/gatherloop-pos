@@ -132,10 +132,8 @@ func main() {
 	guestNotificationRepository := mysql.NewGuestNotificationRepository(db)
 	paymentVerificationRepository := mysql.NewPaymentVerificationRepository(db)
 
-	// This is actually a dispatcher
-	kdsNotificationUsecase := domain.NewKdsNotificationUsecase(kdsNotificationRepository, kdsDeviceRepository, transactionRepository, kdsPushGatewayRepository, env.KdsPushSound)
-	guestNotificationUsecase := domain.NewGuestNotificationUsecase(guestNotificationRepository, transactionRepository, paymentRepository, whatsappGatewayRepository, env.OrderWebBaseURL)
-
+	kdsNotificationService := domain.NewKdsNotificationService(kdsNotificationRepository, kdsDeviceRepository, transactionRepository, kdsPushGatewayRepository, env.KdsPushSound)
+	guestNotificationService := domain.NewGuestNotificationService(guestNotificationRepository, transactionRepository, paymentRepository, whatsappGatewayRepository, env.OrderWebBaseURL)
 	availabilityService := domain.NewAvailabilityService(productRepository, variantRepository, availabilityRepository)
 	paymentService := domain.NewPaymentService(
 		transactionRepository,
@@ -146,9 +144,9 @@ func main() {
 		walletRepository,
 		kdsNotificationRepository,
 		availabilityService,
+		kdsNotificationService,
 		orderPaymentWalletId,
 		env.OrderPaymentCancelEnabled,
-		kdsNotificationUsecase,
 	)
 	paymentVerificationService := domain.NewPaymentVerificationService(paymentRepository)
 	cartService := domain.NewCartService(
@@ -167,6 +165,8 @@ func main() {
 	tableService := domain.NewTableService(tableRepository)
 	materialService := domain.NewMaterialService(supplierRepository)
 
+	kdsNotificationUsecase := domain.NewKdsNotificationUsecase(kdsNotificationService)
+	guestNotificationUsecase := domain.NewGuestNotificationUsecase(guestNotificationRepository, guestNotificationService)
 	walletUsecase := domain.NewWalletUsecase(walletRepository)
 	transactionUsecase := domain.NewTransactionUsecase(
 		transactionRepository,
@@ -177,8 +177,8 @@ func main() {
 		transactionService,
 		paymentService,
 		availabilityService,
-		kdsNotificationUsecase,
-		guestNotificationUsecase,
+		kdsNotificationService,
+		guestNotificationService,
 	)
 	variantUsecase := domain.NewVariantUsecase(variantRepository, productRepository, variantService)
 	productUsecase := domain.NewProductUsecase(productRepository, variantRepository)
@@ -205,7 +205,7 @@ func main() {
 		paymentService,
 		availabilityService,
 		whatsappNumberVerificationService,
-		kdsNotificationUsecase,
+		kdsNotificationService,
 		env.DokuQrisExpirySeconds,
 		env.CashPaymentExpirySeconds,
 		env.CodVerificationExpirySeconds,
@@ -221,7 +221,7 @@ func main() {
 		kdsNotificationRepository,
 		paymentVerificationService,
 		paymentService,
-		kdsNotificationUsecase,
+		kdsNotificationService,
 	)
 	budgetUsecase := domain.NewBudgetUsecase(budgetRepository)
 	authUsecase := domain.NewAuthUsecase(authRepository)

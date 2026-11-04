@@ -27,7 +27,7 @@ func TestGuestNotificationDispatchJob_RunClaimsPendingNotifications(t *testing.T
 	repository.EXPECT().ClaimPendingGuestNotifications(gomock.Any(), gomock.Any()).Return(nil, nil)
 
 	job := GuestNotificationDispatchJob{
-		usecase: domain.NewGuestNotificationUsecase(repository, nil, nil, nil, "https://order.example.com"),
+		usecase: domain.NewGuestNotificationUsecase(repository, domain.NewGuestNotificationService(repository, nil, nil, nil, "https://order.example.com")),
 	}
 
 	if err := job.Run(context.Background()); err != nil {
@@ -45,7 +45,7 @@ func TestGuestNotificationStaleSendingJob_RunExpiresStaleSending(t *testing.T) {
 	repository.EXPECT().ExpireStaleSending(gomock.Any(), gomock.Any()).Return(nil)
 
 	job := GuestNotificationStaleSendingJob{
-		usecase: domain.NewGuestNotificationUsecase(repository, nil, nil, nil, "https://order.example.com"),
+		usecase: domain.NewGuestNotificationUsecase(repository, domain.NewGuestNotificationService(repository, nil, nil, nil, "https://order.example.com")),
 	}
 
 	if err := job.Run(context.Background()); err != nil {

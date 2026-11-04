@@ -13,7 +13,7 @@ type PaymentVerificationUsecase struct {
 	kdsNotificationRepository     KdsNotificationRepository
 	paymentVerificationService    PaymentVerificationService
 	paymentService                PaymentService
-	kdsNotificationDispatcher     KdsNotificationDispatcher
+	kdsNotificationService        KdsNotificationService
 }
 
 func NewPaymentVerificationUsecase(
@@ -24,7 +24,7 @@ func NewPaymentVerificationUsecase(
 	kdsNotificationRepository KdsNotificationRepository,
 	paymentVerificationService PaymentVerificationService,
 	paymentService PaymentService,
-	kdsNotificationDispatcher KdsNotificationDispatcher,
+	kdsNotificationService KdsNotificationService,
 ) PaymentVerificationUsecase {
 	return PaymentVerificationUsecase{
 		paymentRepository:             paymentRepository,
@@ -34,7 +34,7 @@ func NewPaymentVerificationUsecase(
 		kdsNotificationRepository:     kdsNotificationRepository,
 		paymentVerificationService:    paymentVerificationService,
 		paymentService:                paymentService,
-		kdsNotificationDispatcher:     kdsNotificationDispatcher,
+		kdsNotificationService:        kdsNotificationService,
 	}
 }
 
@@ -103,7 +103,7 @@ func (usecase PaymentVerificationUsecase) Approve(ctx context.Context, transacti
 	})
 
 	if err == nil {
-		usecase.kdsNotificationDispatcher.TriggerDispatch()
+		usecase.kdsNotificationService.TriggerDispatch()
 	}
 
 	return err

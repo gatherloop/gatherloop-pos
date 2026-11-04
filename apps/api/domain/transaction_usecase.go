@@ -17,8 +17,8 @@ type TransactionUsecase struct {
 	paymentService      PaymentService
 	availabilityService AvailabilityService
 
-	kdsNotificationDispatcher   KdsNotificationDispatcher
-	guestNotificationDispatcher GuestNotificationDispatcher
+	kdsNotificationService   KdsNotificationService
+	guestNotificationService GuestNotificationService
 }
 
 func NewTransactionUsecase(
@@ -32,8 +32,8 @@ func NewTransactionUsecase(
 	paymentService PaymentService,
 	availabilityService AvailabilityService,
 
-	kdsNotificationDispatcher KdsNotificationDispatcher,
-	guestNotificationDispatcher GuestNotificationDispatcher,
+	kdsNotificationService KdsNotificationService,
+	guestNotificationService GuestNotificationService,
 ) TransactionUsecase {
 	return TransactionUsecase{
 		transactionRepository:       transactionRepository,
@@ -46,8 +46,8 @@ func NewTransactionUsecase(
 		paymentService:      paymentService,
 		availabilityService: availabilityService,
 
-		kdsNotificationDispatcher:   kdsNotificationDispatcher,
-		guestNotificationDispatcher: guestNotificationDispatcher,
+		kdsNotificationService:   kdsNotificationService,
+		guestNotificationService: guestNotificationService,
 	}
 }
 
@@ -290,7 +290,7 @@ func (usecase TransactionUsecase) PayTransaction(ctx context.Context, walletId i
 	})
 	// FR-4: kicked after the commit so the cashier's HTTP response never waits on Expo.
 	if err == nil {
-		usecase.kdsNotificationDispatcher.TriggerDispatch()
+		usecase.kdsNotificationService.TriggerDispatch()
 	}
 	return err
 }
@@ -375,7 +375,7 @@ func (usecase TransactionUsecase) CompleteTransaction(ctx context.Context, id in
 		return usecase.guestNotificationRepository.EnqueueForCompletedTransaction(ctxWithTx, transaction, sessionId, whatsappNumber)
 	})
 	if err == nil {
-		usecase.guestNotificationDispatcher.TriggerDispatch()
+		usecase.guestNotificationService.TriggerDispatch()
 	}
 	return err
 }

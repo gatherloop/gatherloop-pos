@@ -41,14 +41,13 @@ type paymentUsecaseMocks struct {
 	walletRepo                *mock.MockWalletRepository
 	availabilityRepo          *mock.MockAvailabilityRepository
 	kdsNotificationRepo       *mock.MockKdsNotificationRepository
-	kdsNotificationDispatcher *mock.MockKdsNotificationDispatcher
+	kdsNotificationDispatcher domain.KdsNotificationService
 	whatsappNumberVerifier    domain.WhatsappNumberVerificationService
 	paymentVerificationRepo   *mock.MockPaymentVerificationRepository
 }
 
 func newPaymentUsecaseMocks(ctrl *gomock.Controller) paymentUsecaseMocks {
-	kdsNotificationDispatcher := mock.NewMockKdsNotificationDispatcher(ctrl)
-	kdsNotificationDispatcher.EXPECT().TriggerDispatch().AnyTimes()
+	kdsNotificationDispatcher := permissiveKdsNotificationService(ctrl)
 
 	// A permissive default (never rejects, whatever number it is asked about) so every existing
 	// test that isn't about the verifier itself keeps behaving exactly as it did before this
@@ -84,7 +83,7 @@ func (m paymentUsecaseMocks) usecase() domain.PaymentUsecase {
 
 // usecaseWithDispatcher builds the usecase over a caller-supplied dispatcher instead of the
 // permissive default, for the tests that assert on the FR-4 post-commit dispatch trigger itself.
-func (m paymentUsecaseMocks) usecaseWithDispatcher(dispatcher domain.KdsNotificationDispatcher) domain.PaymentUsecase {
+func (m paymentUsecaseMocks) usecaseWithDispatcher(dispatcher domain.KdsNotificationService) domain.PaymentUsecase {
 	return m.usecaseWithDispatcherAndCancelEnabled(dispatcher, false)
 }
 
@@ -94,7 +93,7 @@ func (m paymentUsecaseMocks) usecaseWithCancelEnabled() domain.PaymentUsecase {
 	return m.usecaseWithDispatcherAndCancelEnabled(m.kdsNotificationDispatcher, true)
 }
 
-func (m paymentUsecaseMocks) usecaseWithDispatcherAndCancelEnabled(dispatcher domain.KdsNotificationDispatcher, orderPaymentCancelEnabled bool) domain.PaymentUsecase {
+func (m paymentUsecaseMocks) usecaseWithDispatcherAndCancelEnabled(dispatcher domain.KdsNotificationService, orderPaymentCancelEnabled bool) domain.PaymentUsecase {
 	return m.usecaseWithDispatcherCancelAndCodEnabled(dispatcher, orderPaymentCancelEnabled, false)
 }
 
@@ -104,7 +103,7 @@ func (m paymentUsecaseMocks) usecaseWithCodEnabled() domain.PaymentUsecase {
 	return m.usecaseWithDispatcherCancelAndCodEnabled(m.kdsNotificationDispatcher, false, true)
 }
 
-func (m paymentUsecaseMocks) usecaseWithDispatcherCancelAndCodEnabled(dispatcher domain.KdsNotificationDispatcher, orderPaymentCancelEnabled bool, orderCodPaymentEnabled bool) domain.PaymentUsecase {
+func (m paymentUsecaseMocks) usecaseWithDispatcherCancelAndCodEnabled(dispatcher domain.KdsNotificationService, orderPaymentCancelEnabled bool, orderCodPaymentEnabled bool) domain.PaymentUsecase {
 	return m.build(dispatcher, m.whatsappNumberVerifier, m.paymentVerificationRepo, orderPaymentCancelEnabled, orderCodPaymentEnabled)
 }
 
@@ -912,8 +911,7 @@ func TestPaymentUsecase_Checkout(t *testing.T) {
 			})
 		m.kdsNotificationRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any(), domain.KdsNotificationKindCashPending).Return(nil)
 
-		dispatcher := mock.NewMockKdsNotificationDispatcher(ctrl)
-		dispatcher.EXPECT().TriggerDispatch().Times(1)
+		dispatcher := newKdsServiceExpectingDispatches(t, 1)
 
 		_, _, _, err := m.usecaseWithDispatcher(dispatcher).Checkout(context.Background(), "session-1", "Budi", "", domain.PaymentMethodCash, "", "")
 
@@ -1047,8 +1045,7 @@ func TestPaymentUsecase_Checkout(t *testing.T) {
 		m.paymentVerificationRepo.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil)
 		m.kdsNotificationRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any(), domain.KdsNotificationKindCodVerification).Return(nil)
 
-		dispatcher := mock.NewMockKdsNotificationDispatcher(ctrl)
-		dispatcher.EXPECT().TriggerDispatch().Times(1)
+		dispatcher := newKdsServiceExpectingDispatches(t, 1)
 
 		_, _, _, err := m.usecaseWithDispatcherCancelAndCodEnabled(dispatcher, false, true).Checkout(context.Background(), "session-1", "Budi", "", domain.PaymentMethodCod, "", codPhotoBase64())
 
@@ -1127,8 +1124,7 @@ func TestPaymentUsecase_Checkout(t *testing.T) {
 			})
 		m.kdsNotificationRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
 
-		dispatcher := mock.NewMockKdsNotificationDispatcher(ctrl)
-		dispatcher.EXPECT().TriggerDispatch().Times(0)
+		dispatcher := newKdsServiceExpectingDispatches(t, 0)
 
 		_, _, _, err := m.usecaseWithDispatcher(dispatcher).Checkout(context.Background(), "session-1", "Budi", "", domain.PaymentMethodQris, "", "")
 
@@ -1959,8 +1955,7 @@ func TestPaymentUsecase_CancelPayment(t *testing.T) {
 
 		m := newPaymentUsecaseMocks(ctrl)
 		withPaymentTransactionMock(m.paymentRepo)
-		dispatcher := mock.NewMockKdsNotificationDispatcher(ctrl)
-		dispatcher.EXPECT().TriggerDispatch().Times(1)
+		dispatcher := newKdsServiceExpectingDispatches(t, 1)
 
 		payment := pendingCashPaymentFixture()
 		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNoForUpdate(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
@@ -2731,8 +2726,7 @@ func TestPaymentUsecase_KdsDispatchTrigger(t *testing.T) {
 			DoAndReturn(func(_ context.Context, cart domain.Cart, id int64) (domain.Cart, *domain.Error) { return cart, nil })
 		expectNoSupersede(m, 1)
 
-		dispatcher := mock.NewMockKdsNotificationDispatcher(ctrl)
-		dispatcher.EXPECT().TriggerDispatch().Times(1)
+		dispatcher := newKdsServiceExpectingDispatches(t, 1)
 
 		_, outcome, err := m.usecaseWithDispatcher(dispatcher).ConfirmPayment(context.Background(), status)
 
@@ -2754,8 +2748,7 @@ func TestPaymentUsecase_KdsDispatchTrigger(t *testing.T) {
 		status := domain.QrisStatus{PartnerReferenceNo: payment.PartnerReferenceNo, Status: domain.PaymentGatewayStatusPaid, PaidAmount: payment.Amount}
 		m.paymentRepo.EXPECT().GetPaymentByPartnerReferenceNoForUpdate(gomock.Any(), payment.PartnerReferenceNo).Return(payment, nil)
 
-		dispatcher := mock.NewMockKdsNotificationDispatcher(ctrl)
-		dispatcher.EXPECT().TriggerDispatch().Times(0)
+		dispatcher := newKdsServiceExpectingDispatches(t, 0)
 
 		_, outcome, err := m.usecaseWithDispatcher(dispatcher).ConfirmPayment(context.Background(), status)
 
@@ -2785,8 +2778,7 @@ func TestPaymentUsecase_KdsDispatchTrigger(t *testing.T) {
 			DoAndReturn(func(_ context.Context, cart domain.Cart, id int64) (domain.Cart, *domain.Error) { return cart, nil })
 		expectNoSupersede(m, 1)
 
-		dispatcher := mock.NewMockKdsNotificationDispatcher(ctrl)
-		dispatcher.EXPECT().TriggerDispatch().Times(1)
+		dispatcher := newKdsServiceExpectingDispatches(t, 1)
 
 		result, _, _, err := m.usecaseWithDispatcher(dispatcher).GetPaymentStatus(context.Background(), payment.SessionId, payment.PartnerReferenceNo, "")
 
@@ -2809,8 +2801,7 @@ func TestPaymentUsecase_KdsDispatchTrigger(t *testing.T) {
 			DoAndReturn(func(_ context.Context, p domain.Payment, id int64) (domain.Payment, *domain.Error) { return p, nil })
 		m.transactionRepo.EXPECT().GetTransactionById(gomock.Any(), int64(99)).Return(domain.Transaction{Id: 99}, nil)
 
-		dispatcher := mock.NewMockKdsNotificationDispatcher(ctrl)
-		dispatcher.EXPECT().TriggerDispatch().Times(0)
+		dispatcher := newKdsServiceExpectingDispatches(t, 0)
 
 		result, _, _, err := m.usecaseWithDispatcher(dispatcher).GetPaymentStatus(context.Background(), payment.SessionId, payment.PartnerReferenceNo, "")
 
@@ -3025,8 +3016,7 @@ func TestPaymentUsecase_ExpireStalePayments(t *testing.T) {
 			DoAndReturn(func(_ context.Context, cart domain.Cart, id int64) (domain.Cart, *domain.Error) { return cart, nil })
 		expectNoSupersede(m, 1)
 
-		dispatcher := mock.NewMockKdsNotificationDispatcher(ctrl)
-		dispatcher.EXPECT().TriggerDispatch().Times(1)
+		dispatcher := newKdsServiceExpectingDispatches(t, 1)
 
 		err := m.usecaseWithDispatcher(dispatcher).ExpireStalePayments(context.Background())
 
@@ -3137,8 +3127,8 @@ func TestPaymentUsecase_DeleteOrphanedVerificationPhotos(t *testing.T) {
 	})
 }
 
-func (m paymentUsecaseMocks) build(dispatcher domain.KdsNotificationDispatcher, whatsappNumberVerificationService domain.WhatsappNumberVerificationService, paymentVerificationRepo domain.PaymentVerificationRepository, orderPaymentCancelEnabled bool, orderCodPaymentEnabled bool) domain.PaymentUsecase {
+func (m paymentUsecaseMocks) build(dispatcher domain.KdsNotificationService, whatsappNumberVerificationService domain.WhatsappNumberVerificationService, paymentVerificationRepo domain.PaymentVerificationRepository, orderPaymentCancelEnabled bool, orderCodPaymentEnabled bool) domain.PaymentUsecase {
 	availabilityService := domain.NewAvailabilityService(nil, nil, m.availabilityRepo)
-	paymentService := domain.NewPaymentService(m.transactionRepo, m.paymentRepo, paymentVerificationRepo, m.gatewayRepo, m.cartRepo, m.walletRepo, m.kdsNotificationRepo, availabilityService, checkoutOrderPaymentWalletId, orderPaymentCancelEnabled, dispatcher)
+	paymentService := domain.NewPaymentService(m.transactionRepo, m.paymentRepo, paymentVerificationRepo, m.gatewayRepo, m.cartRepo, m.walletRepo, m.kdsNotificationRepo, availabilityService, dispatcher, checkoutOrderPaymentWalletId, orderPaymentCancelEnabled)
 	return domain.NewPaymentUsecase(m.paymentRepo, m.gatewayRepo, m.customerRepo, m.cartRepo, m.transactionRepo, m.variantRepo, m.walletRepo, m.kdsNotificationRepo, paymentVerificationRepo, paymentService, availabilityService, whatsappNumberVerificationService, dispatcher, checkoutQrisExpirySeconds, checkoutCashExpirySeconds, checkoutCodVerificationExpirySeconds, checkoutOrderPaymentWalletId, orderPaymentCancelEnabled, orderCodPaymentEnabled)
 }

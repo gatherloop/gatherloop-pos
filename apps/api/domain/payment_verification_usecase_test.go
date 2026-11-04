@@ -19,25 +19,26 @@ type paymentVerificationUsecaseMocks struct {
 	cartRepo                  *mock.MockCartRepository
 	availabilityRepo          *mock.MockAvailabilityRepository
 	kdsNotificationRepo       *mock.MockKdsNotificationRepository
-	kdsNotificationDispatcher *mock.MockKdsNotificationDispatcher
+	kdsNotificationDispatcher domain.KdsNotificationService
 }
 
 func newPaymentVerificationUsecaseMocks(ctrl *gomock.Controller) paymentVerificationUsecaseMocks {
+	kdsNotificationRepo := mock.NewMockKdsNotificationRepository(ctrl)
 	return paymentVerificationUsecaseMocks{
 		paymentRepo:               mock.NewMockPaymentRepository(ctrl),
 		verificationRepo:          mock.NewMockPaymentVerificationRepository(ctrl),
 		transactionRepo:           mock.NewMockTransactionRepository(ctrl),
 		cartRepo:                  mock.NewMockCartRepository(ctrl),
 		availabilityRepo:          mock.NewMockAvailabilityRepository(ctrl),
-		kdsNotificationRepo:       mock.NewMockKdsNotificationRepository(ctrl),
-		kdsNotificationDispatcher: mock.NewMockKdsNotificationDispatcher(ctrl),
+		kdsNotificationRepo:       kdsNotificationRepo,
+		kdsNotificationDispatcher: domain.NewKdsNotificationService(kdsNotificationRepo, nil, nil, nil, ""),
 	}
 }
 
 func (m paymentVerificationUsecaseMocks) usecase() domain.PaymentVerificationUsecase {
 	paymentVerificationService := domain.NewPaymentVerificationService(m.paymentRepo)
 	availabilityService := domain.NewAvailabilityService(nil, nil, m.availabilityRepo)
-	paymentService := domain.NewPaymentService(m.transactionRepo, m.paymentRepo, m.verificationRepo, nil, m.cartRepo, nil, m.kdsNotificationRepo, availabilityService, 0, false, m.kdsNotificationDispatcher)
+	paymentService := domain.NewPaymentService(m.transactionRepo, m.paymentRepo, m.verificationRepo, nil, m.cartRepo, nil, m.kdsNotificationRepo, availabilityService, m.kdsNotificationDispatcher, 0, false)
 	return domain.NewPaymentVerificationUsecase(m.paymentRepo, m.verificationRepo, m.transactionRepo, m.cartRepo, m.kdsNotificationRepo, paymentVerificationService, paymentService, m.kdsNotificationDispatcher)
 }
 
@@ -132,7 +133,7 @@ func TestPaymentVerificationUsecase_Approve(t *testing.T) {
 
 		m := newPaymentVerificationUsecaseMocks(ctrl)
 		withVerificationPaymentTransactionMock(m.paymentRepo)
-		m.kdsNotificationDispatcher.EXPECT().TriggerDispatch().Times(1)
+		m.kdsNotificationDispatcher = newKdsServiceExpectingDispatches(t, 1)
 
 		payment := awaitingCodPaymentFixture()
 		m.paymentRepo.EXPECT().GetPaymentByTransactionIdForUpdate(gomock.Any(), int64(99)).Return(payment, nil)
@@ -168,7 +169,7 @@ func TestPaymentVerificationUsecase_Approve(t *testing.T) {
 
 		m := newPaymentVerificationUsecaseMocks(ctrl)
 		withVerificationPaymentTransactionMock(m.paymentRepo)
-		m.kdsNotificationDispatcher.EXPECT().TriggerDispatch().Times(1)
+		m.kdsNotificationDispatcher = newKdsServiceExpectingDispatches(t, 1)
 
 		payment := awaitingCodPaymentFixture()
 		payment.ExpiredAt = time.Now().Add(-1 * time.Minute)

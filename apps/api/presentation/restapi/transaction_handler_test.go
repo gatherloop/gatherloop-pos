@@ -35,8 +35,7 @@ func newTransactionHandler(t *testing.T, setupMocks func(txRepo *mock.MockTransa
 	availabilityRepo.EXPECT().UpdateProductAvailableQuantity(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
 	kdsNotificationRepo := mock.NewMockKdsNotificationRepository(ctrl)
 	kdsNotificationRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-	kdsNotificationDispatcher := mock.NewMockKdsNotificationDispatcher(ctrl)
-	kdsNotificationDispatcher.EXPECT().TriggerDispatch().AnyTimes()
+	kdsNotificationDispatcher := permissiveKdsNotificationService(ctrl)
 	paymentRepo := mock.NewMockPaymentRepository(ctrl)
 	// FR-6: an already-paid payment makes settleOrderPayment a no-op for handler tests that
 	// don't care about it, so it never reaches UpdatePaymentById or the cart repository. It also
@@ -45,14 +44,13 @@ func newTransactionHandler(t *testing.T, setupMocks func(txRepo *mock.MockTransa
 	paymentRepo.EXPECT().GetPaymentByTransactionIdForUpdate(gomock.Any(), gomock.Any()).Return(domain.Payment{SessionId: "session-1", Status: domain.PaymentStatePaid}, nil).AnyTimes()
 	guestNotificationRepo := mock.NewMockGuestNotificationRepository(ctrl)
 	guestNotificationRepo.EXPECT().EnqueueForCompletedTransaction(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-	guestNotificationDispatcher := mock.NewMockGuestNotificationDispatcher(ctrl)
-	guestNotificationDispatcher.EXPECT().TriggerDispatch().AnyTimes()
+	guestNotificationDispatcher := permissiveGuestNotificationService(ctrl)
 	cartRepo := mock.NewMockCartRepository(ctrl)
 	paymentVerificationRepo := mock.NewMockPaymentVerificationRepository(ctrl)
 	paymentVerificationRepo.EXPECT().DeleteByPaymentId(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 	setupMocks(txRepo, variantRepo, couponRepo, walletRepo)
 	availabilityService := domain.NewAvailabilityService(nil, nil, availabilityRepo)
-	paymentService := domain.NewPaymentService(txRepo, paymentRepo, paymentVerificationRepo, nil, cartRepo, walletRepo, kdsNotificationRepo, availabilityService, 0, false, kdsNotificationDispatcher)
+	paymentService := domain.NewPaymentService(txRepo, paymentRepo, paymentVerificationRepo, nil, cartRepo, walletRepo, kdsNotificationRepo, availabilityService, kdsNotificationDispatcher, 0, false)
 	transactionService := domain.NewTransactionService(couponRepo, paymentRepo, cartRepo, paymentService)
 	usecase := domain.NewTransactionUsecase(txRepo, variantRepo, walletRepo, paymentRepo, guestNotificationRepo, transactionService, paymentService, availabilityService, kdsNotificationDispatcher, guestNotificationDispatcher)
 	return restapi.NewTransactionHandler(usecase), ctrl

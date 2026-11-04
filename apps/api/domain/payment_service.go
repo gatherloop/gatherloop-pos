@@ -8,14 +8,7 @@ import (
 )
 
 const statusRequeryFloor = 1 * time.Second
-
-// FR-4: a bounded batch per sweep so one tick of the sweeper cannot run unbounded, matching
-// kdsDispatchBatchSize.
 const paymentExpiryBatchSize = 50
-
-// FR-6/D5: the DeleteOrphaned backstop's own bound, so one sweeper tick cannot run unbounded
-// either — it should always delete zero rows, so the bound only matters when the invariant has
-// already broken.
 const paymentVerificationOrphanBatchSize = 50
 
 type PaymentService struct {
@@ -26,10 +19,12 @@ type PaymentService struct {
 	cartRepository                CartRepository
 	walletRepository              WalletRepository
 	kdsNotificationRepository     KdsNotificationRepository
-	availabilityService           AvailabilityService
-	orderPaymentWalletId          int64
-	orderPaymentCancelEnabled     bool
-	kdsNotificationDispatcher     KdsNotificationDispatcher
+
+	availabilityService    AvailabilityService
+	kdsNotificationService KdsNotificationService
+
+	orderPaymentWalletId      int64
+	orderPaymentCancelEnabled bool
 }
 
 func NewPaymentService(
@@ -40,10 +35,12 @@ func NewPaymentService(
 	cartRepository CartRepository,
 	walletRepository WalletRepository,
 	kdsNotificationRepository KdsNotificationRepository,
+
 	availabilityService AvailabilityService,
+	kdsNotificationService KdsNotificationService,
+
 	orderPaymentWalletId int64,
 	orderPaymentCancelEnabled bool,
-	kdsNotificationDispatcher KdsNotificationDispatcher,
 ) PaymentService {
 	return PaymentService{
 		transactionRepository:         transactionRepository,
@@ -54,9 +51,9 @@ func NewPaymentService(
 		walletRepository:              walletRepository,
 		kdsNotificationRepository:     kdsNotificationRepository,
 		availabilityService:           availabilityService,
+		kdsNotificationService:        kdsNotificationService,
 		orderPaymentWalletId:          orderPaymentWalletId,
 		orderPaymentCancelEnabled:     orderPaymentCancelEnabled,
-		kdsNotificationDispatcher:     kdsNotificationDispatcher,
 	}
 }
 
@@ -299,7 +296,7 @@ func (service PaymentService) ExpireOne(ctx context.Context, payment Payment, no
 		logger.Info("expired stale payment")
 	case ConfirmPaymentOutcomePaid, ConfirmPaymentOutcomePaidLate:
 		logger.Warn("stale payment was already paid at the gateway", slog.String("outcome", string(outcome)))
-		service.kdsNotificationDispatcher.TriggerDispatch()
+		service.kdsNotificationService.TriggerDispatch()
 	}
 }
 
