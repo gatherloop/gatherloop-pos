@@ -16,10 +16,10 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-func newChecklistSessionHandler(t *testing.T, setupMocks func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository)) (restapi.ChecklistSessionHandler, *gomock.Controller) {
+func newChecklistSessionHandler(t *testing.T, setupMocks func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort)) (restapi.ChecklistSessionHandler, *gomock.Controller) {
 	ctrl := gomock.NewController(t)
-	sessionRepo := mock.NewMockChecklistSessionRepository(ctrl)
-	templateRepo := mock.NewMockChecklistTemplateRepository(ctrl)
+	sessionRepo := mock.NewMockChecklistSessionRepoPort(ctrl)
+	templateRepo := mock.NewMockChecklistTemplateRepoPort(ctrl)
 	setupMocks(sessionRepo, templateRepo)
 	usecase := domain.NewChecklistSessionUsecase(sessionRepo, templateRepo)
 	return restapi.NewChecklistSessionHandler(usecase), ctrl
@@ -29,13 +29,13 @@ func TestChecklistSessionHandler_GetChecklistSessionList(t *testing.T) {
 	tests := []struct {
 		name           string
 		queryParams    string
-		setupMocks     func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository)
+		setupMocks     func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort)
 		expectedStatus int
 	}{
 		{
 			name:        "success - no filters",
 			queryParams: "",
-			setupMocks: func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository) {
+			setupMocks: func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort) {
 				sessionRepo.EXPECT().GetChecklistSessionList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return([]domain.ChecklistSession{
 						{Id: 1, ChecklistTemplateId: 1, Date: "2026-04-05"},
@@ -49,7 +49,7 @@ func TestChecklistSessionHandler_GetChecklistSessionList(t *testing.T) {
 		{
 			name:        "success - with templateId filter",
 			queryParams: "?templateId=1&limit=5&skip=0",
-			setupMocks: func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository) {
+			setupMocks: func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort) {
 				sessionRepo.EXPECT().GetChecklistSessionList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return([]domain.ChecklistSession{{Id: 1, ChecklistTemplateId: 1, Date: "2026-04-05"}}, nil)
 				sessionRepo.EXPECT().GetChecklistSessionListTotal(gomock.Any(), gomock.Any()).
@@ -60,7 +60,7 @@ func TestChecklistSessionHandler_GetChecklistSessionList(t *testing.T) {
 		{
 			name:        "success - with status completed filter",
 			queryParams: "?status=completed",
-			setupMocks: func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository) {
+			setupMocks: func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort) {
 				sessionRepo.EXPECT().GetChecklistSessionList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return([]domain.ChecklistSession{}, nil)
 				sessionRepo.EXPECT().GetChecklistSessionListTotal(gomock.Any(), gomock.Any()).
@@ -71,7 +71,7 @@ func TestChecklistSessionHandler_GetChecklistSessionList(t *testing.T) {
 		{
 			name:        "invalid skip param",
 			queryParams: "?skip=abc",
-			setupMocks: func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository) {
+			setupMocks: func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort) {
 			},
 			expectedStatus: http.StatusBadRequest,
 		},
@@ -96,13 +96,13 @@ func TestChecklistSessionHandler_CreateChecklistSession(t *testing.T) {
 	tests := []struct {
 		name           string
 		body           string
-		setupMocks     func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository)
+		setupMocks     func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort)
 		expectedStatus int
 	}{
 		{
 			name: "success",
 			body: `{"checklistTemplateId": 1, "date": "2026-04-05"}`,
-			setupMocks: func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository) {
+			setupMocks: func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort) {
 				sessionRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				templateRepo.EXPECT().GetChecklistTemplateById(gomock.Any(), int64(1)).
@@ -123,28 +123,28 @@ func TestChecklistSessionHandler_CreateChecklistSession(t *testing.T) {
 		{
 			name: "invalid JSON body",
 			body: `{invalid`,
-			setupMocks: func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository) {
+			setupMocks: func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort) {
 			},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name: "missing template id",
 			body: `{"checklistTemplateId": 0, "date": "2026-04-05"}`,
-			setupMocks: func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository) {
+			setupMocks: func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort) {
 			},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name: "missing date",
 			body: `{"checklistTemplateId": 1, "date": ""}`,
-			setupMocks: func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository) {
+			setupMocks: func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort) {
 			},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name: "duplicate session",
 			body: `{"checklistTemplateId": 1, "date": "2026-04-05"}`,
-			setupMocks: func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository) {
+			setupMocks: func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort) {
 				sessionRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				templateRepo.EXPECT().GetChecklistTemplateById(gomock.Any(), int64(1)).
@@ -177,13 +177,13 @@ func TestChecklistSessionHandler_GetChecklistSessionById(t *testing.T) {
 	tests := []struct {
 		name               string
 		checklistSessionId string
-		setupMocks         func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository)
+		setupMocks         func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort)
 		expectedStatus     int
 	}{
 		{
 			name:               "success",
 			checklistSessionId: "1",
-			setupMocks: func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository) {
+			setupMocks: func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort) {
 				sessionRepo.EXPECT().GetChecklistSessionById(gomock.Any(), int64(1)).
 					Return(domain.ChecklistSession{Id: 1, ChecklistTemplateId: 1, Date: "2026-04-05"}, nil)
 			},
@@ -192,7 +192,7 @@ func TestChecklistSessionHandler_GetChecklistSessionById(t *testing.T) {
 		{
 			name:               "not found",
 			checklistSessionId: "99",
-			setupMocks: func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository) {
+			setupMocks: func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort) {
 				sessionRepo.EXPECT().GetChecklistSessionById(gomock.Any(), int64(99)).
 					Return(domain.ChecklistSession{}, &domain.Error{Type: domain.NotFound, Message: "not found"})
 			},
@@ -201,7 +201,7 @@ func TestChecklistSessionHandler_GetChecklistSessionById(t *testing.T) {
 		{
 			name:               "invalid id",
 			checklistSessionId: "abc",
-			setupMocks: func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository) {
+			setupMocks: func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort) {
 			},
 			expectedStatus: http.StatusBadRequest,
 		},
@@ -224,13 +224,13 @@ func TestChecklistSessionHandler_DeleteChecklistSessionById(t *testing.T) {
 	tests := []struct {
 		name               string
 		checklistSessionId string
-		setupMocks         func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository)
+		setupMocks         func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort)
 		expectedStatus     int
 	}{
 		{
 			name:               "success",
 			checklistSessionId: "1",
-			setupMocks: func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository) {
+			setupMocks: func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort) {
 				sessionRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				sessionRepo.EXPECT().GetChecklistSessionById(gomock.Any(), int64(1)).
@@ -242,14 +242,14 @@ func TestChecklistSessionHandler_DeleteChecklistSessionById(t *testing.T) {
 		{
 			name:               "invalid id",
 			checklistSessionId: "abc",
-			setupMocks: func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository) {
+			setupMocks: func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort) {
 			},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:               "not found",
 			checklistSessionId: "99",
-			setupMocks: func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository) {
+			setupMocks: func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort) {
 				sessionRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				sessionRepo.EXPECT().GetChecklistSessionById(gomock.Any(), int64(99)).
@@ -278,13 +278,13 @@ func TestChecklistSessionHandler_CheckSessionItem(t *testing.T) {
 	tests := []struct {
 		name                   string
 		checklistSessionItemId string
-		setupMocks             func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository)
+		setupMocks             func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort)
 		expectedStatus         int
 	}{
 		{
 			name:                   "success",
 			checklistSessionItemId: "10",
-			setupMocks: func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository) {
+			setupMocks: func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort) {
 				sessionRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				sessionRepo.EXPECT().GetChecklistSessionItemById(gomock.Any(), int64(10)).
@@ -301,14 +301,14 @@ func TestChecklistSessionHandler_CheckSessionItem(t *testing.T) {
 		{
 			name:                   "invalid id",
 			checklistSessionItemId: "abc",
-			setupMocks: func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository) {
+			setupMocks: func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort) {
 			},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:                   "item has sub-items",
 			checklistSessionItemId: "20",
-			setupMocks: func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository) {
+			setupMocks: func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort) {
 				sessionRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				sessionRepo.EXPECT().GetChecklistSessionItemById(gomock.Any(), int64(20)).
@@ -323,7 +323,7 @@ func TestChecklistSessionHandler_CheckSessionItem(t *testing.T) {
 		{
 			name:                   "not found",
 			checklistSessionItemId: "99",
-			setupMocks: func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository) {
+			setupMocks: func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort) {
 				sessionRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				sessionRepo.EXPECT().GetChecklistSessionItemById(gomock.Any(), int64(99)).
@@ -352,13 +352,13 @@ func TestChecklistSessionHandler_UncheckSessionItem(t *testing.T) {
 	tests := []struct {
 		name                   string
 		checklistSessionItemId string
-		setupMocks             func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository)
+		setupMocks             func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort)
 		expectedStatus         int
 	}{
 		{
 			name:                   "success",
 			checklistSessionItemId: "10",
-			setupMocks: func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository) {
+			setupMocks: func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort) {
 				sessionRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				sessionRepo.EXPECT().GetChecklistSessionItemById(gomock.Any(), int64(10)).
@@ -372,14 +372,14 @@ func TestChecklistSessionHandler_UncheckSessionItem(t *testing.T) {
 		{
 			name:                   "invalid id",
 			checklistSessionItemId: "abc",
-			setupMocks: func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository) {
+			setupMocks: func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort) {
 			},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:                   "item has sub-items",
 			checklistSessionItemId: "20",
-			setupMocks: func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository) {
+			setupMocks: func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort) {
 				sessionRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				sessionRepo.EXPECT().GetChecklistSessionItemById(gomock.Any(), int64(20)).
@@ -413,13 +413,13 @@ func TestChecklistSessionHandler_CheckSessionSubItem(t *testing.T) {
 	tests := []struct {
 		name                      string
 		checklistSessionSubItemId string
-		setupMocks                func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository)
+		setupMocks                func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort)
 		expectedStatus            int
 	}{
 		{
 			name:                      "success",
 			checklistSessionSubItemId: "100",
-			setupMocks: func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository) {
+			setupMocks: func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort) {
 				sessionRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				sessionRepo.EXPECT().GetChecklistSessionSubItemById(gomock.Any(), int64(100)).
@@ -436,14 +436,14 @@ func TestChecklistSessionHandler_CheckSessionSubItem(t *testing.T) {
 		{
 			name:                      "invalid id",
 			checklistSessionSubItemId: "abc",
-			setupMocks: func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository) {
+			setupMocks: func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort) {
 			},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:                      "not found",
 			checklistSessionSubItemId: "99",
-			setupMocks: func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository) {
+			setupMocks: func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort) {
 				sessionRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				sessionRepo.EXPECT().GetChecklistSessionSubItemById(gomock.Any(), int64(99)).
@@ -472,13 +472,13 @@ func TestChecklistSessionHandler_UncheckSessionSubItem(t *testing.T) {
 	tests := []struct {
 		name                      string
 		checklistSessionSubItemId string
-		setupMocks                func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository)
+		setupMocks                func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort)
 		expectedStatus            int
 	}{
 		{
 			name:                      "success",
 			checklistSessionSubItemId: "100",
-			setupMocks: func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository) {
+			setupMocks: func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort) {
 				sessionRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				sessionRepo.EXPECT().GetChecklistSessionSubItemById(gomock.Any(), int64(100)).
@@ -492,14 +492,14 @@ func TestChecklistSessionHandler_UncheckSessionSubItem(t *testing.T) {
 		{
 			name:                      "invalid id",
 			checklistSessionSubItemId: "abc",
-			setupMocks: func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository) {
+			setupMocks: func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort) {
 			},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:                      "not found",
 			checklistSessionSubItemId: "99",
-			setupMocks: func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository) {
+			setupMocks: func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort) {
 				sessionRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				sessionRepo.EXPECT().GetChecklistSessionSubItemById(gomock.Any(), int64(99)).

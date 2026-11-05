@@ -18,13 +18,13 @@ func TestStockCheckHandler_GetStockCheckList(t *testing.T) {
 	tests := []struct {
 		name           string
 		url            string
-		setupMock      func(sc *mock.MockStockCheckRepository, m *mock.MockMaterialRepository)
+		setupMock      func(sc *mock.MockStockCheckRepoPort, m *mock.MockMaterialRepoPort)
 		expectedStatus int
 	}{
 		{
 			name: "success",
 			url:  "/stock-checks",
-			setupMock: func(sc *mock.MockStockCheckRepository, m *mock.MockMaterialRepository) {
+			setupMock: func(sc *mock.MockStockCheckRepoPort, m *mock.MockMaterialRepoPort) {
 				sc.EXPECT().GetStockCheckList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]domain.StockCheck{{Id: 1}}, nil)
 				sc.EXPECT().GetStockCheckListTotal(gomock.Any()).Return(int64(1), nil)
 			},
@@ -33,13 +33,13 @@ func TestStockCheckHandler_GetStockCheckList(t *testing.T) {
 		{
 			name:           "invalid skip param",
 			url:            "/stock-checks?skip=abc",
-			setupMock:      func(sc *mock.MockStockCheckRepository, m *mock.MockMaterialRepository) {},
+			setupMock:      func(sc *mock.MockStockCheckRepoPort, m *mock.MockMaterialRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name: "repo error",
 			url:  "/stock-checks",
-			setupMock: func(sc *mock.MockStockCheckRepository, m *mock.MockMaterialRepository) {
+			setupMock: func(sc *mock.MockStockCheckRepoPort, m *mock.MockMaterialRepoPort) {
 				sc.EXPECT().GetStockCheckList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &domain.Error{Type: domain.InternalServerError, Message: "db error"})
 			},
 			expectedStatus: http.StatusInternalServerError,
@@ -50,8 +50,8 @@ func TestStockCheckHandler_GetStockCheckList(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			scRepo := mock.NewMockStockCheckRepository(ctrl)
-			matRepo := mock.NewMockMaterialRepository(ctrl)
+			scRepo := mock.NewMockStockCheckRepoPort(ctrl)
+			matRepo := mock.NewMockMaterialRepoPort(ctrl)
 			tt.setupMock(scRepo, matRepo)
 			handler := restapi.NewStockCheckHandler(domain.NewStockCheckUsecase(scRepo, matRepo))
 			req := httptest.NewRequest(http.MethodGet, tt.url, nil)
@@ -66,13 +66,13 @@ func TestStockCheckHandler_GetStockCheckById(t *testing.T) {
 	tests := []struct {
 		name           string
 		stockCheckId   string
-		setupMock      func(sc *mock.MockStockCheckRepository, m *mock.MockMaterialRepository)
+		setupMock      func(sc *mock.MockStockCheckRepoPort, m *mock.MockMaterialRepoPort)
 		expectedStatus int
 	}{
 		{
 			name:         "success",
 			stockCheckId: "1",
-			setupMock: func(sc *mock.MockStockCheckRepository, m *mock.MockMaterialRepository) {
+			setupMock: func(sc *mock.MockStockCheckRepoPort, m *mock.MockMaterialRepoPort) {
 				sc.EXPECT().GetStockCheckById(gomock.Any(), int64(1)).Return(domain.StockCheck{Id: 1}, nil)
 			},
 			expectedStatus: http.StatusOK,
@@ -80,7 +80,7 @@ func TestStockCheckHandler_GetStockCheckById(t *testing.T) {
 		{
 			name:         "not found",
 			stockCheckId: "99",
-			setupMock: func(sc *mock.MockStockCheckRepository, m *mock.MockMaterialRepository) {
+			setupMock: func(sc *mock.MockStockCheckRepoPort, m *mock.MockMaterialRepoPort) {
 				sc.EXPECT().GetStockCheckById(gomock.Any(), int64(99)).Return(domain.StockCheck{}, &domain.Error{Type: domain.NotFound, Message: "not found"})
 			},
 			expectedStatus: http.StatusNotFound,
@@ -88,7 +88,7 @@ func TestStockCheckHandler_GetStockCheckById(t *testing.T) {
 		{
 			name:           "invalid id",
 			stockCheckId:   "abc",
-			setupMock:      func(sc *mock.MockStockCheckRepository, m *mock.MockMaterialRepository) {},
+			setupMock:      func(sc *mock.MockStockCheckRepoPort, m *mock.MockMaterialRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 	}
@@ -97,8 +97,8 @@ func TestStockCheckHandler_GetStockCheckById(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			scRepo := mock.NewMockStockCheckRepository(ctrl)
-			matRepo := mock.NewMockMaterialRepository(ctrl)
+			scRepo := mock.NewMockStockCheckRepoPort(ctrl)
+			matRepo := mock.NewMockMaterialRepoPort(ctrl)
 			tt.setupMock(scRepo, matRepo)
 			handler := restapi.NewStockCheckHandler(domain.NewStockCheckUsecase(scRepo, matRepo))
 			req := httptest.NewRequest(http.MethodGet, "/stock-checks/"+tt.stockCheckId, nil)
@@ -114,13 +114,13 @@ func TestStockCheckHandler_CreateStockCheck(t *testing.T) {
 	tests := []struct {
 		name           string
 		body           string
-		setupMock      func(sc *mock.MockStockCheckRepository, m *mock.MockMaterialRepository)
+		setupMock      func(sc *mock.MockStockCheckRepoPort, m *mock.MockMaterialRepoPort)
 		expectedStatus int
 	}{
 		{
 			name: "success",
 			body: `{"items": [{"materialId": 1, "currentStock": 3}]}`,
-			setupMock: func(sc *mock.MockStockCheckRepository, m *mock.MockMaterialRepository) {
+			setupMock: func(sc *mock.MockStockCheckRepoPort, m *mock.MockMaterialRepoPort) {
 				m.EXPECT().GetMaterialList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]domain.Material{{Id: 1, Name: "Tepung"}}, nil)
 				sc.EXPECT().CreateStockCheck(gomock.Any(), gomock.Any()).Return(domain.StockCheck{Id: 1}, nil)
 			},
@@ -129,13 +129,13 @@ func TestStockCheckHandler_CreateStockCheck(t *testing.T) {
 		{
 			name:           "invalid JSON body",
 			body:           `{invalid`,
-			setupMock:      func(sc *mock.MockStockCheckRepository, m *mock.MockMaterialRepository) {},
+			setupMock:      func(sc *mock.MockStockCheckRepoPort, m *mock.MockMaterialRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name: "repo error",
 			body: `{"items": []}`,
-			setupMock: func(sc *mock.MockStockCheckRepository, m *mock.MockMaterialRepository) {
+			setupMock: func(sc *mock.MockStockCheckRepoPort, m *mock.MockMaterialRepoPort) {
 				m.EXPECT().GetMaterialList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]domain.Material{}, nil)
 				sc.EXPECT().CreateStockCheck(gomock.Any(), gomock.Any()).Return(domain.StockCheck{}, &domain.Error{Type: domain.InternalServerError, Message: "db error"})
 			},
@@ -147,8 +147,8 @@ func TestStockCheckHandler_CreateStockCheck(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			scRepo := mock.NewMockStockCheckRepository(ctrl)
-			matRepo := mock.NewMockMaterialRepository(ctrl)
+			scRepo := mock.NewMockStockCheckRepoPort(ctrl)
+			matRepo := mock.NewMockMaterialRepoPort(ctrl)
 			tt.setupMock(scRepo, matRepo)
 			handler := restapi.NewStockCheckHandler(domain.NewStockCheckUsecase(scRepo, matRepo))
 			req := httptest.NewRequest(http.MethodPost, "/stock-checks", bytes.NewBufferString(tt.body))
@@ -165,14 +165,14 @@ func TestStockCheckHandler_UpdateStockCheckById(t *testing.T) {
 		name           string
 		stockCheckId   string
 		body           string
-		setupMock      func(sc *mock.MockStockCheckRepository, m *mock.MockMaterialRepository)
+		setupMock      func(sc *mock.MockStockCheckRepoPort, m *mock.MockMaterialRepoPort)
 		expectedStatus int
 	}{
 		{
 			name:         "success",
 			stockCheckId: "1",
 			body:         `{"items": [{"materialId": 1, "currentStock": 5}]}`,
-			setupMock: func(sc *mock.MockStockCheckRepository, m *mock.MockMaterialRepository) {
+			setupMock: func(sc *mock.MockStockCheckRepoPort, m *mock.MockMaterialRepoPort) {
 				sc.EXPECT().GetStockCheckById(gomock.Any(), int64(1)).Return(domain.StockCheck{
 					Id:    1,
 					Items: []domain.StockCheckItem{{Id: 10, MaterialId: 1, CurrentStock: 3}},
@@ -185,14 +185,14 @@ func TestStockCheckHandler_UpdateStockCheckById(t *testing.T) {
 			name:           "invalid id",
 			stockCheckId:   "abc",
 			body:           `{}`,
-			setupMock:      func(sc *mock.MockStockCheckRepository, m *mock.MockMaterialRepository) {},
+			setupMock:      func(sc *mock.MockStockCheckRepoPort, m *mock.MockMaterialRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:         "not found",
 			stockCheckId: "99",
 			body:         `{"items": []}`,
-			setupMock: func(sc *mock.MockStockCheckRepository, m *mock.MockMaterialRepository) {
+			setupMock: func(sc *mock.MockStockCheckRepoPort, m *mock.MockMaterialRepoPort) {
 				sc.EXPECT().GetStockCheckById(gomock.Any(), int64(99)).Return(domain.StockCheck{}, &domain.Error{Type: domain.NotFound, Message: "not found"})
 			},
 			expectedStatus: http.StatusNotFound,
@@ -203,8 +203,8 @@ func TestStockCheckHandler_UpdateStockCheckById(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			scRepo := mock.NewMockStockCheckRepository(ctrl)
-			matRepo := mock.NewMockMaterialRepository(ctrl)
+			scRepo := mock.NewMockStockCheckRepoPort(ctrl)
+			matRepo := mock.NewMockMaterialRepoPort(ctrl)
 			tt.setupMock(scRepo, matRepo)
 			handler := restapi.NewStockCheckHandler(domain.NewStockCheckUsecase(scRepo, matRepo))
 			req := httptest.NewRequest(http.MethodPut, "/stock-checks/"+tt.stockCheckId, bytes.NewBufferString(tt.body))
@@ -221,13 +221,13 @@ func TestStockCheckHandler_DeleteStockCheckById(t *testing.T) {
 	tests := []struct {
 		name           string
 		stockCheckId   string
-		setupMock      func(sc *mock.MockStockCheckRepository, m *mock.MockMaterialRepository)
+		setupMock      func(sc *mock.MockStockCheckRepoPort, m *mock.MockMaterialRepoPort)
 		expectedStatus int
 	}{
 		{
 			name:         "success",
 			stockCheckId: "1",
-			setupMock: func(sc *mock.MockStockCheckRepository, m *mock.MockMaterialRepository) {
+			setupMock: func(sc *mock.MockStockCheckRepoPort, m *mock.MockMaterialRepoPort) {
 				sc.EXPECT().DeleteStockCheckById(gomock.Any(), int64(1)).Return(nil)
 			},
 			expectedStatus: http.StatusOK,
@@ -235,13 +235,13 @@ func TestStockCheckHandler_DeleteStockCheckById(t *testing.T) {
 		{
 			name:           "invalid id",
 			stockCheckId:   "abc",
-			setupMock:      func(sc *mock.MockStockCheckRepository, m *mock.MockMaterialRepository) {},
+			setupMock:      func(sc *mock.MockStockCheckRepoPort, m *mock.MockMaterialRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:         "not found",
 			stockCheckId: "99",
-			setupMock: func(sc *mock.MockStockCheckRepository, m *mock.MockMaterialRepository) {
+			setupMock: func(sc *mock.MockStockCheckRepoPort, m *mock.MockMaterialRepoPort) {
 				sc.EXPECT().DeleteStockCheckById(gomock.Any(), int64(99)).Return(&domain.Error{Type: domain.NotFound, Message: "not found"})
 			},
 			expectedStatus: http.StatusNotFound,
@@ -252,8 +252,8 @@ func TestStockCheckHandler_DeleteStockCheckById(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			scRepo := mock.NewMockStockCheckRepository(ctrl)
-			matRepo := mock.NewMockMaterialRepository(ctrl)
+			scRepo := mock.NewMockStockCheckRepoPort(ctrl)
+			matRepo := mock.NewMockMaterialRepoPort(ctrl)
 			tt.setupMock(scRepo, matRepo)
 			handler := restapi.NewStockCheckHandler(domain.NewStockCheckUsecase(scRepo, matRepo))
 			req := httptest.NewRequest(http.MethodDelete, "/stock-checks/"+tt.stockCheckId, nil)
@@ -269,13 +269,13 @@ func TestStockCheckHandler_GetPurchaseList(t *testing.T) {
 	tests := []struct {
 		name           string
 		stockCheckId   string
-		setupMock      func(sc *mock.MockStockCheckRepository, m *mock.MockMaterialRepository)
+		setupMock      func(sc *mock.MockStockCheckRepoPort, m *mock.MockMaterialRepoPort)
 		expectedStatus int
 	}{
 		{
 			name:         "success with items meeting threshold",
 			stockCheckId: "1",
-			setupMock: func(sc *mock.MockStockCheckRepository, m *mock.MockMaterialRepository) {
+			setupMock: func(sc *mock.MockStockCheckRepoPort, m *mock.MockMaterialRepoPort) {
 				sc.EXPECT().GetStockCheckById(gomock.Any(), int64(1)).Return(domain.StockCheck{
 					Id: 1,
 					Items: []domain.StockCheckItem{
@@ -298,7 +298,7 @@ func TestStockCheckHandler_GetPurchaseList(t *testing.T) {
 		{
 			name:         "not found",
 			stockCheckId: "99",
-			setupMock: func(sc *mock.MockStockCheckRepository, m *mock.MockMaterialRepository) {
+			setupMock: func(sc *mock.MockStockCheckRepoPort, m *mock.MockMaterialRepoPort) {
 				sc.EXPECT().GetStockCheckById(gomock.Any(), int64(99)).Return(domain.StockCheck{}, &domain.Error{Type: domain.NotFound, Message: "not found"})
 			},
 			expectedStatus: http.StatusNotFound,
@@ -306,7 +306,7 @@ func TestStockCheckHandler_GetPurchaseList(t *testing.T) {
 		{
 			name:           "invalid id",
 			stockCheckId:   "abc",
-			setupMock:      func(sc *mock.MockStockCheckRepository, m *mock.MockMaterialRepository) {},
+			setupMock:      func(sc *mock.MockStockCheckRepoPort, m *mock.MockMaterialRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 	}
@@ -315,8 +315,8 @@ func TestStockCheckHandler_GetPurchaseList(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			scRepo := mock.NewMockStockCheckRepository(ctrl)
-			matRepo := mock.NewMockMaterialRepository(ctrl)
+			scRepo := mock.NewMockStockCheckRepoPort(ctrl)
+			matRepo := mock.NewMockMaterialRepoPort(ctrl)
 			tt.setupMock(scRepo, matRepo)
 			handler := restapi.NewStockCheckHandler(domain.NewStockCheckUsecase(scRepo, matRepo))
 			req := httptest.NewRequest(http.MethodGet, "/stock-checks/"+tt.stockCheckId+"/purchase-list", nil)

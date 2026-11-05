@@ -17,7 +17,7 @@ func TestPaymentVerificationService_ResolveAwaitingCodPayment(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		repo := mock.NewMockPaymentRepository(ctrl)
+		repo := mock.NewMockPaymentRepoPort(ctrl)
 		repo.EXPECT().GetPaymentByTransactionIdForUpdate(gomock.Any(), int64(99)).Return(payment, repoErr)
 
 		return domain.NewPaymentVerificationService(repo).ResolveAwaitingCodPayment(context.Background(), 99)

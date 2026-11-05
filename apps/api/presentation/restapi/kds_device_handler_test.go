@@ -18,13 +18,13 @@ func TestKdsDeviceHandler_RegisterKdsDevice(t *testing.T) {
 	tests := []struct {
 		name           string
 		body           string
-		setupMock      func(r *mock.MockKdsDeviceRepository)
+		setupMock      func(r *mock.MockKdsDeviceRepoPort)
 		expectedStatus int
 	}{
 		{
 			name: "success",
 			body: `{"name": "Andi's phone", "pushToken": "ExponentPushToken[abc]", "platform": "android"}`,
-			setupMock: func(r *mock.MockKdsDeviceRepository) {
+			setupMock: func(r *mock.MockKdsDeviceRepoPort) {
 				r.EXPECT().RegisterKdsDevice(gomock.Any(), gomock.Any()).Return(domain.KdsDevice{Id: 1, Name: "Andi's phone"}, nil)
 			},
 			expectedStatus: http.StatusOK,
@@ -32,19 +32,19 @@ func TestKdsDeviceHandler_RegisterKdsDevice(t *testing.T) {
 		{
 			name:           "invalid JSON body",
 			body:           `{invalid`,
-			setupMock:      func(r *mock.MockKdsDeviceRepository) {},
+			setupMock:      func(r *mock.MockKdsDeviceRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:           "missing name",
 			body:           `{"pushToken": "ExponentPushToken[abc]", "platform": "android"}`,
-			setupMock:      func(r *mock.MockKdsDeviceRepository) {},
+			setupMock:      func(r *mock.MockKdsDeviceRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name: "repo error",
 			body: `{"name": "Andi's phone", "pushToken": "ExponentPushToken[abc]", "platform": "android"}`,
-			setupMock: func(r *mock.MockKdsDeviceRepository) {
+			setupMock: func(r *mock.MockKdsDeviceRepoPort) {
 				r.EXPECT().RegisterKdsDevice(gomock.Any(), gomock.Any()).Return(domain.KdsDevice{}, &domain.Error{Type: domain.InternalServerError, Message: "db error"})
 			},
 			expectedStatus: http.StatusInternalServerError,
@@ -55,7 +55,7 @@ func TestKdsDeviceHandler_RegisterKdsDevice(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRepo := mock.NewMockKdsDeviceRepository(ctrl)
+			mockRepo := mock.NewMockKdsDeviceRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 			handler := restapi.NewKdsDeviceHandler(domain.NewKdsDeviceUsecase(mockRepo, nil, "default"))
 			req := httptest.NewRequest(http.MethodPost, "/kds/devices", bytes.NewBufferString(tt.body))
@@ -70,19 +70,19 @@ func TestKdsDeviceHandler_RegisterKdsDevice(t *testing.T) {
 func TestKdsDeviceHandler_GetKdsDeviceList(t *testing.T) {
 	tests := []struct {
 		name           string
-		setupMock      func(r *mock.MockKdsDeviceRepository)
+		setupMock      func(r *mock.MockKdsDeviceRepoPort)
 		expectedStatus int
 	}{
 		{
 			name: "success",
-			setupMock: func(r *mock.MockKdsDeviceRepository) {
+			setupMock: func(r *mock.MockKdsDeviceRepoPort) {
 				r.EXPECT().GetKdsDeviceList(gomock.Any()).Return([]domain.KdsDevice{{Id: 1, Name: "Andi's phone"}}, nil)
 			},
 			expectedStatus: http.StatusOK,
 		},
 		{
 			name: "repo error",
-			setupMock: func(r *mock.MockKdsDeviceRepository) {
+			setupMock: func(r *mock.MockKdsDeviceRepoPort) {
 				r.EXPECT().GetKdsDeviceList(gomock.Any()).Return(nil, &domain.Error{Type: domain.InternalServerError, Message: "db error"})
 			},
 			expectedStatus: http.StatusInternalServerError,
@@ -93,7 +93,7 @@ func TestKdsDeviceHandler_GetKdsDeviceList(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRepo := mock.NewMockKdsDeviceRepository(ctrl)
+			mockRepo := mock.NewMockKdsDeviceRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 			handler := restapi.NewKdsDeviceHandler(domain.NewKdsDeviceUsecase(mockRepo, nil, "default"))
 			req := httptest.NewRequest(http.MethodGet, "/kds/devices", nil)
@@ -108,13 +108,13 @@ func TestKdsDeviceHandler_DeleteKdsDeviceById(t *testing.T) {
 	tests := []struct {
 		name           string
 		kdsDeviceId    string
-		setupMock      func(r *mock.MockKdsDeviceRepository)
+		setupMock      func(r *mock.MockKdsDeviceRepoPort)
 		expectedStatus int
 	}{
 		{
 			name:        "success",
 			kdsDeviceId: "1",
-			setupMock: func(r *mock.MockKdsDeviceRepository) {
+			setupMock: func(r *mock.MockKdsDeviceRepoPort) {
 				r.EXPECT().DeleteKdsDeviceById(gomock.Any(), int64(1)).Return(nil)
 			},
 			expectedStatus: http.StatusOK,
@@ -122,13 +122,13 @@ func TestKdsDeviceHandler_DeleteKdsDeviceById(t *testing.T) {
 		{
 			name:           "invalid id",
 			kdsDeviceId:    "abc",
-			setupMock:      func(r *mock.MockKdsDeviceRepository) {},
+			setupMock:      func(r *mock.MockKdsDeviceRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:        "not found",
 			kdsDeviceId: "99",
-			setupMock: func(r *mock.MockKdsDeviceRepository) {
+			setupMock: func(r *mock.MockKdsDeviceRepoPort) {
 				r.EXPECT().DeleteKdsDeviceById(gomock.Any(), int64(99)).Return(&domain.Error{Type: domain.NotFound, Message: "not found"})
 			},
 			expectedStatus: http.StatusNotFound,
@@ -139,7 +139,7 @@ func TestKdsDeviceHandler_DeleteKdsDeviceById(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRepo := mock.NewMockKdsDeviceRepository(ctrl)
+			mockRepo := mock.NewMockKdsDeviceRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 			handler := restapi.NewKdsDeviceHandler(domain.NewKdsDeviceUsecase(mockRepo, nil, "default"))
 			req := httptest.NewRequest(http.MethodDelete, "/kds/devices/"+tt.kdsDeviceId, nil)
@@ -155,13 +155,13 @@ func TestKdsDeviceHandler_SendTestNotification(t *testing.T) {
 	tests := []struct {
 		name           string
 		kdsDeviceId    string
-		setupMock      func(r *mock.MockKdsDeviceRepository, g *mock.MockKdsPushGatewayRepository)
+		setupMock      func(r *mock.MockKdsDeviceRepoPort, g *mock.MockKdsNotificationGatewayPort)
 		expectedStatus int
 	}{
 		{
 			name:        "success",
 			kdsDeviceId: "1",
-			setupMock: func(r *mock.MockKdsDeviceRepository, g *mock.MockKdsPushGatewayRepository) {
+			setupMock: func(r *mock.MockKdsDeviceRepoPort, g *mock.MockKdsNotificationGatewayPort) {
 				r.EXPECT().GetKdsDeviceById(gomock.Any(), int64(1)).Return(domain.KdsDevice{Id: 1, PushToken: "ExponentPushToken[abc]"}, nil)
 				g.EXPECT().Send(gomock.Any(), gomock.Any()).Return([]domain.KdsPushReceipt{{Status: domain.KdsPushReceiptStatusOk}}, nil)
 			},
@@ -170,13 +170,13 @@ func TestKdsDeviceHandler_SendTestNotification(t *testing.T) {
 		{
 			name:           "invalid id",
 			kdsDeviceId:    "abc",
-			setupMock:      func(r *mock.MockKdsDeviceRepository, g *mock.MockKdsPushGatewayRepository) {},
+			setupMock:      func(r *mock.MockKdsDeviceRepoPort, g *mock.MockKdsNotificationGatewayPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:        "device not found",
 			kdsDeviceId: "99",
-			setupMock: func(r *mock.MockKdsDeviceRepository, g *mock.MockKdsPushGatewayRepository) {
+			setupMock: func(r *mock.MockKdsDeviceRepoPort, g *mock.MockKdsNotificationGatewayPort) {
 				r.EXPECT().GetKdsDeviceById(gomock.Any(), int64(99)).Return(domain.KdsDevice{}, &domain.Error{Type: domain.NotFound, Message: "not found"})
 			},
 			expectedStatus: http.StatusNotFound,
@@ -184,7 +184,7 @@ func TestKdsDeviceHandler_SendTestNotification(t *testing.T) {
 		{
 			name:        "gateway failure",
 			kdsDeviceId: "1",
-			setupMock: func(r *mock.MockKdsDeviceRepository, g *mock.MockKdsPushGatewayRepository) {
+			setupMock: func(r *mock.MockKdsDeviceRepoPort, g *mock.MockKdsNotificationGatewayPort) {
 				r.EXPECT().GetKdsDeviceById(gomock.Any(), int64(1)).Return(domain.KdsDevice{Id: 1, PushToken: "ExponentPushToken[abc]"}, nil)
 				g.EXPECT().Send(gomock.Any(), gomock.Any()).Return(nil, &domain.Error{Type: domain.BadGateway, Message: "failed to reach Expo push service"})
 			},
@@ -196,8 +196,8 @@ func TestKdsDeviceHandler_SendTestNotification(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRepo := mock.NewMockKdsDeviceRepository(ctrl)
-			mockGateway := mock.NewMockKdsPushGatewayRepository(ctrl)
+			mockRepo := mock.NewMockKdsDeviceRepoPort(ctrl)
+			mockGateway := mock.NewMockKdsNotificationGatewayPort(ctrl)
 			tt.setupMock(mockRepo, mockGateway)
 			handler := restapi.NewKdsDeviceHandler(domain.NewKdsDeviceUsecase(mockRepo, mockGateway, "default"))
 			req := httptest.NewRequest(http.MethodPost, "/kds/devices/"+tt.kdsDeviceId+"/test-notification", nil)

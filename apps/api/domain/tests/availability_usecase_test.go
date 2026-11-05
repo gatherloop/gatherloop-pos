@@ -10,15 +10,15 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-func newAvailabilityUsecase(ctrl *gomock.Controller) (domain.AvailabilityUsecase, *mock.MockAvailabilityRepository, *mock.MockProductRepository, *mock.MockVariantRepository) {
-	mockAvailabilityRepo := mock.NewMockAvailabilityRepository(ctrl)
-	mockProductRepo := mock.NewMockProductRepository(ctrl)
-	mockVariantRepo := mock.NewMockVariantRepository(ctrl)
+func newAvailabilityUsecase(ctrl *gomock.Controller) (domain.AvailabilityUsecase, *mock.MockAvailabilityRepoPort, *mock.MockProductRepoPort, *mock.MockVariantRepoPort) {
+	mockAvailabilityRepo := mock.NewMockAvailabilityRepoPort(ctrl)
+	mockProductRepo := mock.NewMockProductRepoPort(ctrl)
+	mockVariantRepo := mock.NewMockVariantRepoPort(ctrl)
 	usecase := domain.NewAvailabilityUsecase(mockAvailabilityRepo, mockProductRepo, mockVariantRepo, domain.NewAvailabilityService(mockProductRepo, mockVariantRepo, mockAvailabilityRepo))
 	return usecase, mockAvailabilityRepo, mockProductRepo, mockVariantRepo
 }
 
-func expectEmptyAvailabilityProductList(r *mock.MockProductRepository, times int) {
+func expectEmptyAvailabilityProductList(r *mock.MockProductRepoPort, times int) {
 	purchase := domain.SaleTypePurchase
 	published := domain.ProductStatusPublished
 	r.EXPECT().GetProductList(gomock.Any(), "", domain.CreatedAt, domain.Ascending, 0, 0, &purchase, &published).
@@ -71,13 +71,13 @@ func TestAvailabilityUsecase_UpdateAvailability(t *testing.T) {
 		name           string
 		productUpdates []domain.AvailabilityProductUpdate
 		variantUpdates []domain.AvailabilityVariantUpdate
-		setupMock      func(availabilityRepo *mock.MockAvailabilityRepository, productRepo *mock.MockProductRepository, variantRepo *mock.MockVariantRepository)
+		setupMock      func(availabilityRepo *mock.MockAvailabilityRepoPort, productRepo *mock.MockProductRepoPort, variantRepo *mock.MockVariantRepoPort)
 		expectedError  *domain.Error
 	}{
 		{
 			name:           "partial product update leaves quantity untouched",
 			productUpdates: []domain.AvailabilityProductUpdate{{ProductId: 1, IsAvailable: &falseValue}},
-			setupMock: func(availabilityRepo *mock.MockAvailabilityRepository, productRepo *mock.MockProductRepository, variantRepo *mock.MockVariantRepository) {
+			setupMock: func(availabilityRepo *mock.MockAvailabilityRepoPort, productRepo *mock.MockProductRepoPort, variantRepo *mock.MockVariantRepoPort) {
 				productRepo.EXPECT().GetProductById(gomock.Any(), int64(1)).
 					Return(domain.Product{Id: 1, Name: "Es Kopi Susu", AvailabilityTracking: domain.AvailabilityTrackingNone}, nil)
 				availabilityRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
@@ -89,7 +89,7 @@ func TestAvailabilityUsecase_UpdateAvailability(t *testing.T) {
 		{
 			name:           "rejects quantity against tracking = none",
 			productUpdates: []domain.AvailabilityProductUpdate{{ProductId: 1, AvailableQuantity: &quantity5}},
-			setupMock: func(availabilityRepo *mock.MockAvailabilityRepository, productRepo *mock.MockProductRepository, variantRepo *mock.MockVariantRepository) {
+			setupMock: func(availabilityRepo *mock.MockAvailabilityRepoPort, productRepo *mock.MockProductRepoPort, variantRepo *mock.MockVariantRepoPort) {
 				productRepo.EXPECT().GetProductById(gomock.Any(), int64(1)).
 					Return(domain.Product{Id: 1, Name: "Es Kopi Susu", AvailabilityTracking: domain.AvailabilityTrackingNone}, nil)
 			},
@@ -98,21 +98,21 @@ func TestAvailabilityUsecase_UpdateAvailability(t *testing.T) {
 		{
 			name:           "rejects a negative product quantity",
 			productUpdates: []domain.AvailabilityProductUpdate{{ProductId: 1, AvailableQuantity: &negativeQuantity}},
-			setupMock: func(availabilityRepo *mock.MockAvailabilityRepository, productRepo *mock.MockProductRepository, variantRepo *mock.MockVariantRepository) {
+			setupMock: func(availabilityRepo *mock.MockAvailabilityRepoPort, productRepo *mock.MockProductRepoPort, variantRepo *mock.MockVariantRepoPort) {
 			},
 			expectedError: &domain.Error{Type: domain.BadRequest},
 		},
 		{
 			name:           "rejects a negative variant quantity",
 			variantUpdates: []domain.AvailabilityVariantUpdate{{VariantId: 1, AvailableQuantity: &negativeQuantity}},
-			setupMock: func(availabilityRepo *mock.MockAvailabilityRepository, productRepo *mock.MockProductRepository, variantRepo *mock.MockVariantRepository) {
+			setupMock: func(availabilityRepo *mock.MockAvailabilityRepoPort, productRepo *mock.MockProductRepoPort, variantRepo *mock.MockVariantRepoPort) {
 			},
 			expectedError: &domain.Error{Type: domain.BadRequest},
 		},
 		{
 			name:           "rejects a variant quantity when tracked at the product level",
 			variantUpdates: []domain.AvailabilityVariantUpdate{{VariantId: 1, AvailableQuantity: &quantity5}},
-			setupMock: func(availabilityRepo *mock.MockAvailabilityRepository, productRepo *mock.MockProductRepository, variantRepo *mock.MockVariantRepository) {
+			setupMock: func(availabilityRepo *mock.MockAvailabilityRepoPort, productRepo *mock.MockProductRepoPort, variantRepo *mock.MockVariantRepoPort) {
 				variantRepo.EXPECT().GetVariantById(gomock.Any(), int64(1)).
 					Return(domain.Variant{Id: 1, Name: "Choco", Product: domain.Product{AvailabilityTracking: domain.AvailabilityTrackingProduct}}, nil)
 			},
@@ -121,7 +121,7 @@ func TestAvailabilityUsecase_UpdateAvailability(t *testing.T) {
 		{
 			name:           "updates a variant quantity when tracked at the variant level",
 			variantUpdates: []domain.AvailabilityVariantUpdate{{VariantId: 1, AvailableQuantity: &quantity5}},
-			setupMock: func(availabilityRepo *mock.MockAvailabilityRepository, productRepo *mock.MockProductRepository, variantRepo *mock.MockVariantRepository) {
+			setupMock: func(availabilityRepo *mock.MockAvailabilityRepoPort, productRepo *mock.MockProductRepoPort, variantRepo *mock.MockVariantRepoPort) {
 				variantRepo.EXPECT().GetVariantById(gomock.Any(), int64(1)).
 					Return(domain.Variant{Id: 1, Name: "Choco", Product: domain.Product{AvailabilityTracking: domain.AvailabilityTrackingVariant}}, nil)
 				availabilityRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(

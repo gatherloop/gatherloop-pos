@@ -6,23 +6,23 @@ import (
 )
 
 type AvailabilityUsecase struct {
-	availabilityRepository AvailabilityRepository
-	productRepository      ProductRepository
-	variantRepository      VariantRepository
-	availabilityService    AvailabilityService
+	availabilityRepoPort AvailabilityRepoPort
+	productRepoPort      ProductRepoPort
+	variantRepoPort      VariantRepoPort
+	availabilityService  AvailabilityService
 }
 
 func NewAvailabilityUsecase(
-	availabilityRepository AvailabilityRepository,
-	productRepository ProductRepository,
-	variantRepository VariantRepository,
+	availabilityRepoPort AvailabilityRepoPort,
+	productRepoPort ProductRepoPort,
+	variantRepoPort VariantRepoPort,
 	availabilityService AvailabilityService,
 ) AvailabilityUsecase {
 	return AvailabilityUsecase{
-		availabilityRepository: availabilityRepository,
-		productRepository:      productRepository,
-		variantRepository:      variantRepository,
-		availabilityService:    availabilityService,
+		availabilityRepoPort: availabilityRepoPort,
+		productRepoPort:      productRepoPort,
+		variantRepoPort:      variantRepoPort,
+		availabilityService:  availabilityService,
 	}
 }
 
@@ -37,7 +37,7 @@ func (usecase AvailabilityUsecase) UpdateAvailability(ctx context.Context, produ
 			return []AvailabilityProduct{}, &Error{Type: BadRequest, Message: "available quantity cannot be negative"}
 		}
 
-		product, err := usecase.productRepository.GetProductById(ctx, productUpdate.ProductId)
+		product, err := usecase.productRepoPort.GetProductById(ctx, productUpdate.ProductId)
 		if err != nil {
 			return []AvailabilityProduct{}, err
 		}
@@ -55,7 +55,7 @@ func (usecase AvailabilityUsecase) UpdateAvailability(ctx context.Context, produ
 			return []AvailabilityProduct{}, &Error{Type: BadRequest, Message: "available quantity cannot be negative"}
 		}
 
-		variant, err := usecase.variantRepository.GetVariantById(ctx, variantUpdate.VariantId)
+		variant, err := usecase.variantRepoPort.GetVariantById(ctx, variantUpdate.VariantId)
 		if err != nil {
 			return []AvailabilityProduct{}, err
 		}
@@ -67,9 +67,9 @@ func (usecase AvailabilityUsecase) UpdateAvailability(ctx context.Context, produ
 		variants[variantUpdate.VariantId] = variant
 	}
 
-	err := usecase.availabilityRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+	err := usecase.availabilityRepoPort.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
 		for _, productUpdate := range productUpdates {
-			if err := usecase.availabilityRepository.UpdateProductAvailability(ctxWithTx, productUpdate.ProductId, productUpdate.IsAvailable, productUpdate.AvailableQuantity); err != nil {
+			if err := usecase.availabilityRepoPort.UpdateProductAvailability(ctxWithTx, productUpdate.ProductId, productUpdate.IsAvailable, productUpdate.AvailableQuantity); err != nil {
 				return err
 			}
 
@@ -79,7 +79,7 @@ func (usecase AvailabilityUsecase) UpdateAvailability(ctx context.Context, produ
 		}
 
 		for _, variantUpdate := range variantUpdates {
-			if err := usecase.availabilityRepository.UpdateVariantAvailability(ctxWithTx, variantUpdate.VariantId, variantUpdate.IsAvailable, variantUpdate.AvailableQuantity); err != nil {
+			if err := usecase.availabilityRepoPort.UpdateVariantAvailability(ctxWithTx, variantUpdate.VariantId, variantUpdate.IsAvailable, variantUpdate.AvailableQuantity); err != nil {
 				return err
 			}
 
@@ -102,12 +102,12 @@ func (usecase AvailabilityUsecase) GetAvailabilityMovementList(ctx context.Conte
 		return []AvailabilityMovement{}, 0, &Error{Type: BadRequest, Message: "level must be product or variant"}
 	}
 
-	movements, err := usecase.availabilityRepository.GetAvailabilityMovementList(ctx, level, id, skip, limit)
+	movements, err := usecase.availabilityRepoPort.GetAvailabilityMovementList(ctx, level, id, skip, limit)
 	if err != nil {
 		return []AvailabilityMovement{}, 0, err
 	}
 
-	total, err := usecase.availabilityRepository.GetAvailabilityMovementListTotal(ctx, level, id)
+	total, err := usecase.availabilityRepoPort.GetAvailabilityMovementListTotal(ctx, level, id)
 	if err != nil {
 		return []AvailabilityMovement{}, 0, err
 	}

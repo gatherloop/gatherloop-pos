@@ -5,11 +5,11 @@ import "context"
 const maxTableCodeGenerationAttempts = 5
 
 type TableService struct {
-	tableRepository TableRepository
+	tableRepoPort TableRepoPort
 }
 
-func NewTableService(tableRepository TableRepository) TableService {
-	return TableService{tableRepository: tableRepository}
+func NewTableService(tableRepoPort TableRepoPort) TableService {
+	return TableService{tableRepoPort: tableRepoPort}
 }
 
 func (service TableService) GenerateUniqueCode(ctx context.Context) (string, *Error) {
@@ -19,7 +19,7 @@ func (service TableService) GenerateUniqueCode(ctx context.Context) (string, *Er
 			return "", &Error{Type: InternalServerError, Message: "failed to generate table code"}
 		}
 
-		if existing, existingErr := service.tableRepository.GetTableByCode(ctx, code); existingErr == nil && existing.Id > 0 {
+		if existing, existingErr := service.tableRepoPort.GetTableByCode(ctx, code); existingErr == nil && existing.Id > 0 {
 			continue
 		}
 

@@ -10,26 +10,26 @@ import (
 const guestDispatchBatchSize = 50
 
 type GuestNotificationService struct {
-	guestNotificationRepository GuestNotificationRepository
-	transactionRepository       TransactionRepository
-	paymentRepository           PaymentRepository
-	whatsappGatewayRepository   WhatsAppGatewayRepository
-	orderWebBaseURL             string
+	guestNotificationRepoPort GuestNotificationRepoPort
+	transactionRepoPort       TransactionRepoPort
+	paymentRepoPort           PaymentRepoPort
+	whatsAppGatewayPort       WhatsAppGatewayPort
+	orderWebBaseURL           string
 }
 
 func NewGuestNotificationService(
-	guestNotificationRepository GuestNotificationRepository,
-	transactionRepository TransactionRepository,
-	paymentRepository PaymentRepository,
-	whatsappGatewayRepository WhatsAppGatewayRepository,
+	guestNotificationRepoPort GuestNotificationRepoPort,
+	transactionRepoPort TransactionRepoPort,
+	paymentRepoPort PaymentRepoPort,
+	whatsAppGatewayPort WhatsAppGatewayPort,
 	orderWebBaseURL string,
 ) GuestNotificationService {
 	return GuestNotificationService{
-		guestNotificationRepository: guestNotificationRepository,
-		transactionRepository:       transactionRepository,
-		paymentRepository:           paymentRepository,
-		whatsappGatewayRepository:   whatsappGatewayRepository,
-		orderWebBaseURL:             orderWebBaseURL,
+		guestNotificationRepoPort: guestNotificationRepoPort,
+		transactionRepoPort:       transactionRepoPort,
+		paymentRepoPort:           paymentRepoPort,
+		whatsAppGatewayPort:       whatsAppGatewayPort,
+		orderWebBaseURL:           orderWebBaseURL,
 	}
 }
 
@@ -42,7 +42,7 @@ func (service GuestNotificationService) TriggerDispatch() {
 }
 
 func (service GuestNotificationService) DispatchPending(ctx context.Context) *Error {
-	notifications, err := service.guestNotificationRepository.ClaimPendingGuestNotifications(ctx, guestDispatchBatchSize)
+	notifications, err := service.guestNotificationRepoPort.ClaimPendingGuestNotifications(ctx, guestDispatchBatchSize)
 	if err != nil {
 		return err
 	}
@@ -65,13 +65,13 @@ func (service GuestNotificationService) dispatchOne(ctx context.Context, notific
 		return
 	}
 
-	transaction, err := service.transactionRepository.GetTransactionById(ctx, notification.TransactionId)
+	transaction, err := service.transactionRepoPort.GetTransactionById(ctx, notification.TransactionId)
 	if err != nil {
 		service.markRejected(ctx, notification.Id, "failed to load transaction: "+err.Message, logger)
 		return
 	}
 
-	payment, err := service.paymentRepository.GetPaymentByTransactionId(ctx, notification.TransactionId)
+	payment, err := service.paymentRepoPort.GetPaymentByTransactionId(ctx, notification.TransactionId)
 	if err != nil {
 		service.markRejected(ctx, notification.Id, "failed to load payment: "+err.Message, logger)
 		return
@@ -84,7 +84,7 @@ func (service GuestNotificationService) dispatchOne(ctx context.Context, notific
 	orderUrl := BuildOrderStatusUrl(service.orderWebBaseURL, payment.PartnerReferenceNo, accessKey)
 	message := BuildGuestWhatsappMessage(transaction, payment, orderUrl)
 
-	result, sendErr := service.whatsappGatewayRepository.Send(ctx, WhatsAppMessage{To: *notification.WhatsappNumber, Body: message})
+	result, sendErr := service.whatsAppGatewayPort.Send(ctx, WhatsAppMessage{To: *notification.WhatsappNumber, Body: message})
 	if sendErr != nil {
 		service.markUnknown(ctx, notification.Id, "outcome unknown: "+sendErr.Message, logger)
 		return
@@ -92,7 +92,7 @@ func (service GuestNotificationService) dispatchOne(ctx context.Context, notific
 
 	switch result.Outcome {
 	case WhatsAppSendOutcomeAccepted:
-		if markErr := service.guestNotificationRepository.MarkGuestNotificationSent(ctx, notification.Id, result.ProviderMessageId); markErr != nil {
+		if markErr := service.guestNotificationRepoPort.MarkGuestNotificationSent(ctx, notification.Id, result.ProviderMessageId); markErr != nil {
 			logger.Error("failed to mark guest notification sent", slog.Any("error", markErr))
 		}
 		logger.Info("guest whatsapp notification sent", slog.String("providerMessageId", result.ProviderMessageId))
@@ -108,21 +108,21 @@ func (service GuestNotificationService) dispatchOne(ctx context.Context, notific
 }
 
 func (service GuestNotificationService) markSkipped(ctx context.Context, id int64, detail string, logger *slog.Logger) {
-	if err := service.guestNotificationRepository.MarkGuestNotificationSkipped(ctx, id, detail); err != nil {
+	if err := service.guestNotificationRepoPort.MarkGuestNotificationSkipped(ctx, id, detail); err != nil {
 		logger.Error("failed to mark guest notification skipped", slog.Any("error", err))
 	}
 	logger.Warn("guest whatsapp notification skipped", slog.String("detail", detail))
 }
 
 func (service GuestNotificationService) markRejected(ctx context.Context, id int64, detail string, logger *slog.Logger) {
-	if err := service.guestNotificationRepository.MarkGuestNotificationFailed(ctx, id, detail); err != nil {
+	if err := service.guestNotificationRepoPort.MarkGuestNotificationFailed(ctx, id, detail); err != nil {
 		logger.Error("failed to mark guest notification failed", slog.Any("error", err))
 	}
 	logger.Warn("guest whatsapp notification rejected", slog.String("detail", detail))
 }
 
 func (service GuestNotificationService) markUnknown(ctx context.Context, id int64, detail string, logger *slog.Logger) {
-	if err := service.guestNotificationRepository.MarkGuestNotificationUnknownOutcome(ctx, id, detail); err != nil {
+	if err := service.guestNotificationRepoPort.MarkGuestNotificationUnknownOutcome(ctx, id, detail); err != nil {
 		logger.Error("failed to mark guest notification failed", slog.Any("error", err))
 	}
 	logger.Warn("guest whatsapp notification outcome unknown", slog.String("detail", detail))

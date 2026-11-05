@@ -6,11 +6,11 @@ import (
 )
 
 type MaterialService struct {
-	supplierRepository SupplierRepository
+	supplierRepoPort SupplierRepoPort
 }
 
-func NewMaterialService(supplierRepository SupplierRepository) MaterialService {
-	return MaterialService{supplierRepository: supplierRepository}
+func NewMaterialService(supplierRepoPort SupplierRepoPort) MaterialService {
+	return MaterialService{supplierRepoPort: supplierRepoPort}
 }
 
 func (service MaterialService) ValidateSuppliers(ctx context.Context, suppliers []MaterialSupplier) *Error {
@@ -28,7 +28,7 @@ func (service MaterialService) ValidateSuppliers(ctx context.Context, suppliers 
 			return &Error{Type: BadRequest, Message: "invalid purchase_type: must be online, offline, or delivery"}
 		}
 
-		_, err := service.supplierRepository.GetSupplierById(ctx, p.SupplierId)
+		_, err := service.supplierRepoPort.GetSupplierById(ctx, p.SupplierId)
 		if err != nil {
 			return &Error{Type: BadRequest, Message: "supplier not found or has been deleted"}
 		}

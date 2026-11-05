@@ -19,13 +19,13 @@ func TestSupplierHandler_GetSupplierList(t *testing.T) {
 	tests := []struct {
 		name           string
 		url            string
-		setupMock      func(r *mock.MockSupplierRepository)
+		setupMock      func(r *mock.MockSupplierRepoPort)
 		expectedStatus int
 	}{
 		{
 			name: "success",
 			url:  "/suppliers",
-			setupMock: func(r *mock.MockSupplierRepository) {
+			setupMock: func(r *mock.MockSupplierRepoPort) {
 				r.EXPECT().GetSupplierList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]domain.Supplier{{Id: 1}}, nil)
 				r.EXPECT().GetSupplierListTotal(gomock.Any(), gomock.Any()).Return(int64(1), nil)
 			},
@@ -34,13 +34,13 @@ func TestSupplierHandler_GetSupplierList(t *testing.T) {
 		{
 			name:           "invalid skip param",
 			url:            "/suppliers?skip=abc",
-			setupMock:      func(r *mock.MockSupplierRepository) {},
+			setupMock:      func(r *mock.MockSupplierRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name: "repo error",
 			url:  "/suppliers",
-			setupMock: func(r *mock.MockSupplierRepository) {
+			setupMock: func(r *mock.MockSupplierRepoPort) {
 				r.EXPECT().GetSupplierList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &domain.Error{Type: domain.InternalServerError, Message: "db error"})
 			},
 			expectedStatus: http.StatusInternalServerError,
@@ -51,7 +51,7 @@ func TestSupplierHandler_GetSupplierList(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRepo := mock.NewMockSupplierRepository(ctrl)
+			mockRepo := mock.NewMockSupplierRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 			handler := restapi.NewSupplierHandler(domain.NewSupplierUsecase(mockRepo))
 			req := httptest.NewRequest(http.MethodGet, tt.url, nil)
@@ -66,13 +66,13 @@ func TestSupplierHandler_GetSupplierById(t *testing.T) {
 	tests := []struct {
 		name           string
 		supplierId     string
-		setupMock      func(r *mock.MockSupplierRepository)
+		setupMock      func(r *mock.MockSupplierRepoPort)
 		expectedStatus int
 	}{
 		{
 			name:       "success",
 			supplierId: "1",
-			setupMock: func(r *mock.MockSupplierRepository) {
+			setupMock: func(r *mock.MockSupplierRepoPort) {
 				r.EXPECT().GetSupplierById(gomock.Any(), int64(1)).Return(domain.Supplier{Id: 1, Name: "PT Gula"}, nil)
 			},
 			expectedStatus: http.StatusOK,
@@ -80,7 +80,7 @@ func TestSupplierHandler_GetSupplierById(t *testing.T) {
 		{
 			name:       "not found",
 			supplierId: "99",
-			setupMock: func(r *mock.MockSupplierRepository) {
+			setupMock: func(r *mock.MockSupplierRepoPort) {
 				r.EXPECT().GetSupplierById(gomock.Any(), int64(99)).Return(domain.Supplier{}, &domain.Error{Type: domain.NotFound, Message: "not found"})
 			},
 			expectedStatus: http.StatusNotFound,
@@ -88,7 +88,7 @@ func TestSupplierHandler_GetSupplierById(t *testing.T) {
 		{
 			name:           "invalid id",
 			supplierId:     "abc",
-			setupMock:      func(r *mock.MockSupplierRepository) {},
+			setupMock:      func(r *mock.MockSupplierRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 	}
@@ -97,7 +97,7 @@ func TestSupplierHandler_GetSupplierById(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRepo := mock.NewMockSupplierRepository(ctrl)
+			mockRepo := mock.NewMockSupplierRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 			handler := restapi.NewSupplierHandler(domain.NewSupplierUsecase(mockRepo))
 			req := httptest.NewRequest(http.MethodGet, "/suppliers/"+tt.supplierId, nil)
@@ -113,13 +113,13 @@ func TestSupplierHandler_CreateSupplier(t *testing.T) {
 	tests := []struct {
 		name           string
 		body           string
-		setupMock      func(r *mock.MockSupplierRepository)
+		setupMock      func(r *mock.MockSupplierRepoPort)
 		expectedStatus int
 	}{
 		{
 			name: "success",
 			body: `{"name": "PT Gula", "address": "Jakarta", "mapsLink": "https://maps.google.com"}`,
-			setupMock: func(r *mock.MockSupplierRepository) {
+			setupMock: func(r *mock.MockSupplierRepoPort) {
 				r.EXPECT().CreateSupplier(gomock.Any(), gomock.Any()).Return(domain.Supplier{Id: 1, Name: "PT Gula"}, nil)
 			},
 			expectedStatus: http.StatusOK,
@@ -127,13 +127,13 @@ func TestSupplierHandler_CreateSupplier(t *testing.T) {
 		{
 			name:           "invalid JSON body",
 			body:           `{invalid`,
-			setupMock:      func(r *mock.MockSupplierRepository) {},
+			setupMock:      func(r *mock.MockSupplierRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name: "repo error",
 			body: `{"name": "PT Gula", "address": "Jakarta", "mapsLink": "https://maps.google.com"}`,
-			setupMock: func(r *mock.MockSupplierRepository) {
+			setupMock: func(r *mock.MockSupplierRepoPort) {
 				r.EXPECT().CreateSupplier(gomock.Any(), gomock.Any()).Return(domain.Supplier{}, &domain.Error{Type: domain.InternalServerError, Message: "db error"})
 			},
 			expectedStatus: http.StatusInternalServerError,
@@ -144,7 +144,7 @@ func TestSupplierHandler_CreateSupplier(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRepo := mock.NewMockSupplierRepository(ctrl)
+			mockRepo := mock.NewMockSupplierRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 			handler := restapi.NewSupplierHandler(domain.NewSupplierUsecase(mockRepo))
 			req := httptest.NewRequest(http.MethodPost, "/suppliers", bytes.NewBufferString(tt.body))
@@ -161,14 +161,14 @@ func TestSupplierHandler_UpdateSupplierById(t *testing.T) {
 		name           string
 		supplierId     string
 		body           string
-		setupMock      func(r *mock.MockSupplierRepository)
+		setupMock      func(r *mock.MockSupplierRepoPort)
 		expectedStatus int
 	}{
 		{
 			name:       "success",
 			supplierId: "1",
 			body:       `{"name": "CV Garam", "address": "Surabaya", "mapsLink": "https://maps.google.com"}`,
-			setupMock: func(r *mock.MockSupplierRepository) {
+			setupMock: func(r *mock.MockSupplierRepoPort) {
 				r.EXPECT().UpdateSupplierById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Supplier{Id: 1, Name: "CV Garam"}, nil)
 			},
 			expectedStatus: http.StatusOK,
@@ -177,14 +177,14 @@ func TestSupplierHandler_UpdateSupplierById(t *testing.T) {
 			name:           "invalid id",
 			supplierId:     "abc",
 			body:           `{}`,
-			setupMock:      func(r *mock.MockSupplierRepository) {},
+			setupMock:      func(r *mock.MockSupplierRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:       "not found",
 			supplierId: "99",
 			body:       `{"name": "CV Garam", "address": "Surabaya", "mapsLink": "https://maps.google.com"}`,
-			setupMock: func(r *mock.MockSupplierRepository) {
+			setupMock: func(r *mock.MockSupplierRepoPort) {
 				r.EXPECT().UpdateSupplierById(gomock.Any(), gomock.Any(), int64(99)).Return(domain.Supplier{}, &domain.Error{Type: domain.NotFound, Message: "not found"})
 			},
 			expectedStatus: http.StatusNotFound,
@@ -195,7 +195,7 @@ func TestSupplierHandler_UpdateSupplierById(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRepo := mock.NewMockSupplierRepository(ctrl)
+			mockRepo := mock.NewMockSupplierRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 			handler := restapi.NewSupplierHandler(domain.NewSupplierUsecase(mockRepo))
 			req := httptest.NewRequest(http.MethodPut, "/suppliers/"+tt.supplierId, bytes.NewBufferString(tt.body))
@@ -212,13 +212,13 @@ func TestSupplierHandler_DeleteSupplierById(t *testing.T) {
 	tests := []struct {
 		name           string
 		supplierId     string
-		setupMock      func(r *mock.MockSupplierRepository)
+		setupMock      func(r *mock.MockSupplierRepoPort)
 		expectedStatus int
 	}{
 		{
 			name:       "success",
 			supplierId: "1",
-			setupMock: func(r *mock.MockSupplierRepository) {
+			setupMock: func(r *mock.MockSupplierRepoPort) {
 				r.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, callback func(context.Context) *domain.Error) *domain.Error {
 						return callback(ctx)
@@ -232,13 +232,13 @@ func TestSupplierHandler_DeleteSupplierById(t *testing.T) {
 		{
 			name:           "invalid id",
 			supplierId:     "abc",
-			setupMock:      func(r *mock.MockSupplierRepository) {},
+			setupMock:      func(r *mock.MockSupplierRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:       "not found",
 			supplierId: "99",
-			setupMock: func(r *mock.MockSupplierRepository) {
+			setupMock: func(r *mock.MockSupplierRepoPort) {
 				r.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, callback func(context.Context) *domain.Error) *domain.Error {
 						return callback(ctx)
@@ -254,7 +254,7 @@ func TestSupplierHandler_DeleteSupplierById(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRepo := mock.NewMockSupplierRepository(ctrl)
+			mockRepo := mock.NewMockSupplierRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 			handler := restapi.NewSupplierHandler(domain.NewSupplierUsecase(mockRepo))
 			req := httptest.NewRequest(http.MethodDelete, "/suppliers/"+tt.supplierId, nil)

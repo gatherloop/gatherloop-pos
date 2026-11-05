@@ -14,18 +14,18 @@ import (
 const guestOrderWebBaseURL = "https://order.gatherloop.id"
 
 type guestNotificationServiceMocks struct {
-	repo            *mock.MockGuestNotificationRepository
-	transactionRepo *mock.MockTransactionRepository
-	paymentRepo     *mock.MockPaymentRepository
-	whatsappGateway *mock.MockWhatsAppGatewayRepository
+	repo            *mock.MockGuestNotificationRepoPort
+	transactionRepo *mock.MockTransactionRepoPort
+	paymentRepo     *mock.MockPaymentRepoPort
+	whatsappGateway *mock.MockWhatsAppGatewayPort
 }
 
 func newGuestNotificationServiceMocks(ctrl *gomock.Controller) guestNotificationServiceMocks {
 	return guestNotificationServiceMocks{
-		repo:            mock.NewMockGuestNotificationRepository(ctrl),
-		transactionRepo: mock.NewMockTransactionRepository(ctrl),
-		paymentRepo:     mock.NewMockPaymentRepository(ctrl),
-		whatsappGateway: mock.NewMockWhatsAppGatewayRepository(ctrl),
+		repo:            mock.NewMockGuestNotificationRepoPort(ctrl),
+		transactionRepo: mock.NewMockTransactionRepoPort(ctrl),
+		paymentRepo:     mock.NewMockPaymentRepoPort(ctrl),
+		whatsappGateway: mock.NewMockWhatsAppGatewayPort(ctrl),
 	}
 }
 

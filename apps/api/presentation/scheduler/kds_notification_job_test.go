@@ -20,7 +20,7 @@ func TestKdsNotificationDispatchJob_RunClaimsPendingNotifications(t *testing.T) 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	repository := mock.NewMockKdsNotificationRepository(ctrl)
+	repository := mock.NewMockKdsNotificationRepoPort(ctrl)
 	repository.EXPECT().ClaimPendingKdsNotifications(gomock.Any(), gomock.Any()).Return(nil, nil)
 
 	job := KdsNotificationDispatchJob{

@@ -15,14 +15,14 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-func newPublicHandler(t *testing.T) (restapi.PublicHandler, *mock.MockProductRepository, *mock.MockCategoryRepository, *mock.MockVariantRepository, *mock.MockTableRepository) {
+func newPublicHandler(t *testing.T) (restapi.PublicHandler, *mock.MockProductRepoPort, *mock.MockCategoryRepoPort, *mock.MockVariantRepoPort, *mock.MockTableRepoPort) {
 	ctrl := gomock.NewController(t)
 	t.Cleanup(ctrl.Finish)
 
-	productRepo := mock.NewMockProductRepository(ctrl)
-	categoryRepo := mock.NewMockCategoryRepository(ctrl)
-	variantRepo := mock.NewMockVariantRepository(ctrl)
-	tableRepo := mock.NewMockTableRepository(ctrl)
+	productRepo := mock.NewMockProductRepoPort(ctrl)
+	categoryRepo := mock.NewMockCategoryRepoPort(ctrl)
+	variantRepo := mock.NewMockVariantRepoPort(ctrl)
+	tableRepo := mock.NewMockTableRepoPort(ctrl)
 
 	handler := restapi.NewPublicHandler(
 		domain.NewProductUsecase(productRepo, variantRepo),
@@ -231,13 +231,13 @@ func TestPublicHandler_GetTableByCode(t *testing.T) {
 	tests := []struct {
 		name           string
 		code           string
-		setupMock      func(r *mock.MockTableRepository)
+		setupMock      func(r *mock.MockTableRepoPort)
 		expectedStatus int
 	}{
 		{
 			name: "known code resolves to id, label and floor number",
 			code: "0123456789",
-			setupMock: func(r *mock.MockTableRepository) {
+			setupMock: func(r *mock.MockTableRepoPort) {
 				r.EXPECT().GetTableByCode(gomock.Any(), "0123456789").Return(domain.Table{Id: 1, Code: "0123456789", Label: "Meja 1", FloorNumber: 2}, nil)
 			},
 			expectedStatus: http.StatusOK,
@@ -245,7 +245,7 @@ func TestPublicHandler_GetTableByCode(t *testing.T) {
 		{
 			name: "unknown code is not found",
 			code: "ZZZZZZZZZZ",
-			setupMock: func(r *mock.MockTableRepository) {
+			setupMock: func(r *mock.MockTableRepoPort) {
 				r.EXPECT().GetTableByCode(gomock.Any(), "ZZZZZZZZZZ").Return(domain.Table{}, &domain.Error{Type: domain.NotFound, Message: "not found"})
 			},
 			expectedStatus: http.StatusNotFound,

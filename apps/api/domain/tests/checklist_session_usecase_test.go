@@ -11,9 +11,9 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-func newChecklistSessionUsecase(ctrl *gomock.Controller) (domain.ChecklistSessionUsecase, *mock.MockChecklistSessionRepository, *mock.MockChecklistTemplateRepository) {
-	sessionRepo := mock.NewMockChecklistSessionRepository(ctrl)
-	templateRepo := mock.NewMockChecklistTemplateRepository(ctrl)
+func newChecklistSessionUsecase(ctrl *gomock.Controller) (domain.ChecklistSessionUsecase, *mock.MockChecklistSessionRepoPort, *mock.MockChecklistTemplateRepoPort) {
+	sessionRepo := mock.NewMockChecklistSessionRepoPort(ctrl)
+	templateRepo := mock.NewMockChecklistTemplateRepoPort(ctrl)
 	return domain.NewChecklistSessionUsecase(sessionRepo, templateRepo), sessionRepo, templateRepo
 }
 
@@ -50,7 +50,7 @@ func TestChecklistSessionUsecase_CreateChecklistSession(t *testing.T) {
 	tests := []struct {
 		name          string
 		input         domain.ChecklistSession
-		setupMock     func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository)
+		setupMock     func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort)
 		expectedId    int64
 		expectedError *domain.Error
 	}{
@@ -60,7 +60,7 @@ func TestChecklistSessionUsecase_CreateChecklistSession(t *testing.T) {
 				ChecklistTemplateId: 1,
 				Date:                "2026-04-05",
 			},
-			setupMock: func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository) {
+			setupMock: func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort) {
 				sessionRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				templateRepo.EXPECT().GetChecklistTemplateById(gomock.Any(), int64(1)).
@@ -78,7 +78,7 @@ func TestChecklistSessionUsecase_CreateChecklistSession(t *testing.T) {
 				ChecklistTemplateId: 2,
 				Date:                "2026-04-05",
 			},
-			setupMock: func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository) {
+			setupMock: func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort) {
 				sessionRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				templateRepo.EXPECT().GetChecklistTemplateById(gomock.Any(), int64(2)).
@@ -96,7 +96,7 @@ func TestChecklistSessionUsecase_CreateChecklistSession(t *testing.T) {
 				ChecklistTemplateId: 0,
 				Date:                "2026-04-05",
 			},
-			setupMock: func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository) {
+			setupMock: func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort) {
 			},
 			expectedError: &domain.Error{Type: domain.BadRequest},
 		},
@@ -106,7 +106,7 @@ func TestChecklistSessionUsecase_CreateChecklistSession(t *testing.T) {
 				ChecklistTemplateId: 1,
 				Date:                "",
 			},
-			setupMock: func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository) {
+			setupMock: func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort) {
 			},
 			expectedError: &domain.Error{Type: domain.BadRequest},
 		},
@@ -116,7 +116,7 @@ func TestChecklistSessionUsecase_CreateChecklistSession(t *testing.T) {
 				ChecklistTemplateId: 99,
 				Date:                "2026-04-05",
 			},
-			setupMock: func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository) {
+			setupMock: func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort) {
 				sessionRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				templateRepo.EXPECT().GetChecklistTemplateById(gomock.Any(), int64(99)).
@@ -130,7 +130,7 @@ func TestChecklistSessionUsecase_CreateChecklistSession(t *testing.T) {
 				ChecklistTemplateId: 1,
 				Date:                "2026-04-05",
 			},
-			setupMock: func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository) {
+			setupMock: func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort) {
 				sessionRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				templateRepo.EXPECT().GetChecklistTemplateById(gomock.Any(), int64(1)).
@@ -146,7 +146,7 @@ func TestChecklistSessionUsecase_CreateChecklistSession(t *testing.T) {
 				ChecklistTemplateId: 1,
 				Date:                "2026-04-05",
 			},
-			setupMock: func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository) {
+			setupMock: func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort) {
 				sessionRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				templateRepo.EXPECT().GetChecklistTemplateById(gomock.Any(), int64(1)).
@@ -185,14 +185,14 @@ func TestChecklistSessionUsecase_GetChecklistSessionById(t *testing.T) {
 	tests := []struct {
 		name          string
 		id            int64
-		setupMock     func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository)
+		setupMock     func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort)
 		expectedId    int64
 		expectedError *domain.Error
 	}{
 		{
 			name: "success",
 			id:   1,
-			setupMock: func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository) {
+			setupMock: func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort) {
 				sessionRepo.EXPECT().GetChecklistSessionById(gomock.Any(), int64(1)).
 					Return(domain.ChecklistSession{Id: 1, ChecklistTemplateId: 1, Date: "2026-04-05"}, nil)
 			},
@@ -201,7 +201,7 @@ func TestChecklistSessionUsecase_GetChecklistSessionById(t *testing.T) {
 		{
 			name: "not found",
 			id:   99,
-			setupMock: func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository) {
+			setupMock: func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort) {
 				sessionRepo.EXPECT().GetChecklistSessionById(gomock.Any(), int64(99)).
 					Return(domain.ChecklistSession{}, &domain.Error{Type: domain.NotFound, Message: "not found"})
 			},
@@ -234,13 +234,13 @@ func TestChecklistSessionUsecase_DeleteChecklistSessionById(t *testing.T) {
 	tests := []struct {
 		name          string
 		id            int64
-		setupMock     func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository)
+		setupMock     func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort)
 		expectedError *domain.Error
 	}{
 		{
 			name: "success",
 			id:   1,
-			setupMock: func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository) {
+			setupMock: func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort) {
 				sessionRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				sessionRepo.EXPECT().GetChecklistSessionById(gomock.Any(), int64(1)).
@@ -251,7 +251,7 @@ func TestChecklistSessionUsecase_DeleteChecklistSessionById(t *testing.T) {
 		{
 			name: "not found",
 			id:   99,
-			setupMock: func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository) {
+			setupMock: func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort) {
 				sessionRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				sessionRepo.EXPECT().GetChecklistSessionById(gomock.Any(), int64(99)).
@@ -262,7 +262,7 @@ func TestChecklistSessionUsecase_DeleteChecklistSessionById(t *testing.T) {
 		{
 			name: "repo error on delete",
 			id:   1,
-			setupMock: func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository) {
+			setupMock: func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort) {
 				sessionRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				sessionRepo.EXPECT().GetChecklistSessionById(gomock.Any(), int64(1)).
@@ -300,13 +300,13 @@ func TestChecklistSessionUsecase_CheckSessionItem(t *testing.T) {
 	tests := []struct {
 		name          string
 		itemId        int64
-		setupMock     func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository)
+		setupMock     func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort)
 		expectedError *domain.Error
 	}{
 		{
 			name:   "success - item without sub-items, not last item",
 			itemId: 10,
-			setupMock: func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository) {
+			setupMock: func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort) {
 				sessionRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				sessionRepo.EXPECT().GetChecklistSessionItemById(gomock.Any(), int64(10)).
@@ -322,7 +322,7 @@ func TestChecklistSessionUsecase_CheckSessionItem(t *testing.T) {
 		{
 			name:   "success - item without sub-items, last item (auto-complete session)",
 			itemId: 10,
-			setupMock: func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository) {
+			setupMock: func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort) {
 				sessionRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				sessionRepo.EXPECT().GetChecklistSessionItemById(gomock.Any(), int64(10)).
@@ -339,7 +339,7 @@ func TestChecklistSessionUsecase_CheckSessionItem(t *testing.T) {
 		{
 			name:   "error - item has sub-items (cannot check directly)",
 			itemId: 20,
-			setupMock: func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository) {
+			setupMock: func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort) {
 				sessionRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				sessionRepo.EXPECT().GetChecklistSessionItemById(gomock.Any(), int64(20)).
@@ -356,7 +356,7 @@ func TestChecklistSessionUsecase_CheckSessionItem(t *testing.T) {
 		{
 			name:   "item not found",
 			itemId: 99,
-			setupMock: func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository) {
+			setupMock: func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort) {
 				sessionRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				sessionRepo.EXPECT().GetChecklistSessionItemById(gomock.Any(), int64(99)).
@@ -392,13 +392,13 @@ func TestChecklistSessionUsecase_UncheckSessionItem(t *testing.T) {
 	tests := []struct {
 		name          string
 		itemId        int64
-		setupMock     func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository)
+		setupMock     func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort)
 		expectedError *domain.Error
 	}{
 		{
 			name:   "success - session was not completed",
 			itemId: 10,
-			setupMock: func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository) {
+			setupMock: func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort) {
 				sessionRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				sessionRepo.EXPECT().GetChecklistSessionItemById(gomock.Any(), int64(10)).
@@ -411,7 +411,7 @@ func TestChecklistSessionUsecase_UncheckSessionItem(t *testing.T) {
 		{
 			name:   "success - session was completed (revert session completion)",
 			itemId: 10,
-			setupMock: func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository) {
+			setupMock: func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort) {
 				sessionRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				sessionRepo.EXPECT().GetChecklistSessionItemById(gomock.Any(), int64(10)).
@@ -425,7 +425,7 @@ func TestChecklistSessionUsecase_UncheckSessionItem(t *testing.T) {
 		{
 			name:   "error - item has sub-items (cannot uncheck directly)",
 			itemId: 20,
-			setupMock: func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository) {
+			setupMock: func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort) {
 				sessionRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				sessionRepo.EXPECT().GetChecklistSessionItemById(gomock.Any(), int64(20)).
@@ -443,7 +443,7 @@ func TestChecklistSessionUsecase_UncheckSessionItem(t *testing.T) {
 		{
 			name:   "item not found",
 			itemId: 99,
-			setupMock: func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository) {
+			setupMock: func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort) {
 				sessionRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				sessionRepo.EXPECT().GetChecklistSessionItemById(gomock.Any(), int64(99)).
@@ -479,13 +479,13 @@ func TestChecklistSessionUsecase_CheckSessionSubItem(t *testing.T) {
 	tests := []struct {
 		name          string
 		subItemId     int64
-		setupMock     func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository)
+		setupMock     func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort)
 		expectedError *domain.Error
 	}{
 		{
 			name:      "success - not last sub-item",
 			subItemId: 100,
-			setupMock: func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository) {
+			setupMock: func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort) {
 				sessionRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				sessionRepo.EXPECT().GetChecklistSessionSubItemById(gomock.Any(), int64(100)).
@@ -501,7 +501,7 @@ func TestChecklistSessionUsecase_CheckSessionSubItem(t *testing.T) {
 		{
 			name:      "success - last sub-item (auto-complete item), not last item",
 			subItemId: 100,
-			setupMock: func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository) {
+			setupMock: func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort) {
 				sessionRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				sessionRepo.EXPECT().GetChecklistSessionSubItemById(gomock.Any(), int64(100)).
@@ -525,7 +525,7 @@ func TestChecklistSessionUsecase_CheckSessionSubItem(t *testing.T) {
 		{
 			name:      "success - last sub-item (auto-complete item and session)",
 			subItemId: 100,
-			setupMock: func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository) {
+			setupMock: func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort) {
 				sessionRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				sessionRepo.EXPECT().GetChecklistSessionSubItemById(gomock.Any(), int64(100)).
@@ -550,7 +550,7 @@ func TestChecklistSessionUsecase_CheckSessionSubItem(t *testing.T) {
 		{
 			name:      "sub-item not found",
 			subItemId: 99,
-			setupMock: func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository) {
+			setupMock: func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort) {
 				sessionRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				sessionRepo.EXPECT().GetChecklistSessionSubItemById(gomock.Any(), int64(99)).
@@ -586,13 +586,13 @@ func TestChecklistSessionUsecase_UncheckSessionSubItem(t *testing.T) {
 	tests := []struct {
 		name          string
 		subItemId     int64
-		setupMock     func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository)
+		setupMock     func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort)
 		expectedError *domain.Error
 	}{
 		{
 			name:      "success - parent item was not completed",
 			subItemId: 100,
-			setupMock: func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository) {
+			setupMock: func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort) {
 				sessionRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				sessionRepo.EXPECT().GetChecklistSessionSubItemById(gomock.Any(), int64(100)).
@@ -605,7 +605,7 @@ func TestChecklistSessionUsecase_UncheckSessionSubItem(t *testing.T) {
 		{
 			name:      "success - parent item was completed (revert item and session completion)",
 			subItemId: 100,
-			setupMock: func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository) {
+			setupMock: func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort) {
 				sessionRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				sessionRepo.EXPECT().GetChecklistSessionSubItemById(gomock.Any(), int64(100)).
@@ -621,7 +621,7 @@ func TestChecklistSessionUsecase_UncheckSessionSubItem(t *testing.T) {
 		{
 			name:      "success - parent item and session were completed (revert both)",
 			subItemId: 100,
-			setupMock: func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository) {
+			setupMock: func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort) {
 				sessionRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				sessionRepo.EXPECT().GetChecklistSessionSubItemById(gomock.Any(), int64(100)).
@@ -638,7 +638,7 @@ func TestChecklistSessionUsecase_UncheckSessionSubItem(t *testing.T) {
 		{
 			name:      "sub-item not found",
 			subItemId: 99,
-			setupMock: func(sessionRepo *mock.MockChecklistSessionRepository, templateRepo *mock.MockChecklistTemplateRepository) {
+			setupMock: func(sessionRepo *mock.MockChecklistSessionRepoPort, templateRepo *mock.MockChecklistTemplateRepoPort) {
 				sessionRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				sessionRepo.EXPECT().GetChecklistSessionSubItemById(gomock.Any(), int64(99)).

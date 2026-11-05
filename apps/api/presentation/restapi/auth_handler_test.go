@@ -20,13 +20,13 @@ func TestAuthHandler_Login(t *testing.T) {
 	tests := []struct {
 		name           string
 		body           string
-		setupMock      func(r *mock.MockAuthRepository)
+		setupMock      func(r *mock.MockAuthRepoPort)
 		expectedStatus int
 	}{
 		{
 			name: "success",
 			body: `{"username": "admin", "password": "secret"}`,
-			setupMock: func(r *mock.MockAuthRepository) {
+			setupMock: func(r *mock.MockAuthRepoPort) {
 				r.EXPECT().GetUserByUsername(gomock.Any(), "admin").Return(domain.User{Id: 1, Username: "admin", Password: string(hashedPassword)}, nil)
 			},
 			expectedStatus: http.StatusOK,
@@ -34,13 +34,13 @@ func TestAuthHandler_Login(t *testing.T) {
 		{
 			name:           "invalid JSON body",
 			body:           `{invalid`,
-			setupMock:      func(r *mock.MockAuthRepository) {},
+			setupMock:      func(r *mock.MockAuthRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name: "user not found",
 			body: `{"username": "unknown", "password": "secret"}`,
-			setupMock: func(r *mock.MockAuthRepository) {
+			setupMock: func(r *mock.MockAuthRepoPort) {
 				r.EXPECT().GetUserByUsername(gomock.Any(), "unknown").Return(domain.User{}, &domain.Error{Type: domain.NotFound, Message: "user not found"})
 			},
 			expectedStatus: http.StatusNotFound,
@@ -51,7 +51,7 @@ func TestAuthHandler_Login(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRepo := mock.NewMockAuthRepository(ctrl)
+			mockRepo := mock.NewMockAuthRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 			handler := restapi.NewAuthHandler(domain.NewAuthUsecase(mockRepo))
 			req := httptest.NewRequest(http.MethodPost, "/auth/login", bytes.NewBufferString(tt.body))
@@ -66,7 +66,7 @@ func TestAuthHandler_Login(t *testing.T) {
 func TestAuthHandler_Logout(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockRepo := mock.NewMockAuthRepository(ctrl)
+	mockRepo := mock.NewMockAuthRepoPort(ctrl)
 	handler := restapi.NewAuthHandler(domain.NewAuthUsecase(mockRepo))
 	req := httptest.NewRequest(http.MethodPost, "/auth/logout", nil)
 	w := httptest.NewRecorder()

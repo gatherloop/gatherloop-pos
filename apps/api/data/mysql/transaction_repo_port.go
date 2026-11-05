@@ -1,0 +1,334 @@
+package mysql
+
+import (
+	"apps/api/domain"
+	"context"
+	"fmt"
+	"strconv"
+	"time"
+
+	"gorm.io/gorm"
+)
+
+func NewTransactionRepoPort(db *gorm.DB) domain.TransactionRepoPort {
+	return Repository{db: db}
+}
+
+func (repo Repository) GetTransactionList(ctx context.Context, query string, sortBy domain.SortBy, order domain.Order, skip int, limit int, paymentStatus domain.PaymentStatus, walletId *int, source *domain.TransactionSource, fulfillment *domain.TransactionFulfillment) ([]domain.Transaction, *domain.Error) {
+	db := GetDbFromCtx(ctx, repo.db)
+
+	var transactionResults []Transaction
+	result := db.Table("transactions").
+		Select("transactions.*, payments.method AS payment_method, payments.verification_status AS payment_verification_status").
+		Joins("LEFT JOIN payments ON payments.transaction_id = transactions.id AND payments.deleted_at IS NULL").
+		Where("transactions.deleted_at is NULL").
+		Preload("TransactionItems").Preload("TransactionItems.Values").Preload("TransactionItems.Variant").Preload("TransactionItems.Variant.VariantValues").Preload("TransactionItems.Variant.VariantValues.OptionValue").Preload("TransactionItems.Variant.Product").Preload("TransactionItems.Variant.Product.Category").Preload("TransactionCoupons").Preload("TransactionCoupons.Coupon").Preload("Wallet").Preload("Cart").Preload("Cart.Table").Order(fmt.Sprintf("%s %s", ToSortByColumn(sortBy), ToOrderColumn(order)))
+
+	result = whereTransactionSearchQuery(result, query)
+
+	if skip > 0 {
+		result = result.Offset(skip)
+	}
+
+	if limit > 0 {
+		result = result.Limit(limit)
+	}
+
+	switch paymentStatus {
+	case domain.Paid:
+		result = result.Where("transactions.paid_at IS NOT NULL")
+	case domain.Unpaid:
+		result = result.Where("transactions.paid_at IS NULL")
+	}
+
+	if walletId != nil {
+		result = result.Where("wallet_id = ?", walletId)
+	}
+
+	if source != nil {
+		result = result.Where("source = ?", string(*source))
+	}
+
+	result = whereTransactionFulfillmentQuery(result, fulfillment)
+
+	result = result.Find(&transactionResults)
+
+	return ToTransactionsListDomain(transactionResults), ToErrorCtx(ctx, result.Error, "GetTransactionList")
+}
+
+func (repo Repository) GetTransactionListTotal(ctx context.Context, query string, paymentStatus domain.PaymentStatus, walletId *int, source *domain.TransactionSource, fulfillment *domain.TransactionFulfillment) (int64, *domain.Error) {
+	db := GetDbFromCtx(ctx, repo.db)
+	var count int64
+	result := db.Table("transactions").Where("deleted_at", nil)
+
+	result = whereTransactionSearchQuery(result, query)
+
+	switch paymentStatus {
+	case domain.Paid:
+		result = result.Where("paid_at IS NOT NULL")
+	case domain.Unpaid:
+		result = result.Where("paid_at IS NULL")
+	}
+
+	if walletId != nil {
+		result = result.Where("wallet_id = ?", walletId)
+	}
+
+	if source != nil {
+		result = result.Where("source = ?", string(*source))
+	}
+
+	result = whereTransactionFulfillmentQuery(result, fulfillment)
+
+	result = result.Count(&count)
+
+	return count, ToErrorCtx(ctx, result.Error, "GetTransactionListTotal")
+}
+
+func whereTransactionFulfillmentQuery(db *gorm.DB, fulfillment *domain.TransactionFulfillment) *gorm.DB {
+	if fulfillment == nil {
+		return db
+	}
+
+	switch *fulfillment {
+	case domain.TransactionFulfillmentPreparing:
+		return db.Where("source = ? AND completed_at IS NULL", string(domain.TransactionSourceOrder))
+	case domain.TransactionFulfillmentReady:
+		return db.Where("source = ? AND completed_at IS NOT NULL", string(domain.TransactionSourceOrder))
+	default:
+		return db
+	}
+}
+
+func whereTransactionSearchQuery(db *gorm.DB, query string) *gorm.DB {
+	if query == "" {
+		return db
+	}
+
+	if transactionNumber, err := strconv.ParseInt(query, 10, 64); err == nil {
+		return db.Where("name LIKE ? OR transaction_number = ?", "%"+query+"%", transactionNumber)
+	}
+
+	return db.Where("name LIKE ?", "%"+query+"%")
+}
+
+func (repo Repository) GetTransactionById(ctx context.Context, id int64) (domain.Transaction, *domain.Error) {
+	db := GetDbFromCtx(ctx, repo.db)
+
+	var transaction Transaction
+	result := db.Table("transactions").
+		Select("transactions.*, payments.method AS payment_method, payments.verification_status AS payment_verification_status").
+		Joins("LEFT JOIN payments ON payments.transaction_id = transactions.id AND payments.deleted_at IS NULL").
+		Where("transactions.id = ?", id).
+		Preload("TransactionItems").Preload("TransactionItems.Values").Preload("Wallet").Preload("Cart").Preload("Cart.Table").Preload("TransactionItems.Variant").Preload("TransactionItems.Variant.Materials").Preload("TransactionItems.Variant.Materials.Material").Preload("TransactionItems.Variant.VariantValues").Preload("TransactionItems.Variant.VariantValues.OptionValue").Preload("TransactionItems.Variant.Product").Preload("TransactionItems.Variant.Product.Category").Preload("TransactionCoupons").Preload("TransactionCoupons.Coupon").First(&transaction)
+	return ToTransactionDomain(transaction), ToErrorCtx(ctx, result.Error, "GetTransactionById")
+}
+
+func (repo Repository) CreateTransaction(ctx context.Context, transaction domain.Transaction) (domain.Transaction, *domain.Error) {
+	db := GetDbFromCtx(ctx, repo.db)
+
+	if transaction.CreatedAt.IsZero() {
+		transaction.CreatedAt = time.Now()
+	}
+
+	if transaction.DiningOption == "" {
+		transaction.DiningOption = domain.DiningOptionDineIn
+	}
+
+	transactionNumber, err := allocateTransactionNumber(db, transaction.CreatedAt)
+	if err != nil {
+		return domain.Transaction{}, ToErrorCtx(ctx, err, "CreateTransaction")
+	}
+	transaction.TransactionNumber = transactionNumber
+
+	dbTransaction := ToTransactionDB(transaction)
+	if result := db.Session(&gorm.Session{FullSaveAssociations: true}).Table("transactions").Create(&dbTransaction); result.Error != nil {
+		return domain.Transaction{}, ToErrorCtx(ctx, result.Error, "CreateTransaction")
+	}
+
+	var created Transaction
+	fetch := db.Table("transactions").Where("id = ?", dbTransaction.Id).Preload("TransactionItems").Preload("TransactionItems.Values").Preload("TransactionItems.Variant").Preload("TransactionItems.Variant.VariantValues").Preload("TransactionItems.Variant.VariantValues.OptionValue").Preload("TransactionItems.Variant.Product").Preload("TransactionItems.Variant.Product.Category").Preload("TransactionCoupons").Preload("TransactionCoupons.Coupon").Preload("Wallet").Preload("Cart").Preload("Cart.Table").First(&created)
+	return ToTransactionDomain(created), ToErrorCtx(ctx, fetch.Error, "CreateTransaction")
+}
+
+func allocateTransactionNumber(db *gorm.DB, createdAt time.Time) (int64, error) {
+	businessDate := createdAt.Format("2006-01-02")
+
+	if result := db.Exec(
+		"INSERT INTO transaction_number_counters (transaction_date, last_number) VALUES (?, LAST_INSERT_ID(1)) ON DUPLICATE KEY UPDATE last_number = LAST_INSERT_ID(last_number + 1)",
+		businessDate,
+	); result.Error != nil {
+		return 0, result.Error
+	}
+
+	var transactionNumber int64
+	if result := db.Raw("SELECT LAST_INSERT_ID()").Scan(&transactionNumber); result.Error != nil {
+		return 0, result.Error
+	}
+
+	return transactionNumber, nil
+}
+
+func (repo Repository) UpdateTransactionById(ctx context.Context, transaction domain.Transaction, id int64) (domain.Transaction, *domain.Error) {
+	db := GetDbFromCtx(ctx, repo.db)
+	transaction.Id = id
+
+	dbTransaction := ToTransactionDB(transaction)
+
+	if dbTransaction.TransactionItems != nil {
+		var existingItemIds []int64
+		if err := db.Model(&TransactionItem{}).Where("transaction_id = ?", id).Pluck("id", &existingItemIds).Error; err != nil {
+			return domain.Transaction{}, ToErrorCtx(ctx, err, "UpdateTransactionById")
+		}
+		if len(existingItemIds) > 0 {
+			if result := db.Where("transaction_item_id IN ?", existingItemIds).Delete(&TransactionItemValue{}); result.Error != nil {
+				return domain.Transaction{}, ToErrorCtx(ctx, result.Error, "UpdateTransactionById")
+			}
+		}
+	}
+
+	if result := db.Session(&gorm.Session{FullSaveAssociations: true}).Table("transactions").Where("id = ?", id).Updates(&dbTransaction); result.Error != nil {
+		return domain.Transaction{}, ToErrorCtx(ctx, result.Error, "UpdateTransactionById")
+	}
+
+	if dbTransaction.TransactionItems != nil {
+		transactionItemIdsToKeep := []int64{}
+		for _, it := range dbTransaction.TransactionItems {
+			if it.Id > 0 {
+				transactionItemIdsToKeep = append(transactionItemIdsToKeep, it.Id)
+			}
+		}
+
+		if len(transactionItemIdsToKeep) > 0 {
+			if result := db.Table("transaction_items").Where("transaction_id = ? AND id NOT IN ?", id, transactionItemIdsToKeep).Delete(&TransactionItem{}); result.Error != nil {
+				return domain.Transaction{}, ToErrorCtx(ctx, result.Error, "UpdateTransactionById")
+			}
+		} else {
+			if result := db.Table("transaction_items").Where("transaction_id = ?", id).Delete(&TransactionItem{}); result.Error != nil {
+				return domain.Transaction{}, ToErrorCtx(ctx, result.Error, "UpdateTransactionById")
+			}
+		}
+	}
+
+	if dbTransaction.TransactionCoupons != nil {
+		transactionCouponIdsToKeep := []int64{}
+		for _, it := range dbTransaction.TransactionCoupons {
+			if it.Id > 0 {
+				transactionCouponIdsToKeep = append(transactionCouponIdsToKeep, it.Id)
+			}
+		}
+
+		if len(transactionCouponIdsToKeep) > 0 {
+			if result := db.Table("transaction_coupons").Where("transaction_id = ? AND id NOT IN ?", id, transactionCouponIdsToKeep).Delete(&TransactionCoupon{}); result.Error != nil {
+				return domain.Transaction{}, ToErrorCtx(ctx, result.Error, "UpdateTransactionById")
+			}
+		} else {
+			if result := db.Table("transaction_coupons").Where("transaction_id = ?", id).Delete(&TransactionCoupon{}); result.Error != nil {
+				return domain.Transaction{}, ToErrorCtx(ctx, result.Error, "UpdateTransactionById")
+			}
+		}
+	}
+
+	var updated Transaction
+	fetch := db.Table("transactions").Where("id = ?", id).Preload("TransactionItems").Preload("TransactionItems.Values").Preload("TransactionItems.Variant").Preload("TransactionItems.Variant.Materials").Preload("TransactionItems.Variant.Materials.Material").Preload("TransactionItems.Variant.VariantValues").Preload("TransactionItems.Variant.VariantValues.OptionValue").Preload("TransactionItems.Variant.Product").Preload("TransactionItems.Variant.Product.Category").Preload("TransactionCoupons").Preload("TransactionCoupons.Coupon").Preload("Wallet").Preload("Cart").Preload("Cart.Table").First(&updated)
+	return ToTransactionDomain(updated), ToErrorCtx(ctx, fetch.Error, "UpdateTransactionById")
+}
+
+func (repo Repository) DeleteTransactionById(ctx context.Context, id int64) *domain.Error {
+	db := GetDbFromCtx(ctx, repo.db)
+	currentTime := time.Now()
+	result := db.Table("transactions").Where("id = ?", id).Update("deleted_at", currentTime)
+	return ToErrorCtx(ctx, result.Error, "DeleteTransactionById")
+}
+
+func (repo Repository) UndeleteTransactionById(ctx context.Context, id int64) *domain.Error {
+	db := GetDbFromCtx(ctx, repo.db)
+	result := db.Table("transactions").Where("id = ?", id).Update("deleted_at", nil)
+	return ToErrorCtx(ctx, result.Error, "UndeleteTransactionById")
+}
+
+func (repo Repository) UpdateTransactionDiningOptionById(ctx context.Context, id int64, diningOption domain.DiningOption) *domain.Error {
+	db := GetDbFromCtx(ctx, repo.db)
+	result := db.Table("transactions").Where("id = ?", id).Update("dining_option", string(diningOption))
+	return ToErrorCtx(ctx, result.Error, "UpdateTransactionDiningOptionById")
+}
+
+func (repo Repository) PayTransaction(ctx context.Context, walletId int64, paidAt time.Time, paidAmount float32, id int64) *domain.Error {
+	db := GetDbFromCtx(ctx, repo.db)
+	result := db.Table("transactions").Where("id = ?", id).Updates(Transaction{WalletId: &walletId, PaidAt: &paidAt, PaidAmount: paidAmount})
+	return ToErrorCtx(ctx, result.Error, "PayTransaction")
+}
+
+func (repo Repository) UnpayTransaction(ctx context.Context, id int64) *domain.Error {
+	db := GetDbFromCtx(ctx, repo.db)
+	result := db.Table("transactions").Where("id = ?", id).Updates(map[string]interface{}{
+		"wallet_id":    nil,
+		"total_income": 0,
+		"paid_at":      nil,
+		"paid_amount":  0,
+	})
+	return ToErrorCtx(ctx, result.Error, "UnpayTransaction")
+}
+
+func (repo Repository) CompleteTransaction(ctx context.Context, completedAt time.Time, id int64) *domain.Error {
+	db := GetDbFromCtx(ctx, repo.db)
+	result := db.Table("transactions").Where("id = ?", id).Update("completed_at", completedAt)
+	return ToErrorCtx(ctx, result.Error, "CompleteTransaction")
+}
+
+func (repo Repository) UncompleteTransaction(ctx context.Context, id int64) *domain.Error {
+	db := GetDbFromCtx(ctx, repo.db)
+	result := db.Table("transactions").Where("id = ?", id).Update("completed_at", nil)
+	return ToErrorCtx(ctx, result.Error, "UncompleteTransaction")
+}
+
+func (repo Repository) GetTransactionStatistics(ctx context.Context, groupBy string, startDate *time.Time, endDate *time.Time) ([]domain.TransactionStatistic, *domain.Error) {
+	db := GetDbFromCtx(ctx, repo.db)
+
+	dateFormat := ""
+
+	if groupBy == "" || groupBy == "date" {
+		dateFormat = "%d-%m-%Y"
+	} else {
+		dateFormat = "%m-%Y"
+	}
+
+	groupExpr := fmt.Sprintf("DATE_FORMAT(created_at, '%s')", dateFormat)
+
+	query := db.Table("transactions").
+		Select(fmt.Sprintf("%s as date, SUM(total) as total, SUM(total_income) as total_income", groupExpr)).
+		Where("deleted_at is NULL")
+
+	if startDate != nil {
+		query = query.Where("created_at >= ?", *startDate)
+	}
+
+	if endDate != nil {
+		query = query.Where("created_at < ?", endDate.AddDate(0, 0, 1))
+	}
+
+	var transactionStatistics []TransactionStatistic
+	result := query.Group(groupExpr).Order("MIN(created_at) ASC").Find(&transactionStatistics)
+
+	return ToTransactionStatisticsListDomain(transactionStatistics), ToErrorCtx(ctx, result.Error, "GetTransactionStatistics")
+}
+
+func (repo Repository) GetTransactionSummariesByIds(ctx context.Context, ids []int64) ([]domain.TransactionSummary, *domain.Error) {
+	if len(ids) == 0 {
+		return []domain.TransactionSummary{}, nil
+	}
+
+	db := GetDbFromCtx(ctx, repo.db)
+
+	var transactionSummaries []TransactionSummary
+	result := db.Table("transactions").
+		Select("transactions.id AS id, transactions.transaction_number AS transaction_number, transactions.name AS name, transactions.completed_at AS completed_at, tables.label AS table_label, COUNT(transaction_items.id) AS item_count, transactions.dining_option AS dining_option").
+		Joins("LEFT JOIN carts ON carts.id = transactions.cart_id").
+		Joins("LEFT JOIN tables ON tables.id = carts.table_id").
+		Joins("LEFT JOIN transaction_items ON transaction_items.transaction_id = transactions.id").
+		Where("transactions.id IN ? AND transactions.deleted_at IS NULL", ids).
+		Group("transactions.id, transactions.transaction_number, transactions.name, transactions.completed_at, tables.label, transactions.dining_option").
+		Find(&transactionSummaries)
+
+	return ToTransactionSummariesListDomain(transactionSummaries), ToErrorCtx(ctx, result.Error, "GetTransactionSummariesByIds")
+}

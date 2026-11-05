@@ -5,42 +5,42 @@ import (
 )
 
 type WalletUsecase struct {
-	repository WalletRepository
+	walletRepoPort WalletRepoPort
 }
 
-func NewWalletUsecase(repository WalletRepository) WalletUsecase {
-	return WalletUsecase{repository: repository}
+func NewWalletUsecase(walletRepoPort WalletRepoPort) WalletUsecase {
+	return WalletUsecase{walletRepoPort: walletRepoPort}
 }
 
 func (usecase WalletUsecase) GetWalletList(ctx context.Context) ([]Wallet, *Error) {
-	return usecase.repository.GetWalletList(ctx)
+	return usecase.walletRepoPort.GetWalletList(ctx)
 }
 
 func (usecase WalletUsecase) GetWalletById(ctx context.Context, id int64) (Wallet, *Error) {
-	return usecase.repository.GetWalletById(ctx, id)
+	return usecase.walletRepoPort.GetWalletById(ctx, id)
 }
 
 func (usecase WalletUsecase) CreateWallet(ctx context.Context, wallet Wallet) (Wallet, *Error) {
-	return usecase.repository.CreateWallet(ctx, wallet)
+	return usecase.walletRepoPort.CreateWallet(ctx, wallet)
 }
 
 func (usecase WalletUsecase) UpdateWalletById(ctx context.Context, wallet Wallet, id int64) (Wallet, *Error) {
-	return usecase.repository.UpdateWalletById(ctx, wallet, id)
+	return usecase.walletRepoPort.UpdateWalletById(ctx, wallet, id)
 }
 
 func (usecase WalletUsecase) DeleteWalletById(ctx context.Context, id int64) *Error {
-	return usecase.repository.DeleteWalletById(ctx, id)
+	return usecase.walletRepoPort.DeleteWalletById(ctx, id)
 }
 
 func (usecase WalletUsecase) GetWalletTransferList(ctx context.Context, walletId int64, sortBy SortBy, order Order, skip int, limit int) ([]WalletTransfer, *Error) {
-	return usecase.repository.GetWalletTransferList(ctx, walletId, sortBy, order, skip, limit)
+	return usecase.walletRepoPort.GetWalletTransferList(ctx, walletId, sortBy, order, skip, limit)
 }
 
 func (usecase WalletUsecase) CreateWalletTransfer(ctx context.Context, walletTransfer WalletTransfer, fromWalletId int64) (WalletTransfer, *Error) {
-	err := usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+	err := usecase.walletRepoPort.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
 		walletTransfer.FromWalletId = fromWalletId
 
-		fromWallet, err := usecase.repository.GetWalletById(ctxWithTx, fromWalletId)
+		fromWallet, err := usecase.walletRepoPort.GetWalletById(ctxWithTx, fromWalletId)
 		if err != nil {
 			return err
 		}
@@ -48,7 +48,7 @@ func (usecase WalletUsecase) CreateWalletTransfer(ctx context.Context, walletTra
 			return &Error{Type: BadRequest, Message: "insufficient balance"}
 		}
 
-		if _, err = usecase.repository.UpdateWalletById(ctxWithTx, Wallet{
+		if _, err = usecase.walletRepoPort.UpdateWalletById(ctxWithTx, Wallet{
 			Name:                  fromWallet.Name,
 			PaymentCostPercentage: fromWallet.PaymentCostPercentage,
 			IsCashless:            fromWallet.IsCashless,
@@ -58,11 +58,11 @@ func (usecase WalletUsecase) CreateWalletTransfer(ctx context.Context, walletTra
 			return err
 		}
 
-		toWallet, err := usecase.repository.GetWalletById(ctxWithTx, walletTransfer.ToWalletId)
+		toWallet, err := usecase.walletRepoPort.GetWalletById(ctxWithTx, walletTransfer.ToWalletId)
 		if err != nil {
 			return err
 		}
-		if _, err = usecase.repository.UpdateWalletById(ctxWithTx, Wallet{
+		if _, err = usecase.walletRepoPort.UpdateWalletById(ctxWithTx, Wallet{
 			Name:                  toWallet.Name,
 			PaymentCostPercentage: toWallet.PaymentCostPercentage,
 			IsCashless:            toWallet.IsCashless,
@@ -72,7 +72,7 @@ func (usecase WalletUsecase) CreateWalletTransfer(ctx context.Context, walletTra
 			return err
 		}
 
-		walletTransfer, err = usecase.repository.CreateWalletTransfer(ctxWithTx, walletTransfer, fromWalletId)
+		walletTransfer, err = usecase.walletRepoPort.CreateWalletTransfer(ctxWithTx, walletTransfer, fromWalletId)
 		return err
 	})
 

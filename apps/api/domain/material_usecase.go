@@ -5,27 +5,27 @@ import (
 )
 
 type MaterialUsecase struct {
-	materialRepository MaterialRepository
-	materialService    MaterialService
+	materialRepoPort MaterialRepoPort
+	materialService  MaterialService
 }
 
 func NewMaterialUsecase(
-	materialRepository MaterialRepository,
+	materialRepoPort MaterialRepoPort,
 	materialService MaterialService,
 ) MaterialUsecase {
 	return MaterialUsecase{
-		materialRepository: materialRepository,
-		materialService:    materialService,
+		materialRepoPort: materialRepoPort,
+		materialService:  materialService,
 	}
 }
 
 func (usecase MaterialUsecase) GetMaterialList(ctx context.Context, query string, sortBy SortBy, order Order, skip int, limit int, stockCheckStatus *MaterialStockCheckStatus) ([]Material, int64, *Error) {
-	materials, err := usecase.materialRepository.GetMaterialList(ctx, query, sortBy, order, skip, limit, stockCheckStatus)
+	materials, err := usecase.materialRepoPort.GetMaterialList(ctx, query, sortBy, order, skip, limit, stockCheckStatus)
 	if err != nil {
 		return []Material{}, 0, err
 	}
 
-	total, err := usecase.materialRepository.GetMaterialListTotal(ctx, query, stockCheckStatus)
+	total, err := usecase.materialRepoPort.GetMaterialListTotal(ctx, query, stockCheckStatus)
 	if err != nil {
 		return []Material{}, 0, err
 	}
@@ -34,7 +34,7 @@ func (usecase MaterialUsecase) GetMaterialList(ctx context.Context, query string
 	for _, material := range materials {
 		materialIds = append(materialIds, material.Id)
 	}
-	materialWeeklyUsage, err := usecase.materialRepository.GetMaterialsWeeklyUsage(ctx, materialIds)
+	materialWeeklyUsage, err := usecase.materialRepoPort.GetMaterialsWeeklyUsage(ctx, materialIds)
 	if err != nil {
 		return []Material{}, 0, err
 	}
@@ -47,12 +47,12 @@ func (usecase MaterialUsecase) GetMaterialList(ctx context.Context, query string
 }
 
 func (usecase MaterialUsecase) GetMaterialById(ctx context.Context, id int64) (Material, *Error) {
-	materialsUsage, err := usecase.materialRepository.GetMaterialsWeeklyUsage(ctx, []int64{id})
+	materialsUsage, err := usecase.materialRepoPort.GetMaterialsWeeklyUsage(ctx, []int64{id})
 	if err != nil {
 		return Material{}, err
 	}
 
-	material, err := usecase.materialRepository.GetMaterialById(ctx, id)
+	material, err := usecase.materialRepoPort.GetMaterialById(ctx, id)
 	if err != nil {
 		return Material{}, err
 	}
@@ -66,12 +66,12 @@ func (usecase MaterialUsecase) CreateMaterial(ctx context.Context, material Mate
 		return Material{}, err
 	}
 
-	created, err := usecase.materialRepository.CreateMaterial(ctx, material)
+	created, err := usecase.materialRepoPort.CreateMaterial(ctx, material)
 	if err != nil {
 		return Material{}, err
 	}
 
-	materialsUsage, err := usecase.materialRepository.GetMaterialsWeeklyUsage(ctx, []int64{created.Id})
+	materialsUsage, err := usecase.materialRepoPort.GetMaterialsWeeklyUsage(ctx, []int64{created.Id})
 	if err != nil {
 		return Material{}, err
 	}
@@ -85,12 +85,12 @@ func (usecase MaterialUsecase) UpdateMaterialById(ctx context.Context, material 
 		return Material{}, err
 	}
 
-	updated, err := usecase.materialRepository.UpdateMaterialById(ctx, material, id)
+	updated, err := usecase.materialRepoPort.UpdateMaterialById(ctx, material, id)
 	if err != nil {
 		return Material{}, err
 	}
 
-	materialsUsage, err := usecase.materialRepository.GetMaterialsWeeklyUsage(ctx, []int64{id})
+	materialsUsage, err := usecase.materialRepoPort.GetMaterialsWeeklyUsage(ctx, []int64{id})
 	if err != nil {
 		return Material{}, err
 	}
@@ -100,5 +100,5 @@ func (usecase MaterialUsecase) UpdateMaterialById(ctx context.Context, material 
 }
 
 func (usecase MaterialUsecase) DeleteMaterialById(ctx context.Context, id int64) *Error {
-	return usecase.materialRepository.DeleteMaterialById(ctx, id)
+	return usecase.materialRepoPort.DeleteMaterialById(ctx, id)
 }

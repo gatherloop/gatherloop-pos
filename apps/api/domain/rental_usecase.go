@@ -8,28 +8,28 @@ import (
 )
 
 type RentalUsecase struct {
-	rentalRepository      RentalRepository
-	variantRepository     VariantRepository
-	transactionRepository TransactionRepository
-	ticketRepository      TicketRepository
+	rentalRepoPort      RentalRepoPort
+	variantRepoPort     VariantRepoPort
+	transactionRepoPort TransactionRepoPort
+	ticketRepoPort      TicketRepoPort
 }
 
-func NewRentalUsecase(rentalRepository RentalRepository, variantRepository VariantRepository, transactionRepository TransactionRepository, ticketRepository TicketRepository) RentalUsecase {
+func NewRentalUsecase(rentalRepoPort RentalRepoPort, variantRepoPort VariantRepoPort, transactionRepoPort TransactionRepoPort, ticketRepoPort TicketRepoPort) RentalUsecase {
 	return RentalUsecase{
-		rentalRepository:      rentalRepository,
-		variantRepository:     variantRepository,
-		transactionRepository: transactionRepository,
-		ticketRepository:      ticketRepository,
+		rentalRepoPort:      rentalRepoPort,
+		variantRepoPort:     variantRepoPort,
+		transactionRepoPort: transactionRepoPort,
+		ticketRepoPort:      ticketRepoPort,
 	}
 }
 
 func (usecase RentalUsecase) GetRentalList(ctx context.Context, query string, sortBy SortBy, order Order, skip int, limit int, checkoutStatus CheckoutStatus) ([]Rental, int64, *Error) {
-	rentals, err := usecase.rentalRepository.GetRentalList(ctx, query, sortBy, order, skip, limit, checkoutStatus)
+	rentals, err := usecase.rentalRepoPort.GetRentalList(ctx, query, sortBy, order, skip, limit, checkoutStatus)
 	if err != nil {
 		return []Rental{}, 0, err
 	}
 
-	total, err := usecase.rentalRepository.GetRentalListTotal(ctx, query, checkoutStatus)
+	total, err := usecase.rentalRepoPort.GetRentalListTotal(ctx, query, checkoutStatus)
 	if err != nil {
 		return []Rental{}, 0, err
 	}
@@ -38,12 +38,12 @@ func (usecase RentalUsecase) GetRentalList(ctx context.Context, query string, so
 }
 
 func (usecase RentalUsecase) GetRentalById(ctx context.Context, id int64) (Rental, *Error) {
-	return usecase.rentalRepository.GetRentalById(ctx, id)
+	return usecase.rentalRepoPort.GetRentalById(ctx, id)
 }
 
 func (usecase RentalUsecase) DeleteRentalById(ctx context.Context, id int64) *Error {
-	return usecase.rentalRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
-		rental, err := usecase.rentalRepository.GetRentalById(ctxWithTx, id)
+	return usecase.rentalRepoPort.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+		rental, err := usecase.rentalRepoPort.GetRentalById(ctxWithTx, id)
 		if err != nil {
 			return err
 		}
@@ -52,16 +52,16 @@ func (usecase RentalUsecase) DeleteRentalById(ctx context.Context, id int64) *Er
 			return &Error{Type: BadRequest, Message: "rental already checked out"}
 		}
 
-		return usecase.rentalRepository.DeleteRentalById(ctxWithTx, id)
+		return usecase.rentalRepoPort.DeleteRentalById(ctxWithTx, id)
 	})
 }
 
 func (usecase RentalUsecase) CheckinRentals(ctx context.Context, rentalRequests []Rental) ([]Rental, *Error) {
 	var createdRentals []Rental
 
-	err := usecase.rentalRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+	err := usecase.rentalRepoPort.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
 		for index := range rentalRequests {
-			variant, err := usecase.variantRepository.GetVariantById(ctxWithTx, rentalRequests[index].VariantId)
+			variant, err := usecase.variantRepoPort.GetVariantById(ctxWithTx, rentalRequests[index].VariantId)
 			if err != nil {
 				return err
 			}
@@ -71,12 +71,12 @@ func (usecase RentalUsecase) CheckinRentals(ctx context.Context, rentalRequests 
 			rentalRequests[index].PricingTiers = variant.PricingTiers
 			rentalRequests[index].CreatedAt = time.Now()
 
-			if ticket, ticketErr := usecase.ticketRepository.GetTicketByCode(ctxWithTx, rentalRequests[index].Code); ticketErr == nil && ticket.Id > 0 {
+			if ticket, ticketErr := usecase.ticketRepoPort.GetTicketByCode(ctxWithTx, rentalRequests[index].Code); ticketErr == nil && ticket.Id > 0 {
 				rentalRequests[index].TicketId = &ticket.Id
 				rentalRequests[index].TicketName = &ticket.Name
 			}
 		}
-		cr, err := usecase.rentalRepository.CheckinRentals(ctxWithTx, rentalRequests)
+		cr, err := usecase.rentalRepoPort.CheckinRentals(ctxWithTx, rentalRequests)
 		if err != nil {
 			return err
 		}
@@ -96,13 +96,13 @@ func (usecase RentalUsecase) CheckoutRentals(ctx context.Context, rentalIds []in
 		PagerNumber: 0,
 	}
 
-	err := usecase.rentalRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+	err := usecase.rentalRepoPort.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
 
 		var total float64 = 0
 		transactionItems := []TransactionItem{}
 
 		for _, rentalId := range rentalIds {
-			existingRental, err := usecase.rentalRepository.GetRentalById(ctxWithTx, rentalId)
+			existingRental, err := usecase.rentalRepoPort.GetRentalById(ctxWithTx, rentalId)
 			if err != nil {
 				return err
 			}
@@ -111,7 +111,7 @@ func (usecase RentalUsecase) CheckoutRentals(ctx context.Context, rentalIds []in
 				return &Error{Type: BadRequest, Message: "cannot checkout rental, already checked out"}
 			}
 
-			if err := usecase.rentalRepository.CheckoutRental(ctxWithTx, rentalId); err != nil {
+			if err := usecase.rentalRepoPort.CheckoutRental(ctxWithTx, rentalId); err != nil {
 				return err
 			}
 
@@ -124,7 +124,7 @@ func (usecase RentalUsecase) CheckoutRentals(ctx context.Context, rentalIds []in
 			rentalTotal := existingRental.Total()
 			total += float64(rentalTotal)
 
-			variant, err := usecase.variantRepository.GetVariantById(ctxWithTx, existingRental.VariantId)
+			variant, err := usecase.variantRepoPort.GetVariantById(ctxWithTx, existingRental.VariantId)
 			if err != nil {
 				return err
 			}
@@ -161,7 +161,7 @@ func (usecase RentalUsecase) CheckoutRentals(ctx context.Context, rentalIds []in
 		transactionData.Total = float32(total)
 		transactionData.TransactionItems = transactionItems
 
-		ct, err := usecase.transactionRepository.CreateTransaction(ctxWithTx, transactionData)
+		ct, err := usecase.transactionRepoPort.CreateTransaction(ctxWithTx, transactionData)
 		if err != nil {
 			return err
 		}

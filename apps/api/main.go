@@ -73,28 +73,26 @@ func main() {
 		panic("invalid doku configuration")
 	}
 
-	paymentGatewayRepository := doku.NewPaymentGatewayRepository(dokuConfig)
+	paymentGatewayPort := doku.NewPaymentGatewayPort(dokuConfig)
 
 	expoPushConfig := expopush.Config{AccessToken: env.ExpoPushAccessToken}
 	if err := expoPushConfig.Validate(); err != nil {
 		rootLogger.Warn("expo push gateway not configured; KDS notifications will fail", slog.Any("error", err))
 	}
 
-	kdsPushGatewayRepository := expopush.NewKdsPushGatewayRepository(expoPushConfig)
+	kdsNotificationGatewayPort := expopush.NewKdsNotificationGatewayPort(expoPushConfig)
 
 	fonnteConfig := fonnte.Config{Token: env.FonnteToken, BaseURL: env.FonnteBaseURL}
-	var whatsappGatewayRepository domain.WhatsAppGatewayRepository
+	var whatsappGatewayPort domain.WhatsAppGatewayPort
 	if err := fonnteConfig.Validate(); err != nil {
 		rootLogger.Warn("whatsapp gateway not configured; guest notifications will be skipped", slog.Any("error", err))
-		whatsappGatewayRepository = fonnte.NewDisabledWhatsAppGateway()
+		whatsappGatewayPort = fonnte.NewDisabledWhatsAppGateway()
 	} else if env.OrderWebBaseURL == "" {
 		rootLogger.Warn("ORDER_WEB_BASE_URL not configured; guest notifications will be skipped")
-		whatsappGatewayRepository = fonnte.NewDisabledWhatsAppGateway()
+		whatsappGatewayPort = fonnte.NewDisabledWhatsAppGateway()
 	} else {
-		whatsappGatewayRepository = fonnte.NewWhatsAppGatewayRepository(fonnteConfig)
+		whatsappGatewayPort = fonnte.NewWhatsAppGatewayPort(fonnteConfig)
 	}
-
-	whatsappNumberVerificationService := domain.NewWhatsappNumberVerificationUsecase(mysql.NewWhatsappNumberVerificationRepository(db), whatsappGatewayRepository)
 
 	router := mux.NewRouter().StrictSlash(true)
 	router.Use(restapi.EnableCORS)
@@ -102,103 +100,105 @@ func main() {
 
 	orderPaymentWalletId, _ := strconv.ParseInt(env.OrderPaymentWalletId, 10, 64)
 
-	walletRepository := mysql.NewWalletRepository(db)
-	variantRepository := mysql.NewVariantRepository(db)
-	productRepository := mysql.NewProductRepository(db)
-	budgetRepository := mysql.NewBudgetRepository(db)
-	transactionRepository := mysql.NewTransactionRepository(db)
-	materialRepository := mysql.NewMaterialRepository(db)
-	supplierRepository := mysql.NewSupplierRepository(db)
-	expenseRepository := mysql.NewExpenseRepository(db)
-	categoryRepository := mysql.NewCategoryRepository(db)
-	tagRepository := mysql.NewTagRepository(db)
-	couponRepository := mysql.NewCouponRepository(db)
-	ticketRepository := mysql.NewTicketRepository(db)
-	tableRepository := mysql.NewTableRepository(db)
-	cartRepository := mysql.NewCartRepository(db)
-	customerRepository := mysql.NewCustomerRepository(db)
-	paymentRepository := mysql.NewPaymentRepository(db)
-	authRepository := mysql.NewAuthRepository(db)
-	calculationRepository := mysql.NewCalculationRepository(db)
-	rentalRepository := mysql.NewRentalRepository(db)
-	checklistTemplateRepository := mysql.NewChecklistTemplateRepository(db)
-	checklistSessionRepository := mysql.NewChecklistSessionRepository(db)
-	stockCheckRepository := mysql.NewStockCheckRepository(db)
-	availabilityRepository := mysql.NewAvailabilityRepository(db)
-	kdsDeviceRepository := mysql.NewKdsDeviceRepository(db)
-	kdsNotificationRepository := mysql.NewKdsNotificationRepository(db)
-	guestNotificationRepository := mysql.NewGuestNotificationRepository(db)
-	paymentVerificationRepository := mysql.NewPaymentVerificationRepository(db)
+	walletRepoPort := mysql.NewWalletRepoPort(db)
+	variantRepoPort := mysql.NewVariantRepoPort(db)
+	productRepoPort := mysql.NewProductRepoPort(db)
+	budgetRepoPort := mysql.NewBudgetRepoPort(db)
+	transactionRepoPort := mysql.NewTransactionRepoPort(db)
+	materialRepoPort := mysql.NewMaterialRepoPort(db)
+	supplierRepoPort := mysql.NewSupplierRepoPort(db)
+	expenseRepoPort := mysql.NewExpenseRepoPort(db)
+	categoryRepoPort := mysql.NewCategoryRepoPort(db)
+	tagRepoPort := mysql.NewTagRepoPort(db)
+	couponRepoPort := mysql.NewCouponRepoPort(db)
+	ticketRepoPort := mysql.NewTicketRepoPort(db)
+	tableRepoPort := mysql.NewTableRepoPort(db)
+	cartRepoPort := mysql.NewCartRepoPort(db)
+	customerRepoPort := mysql.NewCustomerRepoPort(db)
+	paymentRepoPort := mysql.NewPaymentRepoPort(db)
+	authRepoPort := mysql.NewAuthRepoPort(db)
+	calculationRepoPort := mysql.NewCalculationRepoPort(db)
+	rentalRepoPort := mysql.NewRentalRepoPort(db)
+	checklistTemplateRepoPort := mysql.NewChecklistTemplateRepoPort(db)
+	checklistSessionRepoPort := mysql.NewChecklistSessionRepoPort(db)
+	stockCheckRepoPort := mysql.NewStockCheckRepoPort(db)
+	availabilityRepoPort := mysql.NewAvailabilityRepoPort(db)
+	kdsDeviceRepoPort := mysql.NewKdsDeviceRepoPort(db)
+	kdsNotificationRepoPort := mysql.NewKdsNotificationRepoPort(db)
+	guestNotificationRepoPort := mysql.NewGuestNotificationRepoPort(db)
+	paymentVerificationRepoPort := mysql.NewPaymentVerificationRepoPort(db)
+	whatsAppNumberVerificationRepoPort := mysql.NewWhatsAppNumberVerificationRepoPort(db)
 
-	kdsNotificationService := domain.NewKdsNotificationService(kdsNotificationRepository, kdsDeviceRepository, transactionRepository, kdsPushGatewayRepository, env.KdsPushSound)
-	guestNotificationService := domain.NewGuestNotificationService(guestNotificationRepository, transactionRepository, paymentRepository, whatsappGatewayRepository, env.OrderWebBaseURL)
-	availabilityService := domain.NewAvailabilityService(productRepository, variantRepository, availabilityRepository)
+	whatsappNumberVerificationService := domain.NewWhatsappNumberVerificationUsecase(whatsAppNumberVerificationRepoPort, whatsappGatewayPort)
+	kdsNotificationService := domain.NewKdsNotificationService(kdsNotificationRepoPort, kdsDeviceRepoPort, transactionRepoPort, kdsNotificationGatewayPort, env.KdsPushSound)
+	guestNotificationService := domain.NewGuestNotificationService(guestNotificationRepoPort, transactionRepoPort, paymentRepoPort, whatsappGatewayPort, env.OrderWebBaseURL)
+	availabilityService := domain.NewAvailabilityService(productRepoPort, variantRepoPort, availabilityRepoPort)
 	paymentService := domain.NewPaymentService(
-		transactionRepository,
-		paymentRepository,
-		paymentVerificationRepository,
-		paymentGatewayRepository,
-		cartRepository,
-		walletRepository,
-		kdsNotificationRepository,
+		transactionRepoPort,
+		paymentRepoPort,
+		paymentVerificationRepoPort,
+		paymentGatewayPort,
+		cartRepoPort,
+		walletRepoPort,
+		kdsNotificationRepoPort,
 		availabilityService,
 		kdsNotificationService,
 		orderPaymentWalletId,
 	)
-	paymentVerificationService := domain.NewPaymentVerificationService(paymentRepository)
+	paymentVerificationService := domain.NewPaymentVerificationService(paymentRepoPort)
 	cartService := domain.NewCartService(
-		cartRepository,
-		paymentRepository,
-		variantRepository,
+		cartRepoPort,
+		paymentRepoPort,
+		variantRepoPort,
 	)
-	tagService := domain.NewTagService(tagRepository)
-	variantService := domain.NewVariantService(tagRepository, tagService)
+	tagService := domain.NewTagService(tagRepoPort)
+	variantService := domain.NewVariantService(tagRepoPort, tagService)
 	transactionService := domain.NewTransactionService(
-		couponRepository,
-		paymentRepository,
-		cartRepository,
+		couponRepoPort,
+		paymentRepoPort,
+		cartRepoPort,
 		paymentService,
 	)
-	tableService := domain.NewTableService(tableRepository)
-	materialService := domain.NewMaterialService(supplierRepository)
+	tableService := domain.NewTableService(tableRepoPort)
+	materialService := domain.NewMaterialService(supplierRepoPort)
 
 	kdsNotificationUsecase := domain.NewKdsNotificationUsecase(kdsNotificationService)
-	guestNotificationUsecase := domain.NewGuestNotificationUsecase(guestNotificationRepository, guestNotificationService)
-	walletUsecase := domain.NewWalletUsecase(walletRepository)
+	guestNotificationUsecase := domain.NewGuestNotificationUsecase(guestNotificationRepoPort, guestNotificationService)
+	walletUsecase := domain.NewWalletUsecase(walletRepoPort)
 	transactionUsecase := domain.NewTransactionUsecase(
-		transactionRepository,
-		variantRepository,
-		walletRepository,
-		paymentRepository,
-		guestNotificationRepository,
+		transactionRepoPort,
+		variantRepoPort,
+		walletRepoPort,
+		paymentRepoPort,
+		guestNotificationRepoPort,
 		transactionService,
 		paymentService,
 		availabilityService,
 		kdsNotificationService,
 		guestNotificationService,
 	)
-	variantUsecase := domain.NewVariantUsecase(variantRepository, productRepository, variantService)
-	productUsecase := domain.NewProductUsecase(productRepository, variantRepository)
-	materialUsecase := domain.NewMaterialUsecase(materialRepository, materialService)
-	supplierUsecase := domain.NewSupplierUsecase(supplierRepository)
-	expenseUsecase := domain.NewExpenseUsecase(expenseRepository, budgetRepository, walletRepository)
-	categoryUsecase := domain.NewCategoryUsecase(categoryRepository)
-	tagUsecase := domain.NewTagUsecase(tagRepository, tagService)
-	couponUsecase := domain.NewCouponUsecase(couponRepository)
-	ticketUsecase := domain.NewTicketUsecase(ticketRepository)
-	tableUsecase := domain.NewTableUsecase(tableRepository, tableService)
-	cartUsecase := domain.NewCartUsecase(cartRepository, tableRepository, cartService)
-	customerUsecase := domain.NewCustomerUsecase(customerRepository)
+	variantUsecase := domain.NewVariantUsecase(variantRepoPort, productRepoPort, variantService)
+	productUsecase := domain.NewProductUsecase(productRepoPort, variantRepoPort)
+	materialUsecase := domain.NewMaterialUsecase(materialRepoPort, materialService)
+	supplierUsecase := domain.NewSupplierUsecase(supplierRepoPort)
+	expenseUsecase := domain.NewExpenseUsecase(expenseRepoPort, budgetRepoPort, walletRepoPort)
+	categoryUsecase := domain.NewCategoryUsecase(categoryRepoPort)
+	tagUsecase := domain.NewTagUsecase(tagRepoPort, tagService)
+	couponUsecase := domain.NewCouponUsecase(couponRepoPort)
+	ticketUsecase := domain.NewTicketUsecase(ticketRepoPort)
+	tableUsecase := domain.NewTableUsecase(tableRepoPort, tableService)
+	cartUsecase := domain.NewCartUsecase(cartRepoPort, tableRepoPort, cartService)
+	customerUsecase := domain.NewCustomerUsecase(customerRepoPort)
 	paymentUsecase := domain.NewPaymentUsecase(
-		paymentRepository,
-		paymentGatewayRepository,
-		customerRepository,
-		cartRepository,
-		transactionRepository,
-		variantRepository,
-		walletRepository,
-		kdsNotificationRepository,
-		paymentVerificationRepository,
+		paymentRepoPort,
+		paymentGatewayPort,
+		customerRepoPort,
+		cartRepoPort,
+		transactionRepoPort,
+		variantRepoPort,
+		walletRepoPort,
+		kdsNotificationRepoPort,
+		paymentVerificationRepoPort,
 		paymentService,
 		availabilityService,
 		whatsappNumberVerificationService,
@@ -209,29 +209,29 @@ func main() {
 		orderPaymentWalletId,
 	)
 	paymentVerificationUsecase := domain.NewPaymentVerificationUsecase(
-		paymentRepository,
-		paymentVerificationRepository,
-		transactionRepository,
-		cartRepository,
-		kdsNotificationRepository,
+		paymentRepoPort,
+		paymentVerificationRepoPort,
+		transactionRepoPort,
+		cartRepoPort,
+		kdsNotificationRepoPort,
 		paymentVerificationService,
 		paymentService,
 		kdsNotificationService,
 	)
-	budgetUsecase := domain.NewBudgetUsecase(budgetRepository)
-	authUsecase := domain.NewAuthUsecase(authRepository)
-	calculationUsecase := domain.NewCalculationUsecase(calculationRepository, walletRepository)
-	rentalUsecase := domain.NewRentalUsecase(rentalRepository, variantRepository, transactionRepository, ticketRepository)
-	checklistTemplateUsecase := domain.NewChecklistTemplateUsecase(checklistTemplateRepository)
-	checklistSessionUsecase := domain.NewChecklistSessionUsecase(checklistSessionRepository, checklistTemplateRepository)
-	stockCheckUsecase := domain.NewStockCheckUsecase(stockCheckRepository, materialRepository)
+	budgetUsecase := domain.NewBudgetUsecase(budgetRepoPort)
+	authUsecase := domain.NewAuthUsecase(authRepoPort)
+	calculationUsecase := domain.NewCalculationUsecase(calculationRepoPort, walletRepoPort)
+	rentalUsecase := domain.NewRentalUsecase(rentalRepoPort, variantRepoPort, transactionRepoPort, ticketRepoPort)
+	checklistTemplateUsecase := domain.NewChecklistTemplateUsecase(checklistTemplateRepoPort)
+	checklistSessionUsecase := domain.NewChecklistSessionUsecase(checklistSessionRepoPort, checklistTemplateRepoPort)
+	stockCheckUsecase := domain.NewStockCheckUsecase(stockCheckRepoPort, materialRepoPort)
 	availabilityUsecase := domain.NewAvailabilityUsecase(
-		availabilityRepository,
-		productRepository,
-		variantRepository,
+		availabilityRepoPort,
+		productRepoPort,
+		variantRepoPort,
 		availabilityService,
 	)
-	kdsDeviceUsecase := domain.NewKdsDeviceUsecase(kdsDeviceRepository, kdsPushGatewayRepository, env.KdsPushSound)
+	kdsDeviceUsecase := domain.NewKdsDeviceUsecase(kdsDeviceRepoPort, kdsNotificationGatewayPort, env.KdsPushSound)
 
 	walletHandler := restapi.NewWalletHandler(walletUsecase)
 	transactionHandler := restapi.NewTransactionHandler(transactionUsecase)

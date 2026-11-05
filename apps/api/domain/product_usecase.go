@@ -5,27 +5,27 @@ import (
 )
 
 type ProductUsecase struct {
-	productRepository ProductRepository
-	variantRepository VariantRepository
+	productRepoPort ProductRepoPort
+	variantRepoPort VariantRepoPort
 }
 
 func NewProductUsecase(
-	productRepository ProductRepository,
-	variantRepository VariantRepository,
+	productRepoPort ProductRepoPort,
+	variantRepoPort VariantRepoPort,
 ) ProductUsecase {
 	return ProductUsecase{
-		productRepository: productRepository,
-		variantRepository: variantRepository,
+		productRepoPort: productRepoPort,
+		variantRepoPort: variantRepoPort,
 	}
 }
 
 func (usecase ProductUsecase) GetProductList(ctx context.Context, query string, sortBy SortBy, order Order, skip int, limit int, saleType *SaleType, status *ProductStatus) ([]Product, int64, *Error) {
-	products, err := usecase.productRepository.GetProductList(ctx, query, sortBy, order, skip, limit, saleType, status)
+	products, err := usecase.productRepoPort.GetProductList(ctx, query, sortBy, order, skip, limit, saleType, status)
 	if err != nil {
 		return []Product{}, 0, err
 	}
 
-	total, err := usecase.productRepository.GetProductListTotal(ctx, query, saleType, status)
+	total, err := usecase.productRepoPort.GetProductListTotal(ctx, query, saleType, status)
 	if err != nil {
 		return []Product{}, 0, err
 	}
@@ -34,32 +34,32 @@ func (usecase ProductUsecase) GetProductList(ctx context.Context, query string, 
 }
 
 func (usecase ProductUsecase) GetProductById(ctx context.Context, id int64) (Product, *Error) {
-	return usecase.productRepository.GetProductById(ctx, id)
+	return usecase.productRepoPort.GetProductById(ctx, id)
 }
 
 func (usecase ProductUsecase) CreateProduct(ctx context.Context, product Product) (Product, *Error) {
-	return usecase.productRepository.CreateProduct(ctx, product)
+	return usecase.productRepoPort.CreateProduct(ctx, product)
 }
 
 func (usecase ProductUsecase) UpdateProductById(ctx context.Context, product Product, id int64) (Product, *Error) {
 	var updateResult Product
-	err := usecase.productRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
-		existing, err := usecase.productRepository.GetProductById(ctxWithTx, id)
+	err := usecase.productRepoPort.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+		existing, err := usecase.productRepoPort.GetProductById(ctxWithTx, id)
 		if err != nil {
 			return err
 		}
 
-		updated, err := usecase.productRepository.UpdateProductById(ctxWithTx, product, id)
+		updated, err := usecase.productRepoPort.UpdateProductById(ctxWithTx, product, id)
 		if err != nil {
 			return err
 		}
 		updateResult = updated
 
 		if product.AvailabilityTracking != "" && product.AvailabilityTracking != existing.AvailabilityTracking {
-			if err := usecase.productRepository.ClearAvailableQuantity(ctxWithTx, id); err != nil {
+			if err := usecase.productRepoPort.ClearAvailableQuantity(ctxWithTx, id); err != nil {
 				return err
 			}
-			if err := usecase.variantRepository.ClearAvailableQuantityByProductId(ctxWithTx, id); err != nil {
+			if err := usecase.variantRepoPort.ClearAvailableQuantityByProductId(ctxWithTx, id); err != nil {
 				return err
 			}
 			updateResult.AvailableQuantity = nil
@@ -76,5 +76,5 @@ func (usecase ProductUsecase) UpdateProductById(ctx context.Context, product Pro
 }
 
 func (usecase ProductUsecase) DeleteProductById(ctx context.Context, id int64) *Error {
-	return usecase.productRepository.DeleteProductById(ctx, id)
+	return usecase.productRepoPort.DeleteProductById(ctx, id)
 }

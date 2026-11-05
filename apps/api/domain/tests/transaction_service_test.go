@@ -79,7 +79,7 @@ func TestTransactionService_ApplyTransactionCoupons(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			couponRepository := mock.NewMockCouponRepository(ctrl)
+			couponRepository := mock.NewMockCouponRepoPort(ctrl)
 			couponRepository.EXPECT().GetCouponById(gomock.Any(), int64(1)).Return(tt.coupon, nil)
 
 			service := domain.NewTransactionService(couponRepository, nil, nil, domain.PaymentService{})

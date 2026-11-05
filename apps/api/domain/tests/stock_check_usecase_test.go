@@ -13,13 +13,13 @@ import (
 func TestStockCheckUsecase_GetStockCheckList(t *testing.T) {
 	tests := []struct {
 		name          string
-		setupMock     func(sc *mock.MockStockCheckRepository, m *mock.MockMaterialRepository)
+		setupMock     func(sc *mock.MockStockCheckRepoPort, m *mock.MockMaterialRepoPort)
 		expectedLen   int
 		expectedError *domain.Error
 	}{
 		{
 			name: "success",
-			setupMock: func(sc *mock.MockStockCheckRepository, m *mock.MockMaterialRepository) {
+			setupMock: func(sc *mock.MockStockCheckRepoPort, m *mock.MockMaterialRepoPort) {
 				sc.EXPECT().GetStockCheckList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]domain.StockCheck{{Id: 1}, {Id: 2}}, nil)
 				sc.EXPECT().GetStockCheckListTotal(gomock.Any()).Return(int64(2), nil)
 			},
@@ -27,7 +27,7 @@ func TestStockCheckUsecase_GetStockCheckList(t *testing.T) {
 		},
 		{
 			name: "repo error",
-			setupMock: func(sc *mock.MockStockCheckRepository, m *mock.MockMaterialRepository) {
+			setupMock: func(sc *mock.MockStockCheckRepoPort, m *mock.MockMaterialRepoPort) {
 				sc.EXPECT().GetStockCheckList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &domain.Error{Type: domain.InternalServerError, Message: "db error"})
 			},
 			expectedError: &domain.Error{Type: domain.InternalServerError},
@@ -38,8 +38,8 @@ func TestStockCheckUsecase_GetStockCheckList(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			scRepo := mock.NewMockStockCheckRepository(ctrl)
-			matRepo := mock.NewMockMaterialRepository(ctrl)
+			scRepo := mock.NewMockStockCheckRepoPort(ctrl)
+			matRepo := mock.NewMockMaterialRepoPort(ctrl)
 			tt.setupMock(scRepo, matRepo)
 			usecase := domain.NewStockCheckUsecase(scRepo, matRepo)
 			result, _, err := usecase.GetStockCheckList(context.Background(), domain.CreatedAt, domain.Descending, 0, 10)
@@ -58,8 +58,8 @@ func TestStockCheckUsecase_CreateStockCheck_SnapshotsMaterialFields(t *testing.T
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	scRepo := mock.NewMockStockCheckRepository(ctrl)
-	matRepo := mock.NewMockMaterialRepository(ctrl)
+	scRepo := mock.NewMockStockCheckRepoPort(ctrl)
+	matRepo := mock.NewMockMaterialRepoPort(ctrl)
 
 	matRepo.EXPECT().GetMaterialList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]domain.Material{
 		{
@@ -99,8 +99,8 @@ func TestStockCheckUsecase_CreateStockCheck_OnlyIncludesRequestedMaterials(t *te
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	scRepo := mock.NewMockStockCheckRepository(ctrl)
-	matRepo := mock.NewMockMaterialRepository(ctrl)
+	scRepo := mock.NewMockStockCheckRepoPort(ctrl)
+	matRepo := mock.NewMockMaterialRepoPort(ctrl)
 
 	matRepo.EXPECT().GetMaterialList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]domain.Material{
 		{Id: 1, Name: "Tepung"},
@@ -128,8 +128,8 @@ func TestStockCheckUsecase_GetPurchaseList(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	scRepo := mock.NewMockStockCheckRepository(ctrl)
-	matRepo := mock.NewMockMaterialRepository(ctrl)
+	scRepo := mock.NewMockStockCheckRepoPort(ctrl)
+	matRepo := mock.NewMockMaterialRepoPort(ctrl)
 
 	scRepo.EXPECT().GetStockCheckById(gomock.Any(), int64(1)).Return(domain.StockCheck{
 		Id: 1,
@@ -176,8 +176,8 @@ func TestStockCheckUsecase_GetPurchaseList_ExcludesUnconfiguredPolicy(t *testing
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	scRepo := mock.NewMockStockCheckRepository(ctrl)
-	matRepo := mock.NewMockMaterialRepository(ctrl)
+	scRepo := mock.NewMockStockCheckRepoPort(ctrl)
+	matRepo := mock.NewMockMaterialRepoPort(ctrl)
 
 	scRepo.EXPECT().GetStockCheckById(gomock.Any(), int64(1)).Return(domain.StockCheck{
 		Id: 1,

@@ -5,20 +5,20 @@ import (
 )
 
 type SupplierUsecase struct {
-	repository SupplierRepository
+	supplierRepoPort SupplierRepoPort
 }
 
-func NewSupplierUsecase(repository SupplierRepository) SupplierUsecase {
-	return SupplierUsecase{repository: repository}
+func NewSupplierUsecase(supplierRepoPort SupplierRepoPort) SupplierUsecase {
+	return SupplierUsecase{supplierRepoPort: supplierRepoPort}
 }
 
 func (usecase SupplierUsecase) GetSupplierList(ctx context.Context, query string, sortBy SortBy, order Order, skip int, limit int) ([]Supplier, int64, *Error) {
-	suppliers, err := usecase.repository.GetSupplierList(ctx, query, sortBy, order, skip, limit)
+	suppliers, err := usecase.supplierRepoPort.GetSupplierList(ctx, query, sortBy, order, skip, limit)
 	if err != nil {
 		return []Supplier{}, 0, err
 	}
 
-	total, err := usecase.repository.GetSupplierListTotal(ctx, query)
+	total, err := usecase.supplierRepoPort.GetSupplierListTotal(ctx, query)
 	if err != nil {
 		return []Supplier{}, 0, err
 	}
@@ -27,7 +27,7 @@ func (usecase SupplierUsecase) GetSupplierList(ctx context.Context, query string
 }
 
 func (usecase SupplierUsecase) GetSupplierById(ctx context.Context, id int64) (Supplier, *Error) {
-	supplier, err := usecase.repository.GetSupplierById(ctx, id)
+	supplier, err := usecase.supplierRepoPort.GetSupplierById(ctx, id)
 	if err != nil {
 		return Supplier{}, err
 	}
@@ -36,18 +36,18 @@ func (usecase SupplierUsecase) GetSupplierById(ctx context.Context, id int64) (S
 }
 
 func (usecase SupplierUsecase) CreateSupplier(ctx context.Context, supplier Supplier) (Supplier, *Error) {
-	return usecase.repository.CreateSupplier(ctx, supplier)
+	return usecase.supplierRepoPort.CreateSupplier(ctx, supplier)
 }
 
 func (usecase SupplierUsecase) UpdateSupplierById(ctx context.Context, supplier Supplier, id int64) (Supplier, *Error) {
-	return usecase.repository.UpdateSupplierById(ctx, supplier, id)
+	return usecase.supplierRepoPort.UpdateSupplierById(ctx, supplier, id)
 }
 
 func (usecase SupplierUsecase) DeleteSupplierById(ctx context.Context, id int64) *Error {
-	return usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
-		if err := usecase.repository.DeleteSupplierById(ctxWithTx, id); err != nil {
+	return usecase.supplierRepoPort.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+		if err := usecase.supplierRepoPort.DeleteSupplierById(ctxWithTx, id); err != nil {
 			return err
 		}
-		return usecase.repository.SoftDeleteMaterialSuppliersBySupplierId(ctxWithTx, id)
+		return usecase.supplierRepoPort.SoftDeleteMaterialSuppliersBySupplierId(ctxWithTx, id)
 	})
 }

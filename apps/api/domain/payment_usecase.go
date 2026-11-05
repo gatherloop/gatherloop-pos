@@ -12,15 +12,15 @@ import (
 const maxCustomerNameLength = 60
 
 type PaymentUsecase struct {
-	paymentRepository             PaymentRepository
-	paymentGatewayRepository      PaymentGatewayRepository
-	customerRepository            CustomerRepository
-	cartRepository                CartRepository
-	transactionRepository         TransactionRepository
-	variantRepository             VariantRepository
-	walletRepository              WalletRepository
-	kdsNotificationRepository     KdsNotificationRepository
-	paymentVerificationRepository PaymentVerificationRepository
+	paymentRepoPort             PaymentRepoPort
+	paymentGatewayPort          PaymentGatewayPort
+	customerRepoPort            CustomerRepoPort
+	cartRepoPort                CartRepoPort
+	transactionRepoPort         TransactionRepoPort
+	variantRepoPort             VariantRepoPort
+	walletRepoPort              WalletRepoPort
+	kdsNotificationRepoPort     KdsNotificationRepoPort
+	paymentVerificationRepoPort PaymentVerificationRepoPort
 
 	paymentService                    PaymentService
 	availabilityService               AvailabilityService
@@ -34,15 +34,15 @@ type PaymentUsecase struct {
 }
 
 func NewPaymentUsecase(
-	paymentRepository PaymentRepository,
-	paymentGatewayRepository PaymentGatewayRepository,
-	customerRepository CustomerRepository,
-	cartRepository CartRepository,
-	transactionRepository TransactionRepository,
-	variantRepository VariantRepository,
-	walletRepository WalletRepository,
-	kdsNotificationRepository KdsNotificationRepository,
-	paymentVerificationRepository PaymentVerificationRepository,
+	paymentRepoPort PaymentRepoPort,
+	paymentGatewayPort PaymentGatewayPort,
+	customerRepoPort CustomerRepoPort,
+	cartRepoPort CartRepoPort,
+	transactionRepoPort TransactionRepoPort,
+	variantRepoPort VariantRepoPort,
+	walletRepoPort WalletRepoPort,
+	kdsNotificationRepoPort KdsNotificationRepoPort,
+	paymentVerificationRepoPort PaymentVerificationRepoPort,
 
 	paymentService PaymentService,
 	availabilityService AvailabilityService,
@@ -55,15 +55,15 @@ func NewPaymentUsecase(
 	orderPaymentWalletId int64,
 ) PaymentUsecase {
 	return PaymentUsecase{
-		paymentRepository:                 paymentRepository,
-		paymentGatewayRepository:          paymentGatewayRepository,
-		customerRepository:                customerRepository,
-		cartRepository:                    cartRepository,
-		transactionRepository:             transactionRepository,
-		variantRepository:                 variantRepository,
-		walletRepository:                  walletRepository,
-		kdsNotificationRepository:         kdsNotificationRepository,
-		paymentVerificationRepository:     paymentVerificationRepository,
+		paymentRepoPort:                   paymentRepoPort,
+		paymentGatewayPort:                paymentGatewayPort,
+		customerRepoPort:                  customerRepoPort,
+		cartRepoPort:                      cartRepoPort,
+		transactionRepoPort:               transactionRepoPort,
+		variantRepoPort:                   variantRepoPort,
+		walletRepoPort:                    walletRepoPort,
+		kdsNotificationRepoPort:           kdsNotificationRepoPort,
+		paymentVerificationRepoPort:       paymentVerificationRepoPort,
 		paymentService:                    paymentService,
 		availabilityService:               availabilityService,
 		whatsappNumberVerivicationService: whatsappNumberVerivicationService,
@@ -113,8 +113,8 @@ func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, cu
 		whatsappNumber = &normalized
 	}
 
-	err := usecase.paymentRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
-		wallet, err := usecase.walletRepository.GetWalletById(ctx, usecase.orderPaymentWalletId)
+	err := usecase.paymentRepoPort.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+		wallet, err := usecase.walletRepoPort.GetWalletById(ctx, usecase.orderPaymentWalletId)
 		if err != nil {
 			if err.Type == NotFound {
 				return &Error{Type: InternalServerError, Message: "order payment wallet is not configured"}
@@ -139,12 +139,12 @@ func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, cu
 			return &Error{Type: BadRequest, Message: "customerName must be at most 60 characters"}
 		}
 
-		customer, err := usecase.customerRepository.UpsertCustomerBySessionId(ctx, sessionId, customerName, whatsappNumber)
+		customer, err := usecase.customerRepoPort.UpsertCustomerBySessionId(ctx, sessionId, customerName, whatsappNumber)
 		if err != nil {
 			return err
 		}
 
-		cart, err := usecase.cartRepository.GetActiveCartBySessionId(ctxWithTx, sessionId)
+		cart, err := usecase.cartRepoPort.GetActiveCartBySessionId(ctxWithTx, sessionId)
 		if err != nil {
 			if err.Type != NotFound {
 				return err
@@ -158,7 +158,7 @@ func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, cu
 			return &Error{Type: BadRequest, Message: "table is not set"}
 		}
 
-		if existingPayment, err := usecase.paymentRepository.GetPendingPaymentByCartId(ctxWithTx, cart.Id); err != nil {
+		if existingPayment, err := usecase.paymentRepoPort.GetPendingPaymentByCartId(ctxWithTx, cart.Id); err != nil {
 			if err.Type != NotFound {
 				return err
 			}
@@ -166,19 +166,19 @@ func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, cu
 			if existingPayment.TransactionId == nil {
 				return &Error{Type: InternalServerError, Message: "pending payment has no transaction"}
 			}
-			transaction, txErr := usecase.transactionRepository.GetTransactionById(ctxWithTx, *existingPayment.TransactionId)
+			transaction, txErr := usecase.transactionRepoPort.GetTransactionById(ctxWithTx, *existingPayment.TransactionId)
 			if txErr != nil {
 				return txErr
 			}
 
 			existingPayment.CustomerWhatsappNumber = whatsappNumber
-			updatedPayment, updateErr := usecase.paymentRepository.UpdatePaymentById(ctxWithTx, existingPayment, existingPayment.Id)
+			updatedPayment, updateErr := usecase.paymentRepoPort.UpdatePaymentById(ctxWithTx, existingPayment, existingPayment.Id)
 			if updateErr != nil {
 				return updateErr
 			}
 
 			if diningOption != "" && diningOption != transaction.DiningOption {
-				if updateErr := usecase.transactionRepository.UpdateTransactionDiningOptionById(ctxWithTx, transaction.Id, diningOption); updateErr != nil {
+				if updateErr := usecase.transactionRepoPort.UpdateTransactionDiningOptionById(ctxWithTx, transaction.Id, diningOption); updateErr != nil {
 					return updateErr
 				}
 				transaction.DiningOption = diningOption
@@ -192,7 +192,7 @@ func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, cu
 		transactionItems := []TransactionItem{}
 		var total float32
 		for _, cartItem := range cart.Items {
-			variant, err := usecase.variantRepository.GetVariantById(ctxWithTx, cartItem.VariantId)
+			variant, err := usecase.variantRepoPort.GetVariantById(ctxWithTx, cartItem.VariantId)
 			if err != nil {
 				return err
 			}
@@ -216,7 +216,7 @@ func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, cu
 			return err
 		}
 
-		createdTransaction, err := usecase.transactionRepository.CreateTransaction(ctxWithTx, Transaction{
+		createdTransaction, err := usecase.transactionRepoPort.CreateTransaction(ctxWithTx, Transaction{
 			Name:               customer.Name,
 			Source:             TransactionSourceOrder,
 			DiningOption:       diningOption,
@@ -258,7 +258,7 @@ func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, cu
 			verificationStatus = &awaiting
 		}
 
-		createdPayment, err := usecase.paymentRepository.CreatePayment(ctxWithTx, Payment{
+		createdPayment, err := usecase.paymentRepoPort.CreatePayment(ctxWithTx, Payment{
 			CartId:                 cart.Id,
 			SessionId:              sessionId,
 			CustomerWhatsappNumber: whatsappNumber,
@@ -279,7 +279,7 @@ func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, cu
 		resultTransaction = createdTransaction
 
 		if method == PaymentMethodCod {
-			if createErr := usecase.paymentVerificationRepository.Create(ctxWithTx, PaymentVerificationPhoto{
+			if createErr := usecase.paymentVerificationRepoPort.Create(ctxWithTx, PaymentVerificationPhoto{
 				PaymentId:   createdPayment.Id,
 				ContentType: verificationPhotoContentType,
 				ByteSize:    len(verificationPhotoBytes),
@@ -294,14 +294,14 @@ func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, cu
 			if method == PaymentMethodCod {
 				kind = KdsNotificationKindCodVerification
 			}
-			if enqueueErr := usecase.kdsNotificationRepository.EnqueueForTransaction(ctxWithTx, createdTransaction, kind); enqueueErr != nil {
+			if enqueueErr := usecase.kdsNotificationRepoPort.EnqueueForTransaction(ctxWithTx, createdTransaction, kind); enqueueErr != nil {
 				return enqueueErr
 			}
 			enqueuedNonGatewayNotification = true
 			return nil
 		}
 
-		qrisPayment, gatewayErr := usecase.paymentGatewayRepository.GenerateQris(ctxWithTx, GenerateQrisInput{
+		qrisPayment, gatewayErr := usecase.paymentGatewayPort.GenerateQris(ctxWithTx, GenerateQrisInput{
 			PartnerReferenceNo: partnerReferenceNo,
 			Amount:             total,
 			ExpiredAt:          expiredAt,
@@ -313,7 +313,7 @@ func (usecase PaymentUsecase) Checkout(ctx context.Context, sessionId string, cu
 		createdPayment.GatewayReferenceNo = qrisPayment.GatewayReferenceNo
 		createdPayment.QrContent = qrisPayment.QrContent
 
-		updatedPayment, err := usecase.paymentRepository.UpdatePaymentById(ctxWithTx, createdPayment, createdPayment.Id)
+		updatedPayment, err := usecase.paymentRepoPort.UpdatePaymentById(ctxWithTx, createdPayment, createdPayment.Id)
 		if err != nil {
 			return err
 		}
@@ -334,8 +334,8 @@ func (usecase PaymentUsecase) ConfirmPayment(ctx context.Context, status QrisSta
 	var resultPayment Payment
 	var outcome ConfirmPaymentOutcome
 
-	err := usecase.paymentRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
-		payment, err := usecase.paymentRepository.GetPaymentByPartnerReferenceNoForUpdate(ctxWithTx, status.PartnerReferenceNo)
+	err := usecase.paymentRepoPort.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+		payment, err := usecase.paymentRepoPort.GetPaymentByPartnerReferenceNoForUpdate(ctxWithTx, status.PartnerReferenceNo)
 		if err != nil {
 			if err.Type == NotFound {
 				outcome = ConfirmPaymentOutcomeUnknownReference
@@ -366,8 +366,8 @@ func (usecase PaymentUsecase) GetPaymentStatus(ctx context.Context, sessionId st
 	var resultTransaction Transaction
 	var outcome ConfirmPaymentOutcome
 
-	err := usecase.paymentRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
-		payment, err := usecase.paymentRepository.GetPaymentByPartnerReferenceNo(ctxWithTx, partnerReferenceNo)
+	err := usecase.paymentRepoPort.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+		payment, err := usecase.paymentRepoPort.GetPaymentByPartnerReferenceNo(ctxWithTx, partnerReferenceNo)
 		if err != nil {
 			if err.Type == NotFound {
 				return &Error{Type: NotFound, Message: "payment not found"}
@@ -390,7 +390,7 @@ func (usecase PaymentUsecase) GetPaymentStatus(ctx context.Context, sessionId st
 		if payment.TransactionId == nil {
 			return &Error{Type: InternalServerError, Message: "payment has no transaction"}
 		}
-		transaction, txErr := usecase.transactionRepository.GetTransactionById(ctxWithTx, *payment.TransactionId)
+		transaction, txErr := usecase.transactionRepoPort.GetTransactionById(ctxWithTx, *payment.TransactionId)
 		if txErr != nil {
 			return txErr
 		}
@@ -409,12 +409,12 @@ func (usecase PaymentUsecase) GetPaymentStatus(ctx context.Context, sessionId st
 }
 
 func (usecase PaymentUsecase) GetPaymentList(ctx context.Context, sessionId string, skip int, limit int) ([]PaymentSummary, int64, *Error) {
-	payments, err := usecase.paymentRepository.GetPaymentsBySessionId(ctx, sessionId, skip, limit)
+	payments, err := usecase.paymentRepoPort.GetPaymentsBySessionId(ctx, sessionId, skip, limit)
 	if err != nil {
 		return nil, 0, err
 	}
 
-	total, err := usecase.paymentRepository.GetPaymentsBySessionIdTotal(ctx, sessionId)
+	total, err := usecase.paymentRepoPort.GetPaymentsBySessionIdTotal(ctx, sessionId)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -426,7 +426,7 @@ func (usecase PaymentUsecase) GetPaymentList(ctx context.Context, sessionId stri
 		}
 	}
 
-	transactionSummaries, err := usecase.transactionRepository.GetTransactionSummariesByIds(ctx, transactionIds)
+	transactionSummaries, err := usecase.transactionRepoPort.GetTransactionSummariesByIds(ctx, transactionIds)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -454,8 +454,8 @@ func (usecase PaymentUsecase) CancelPayment(ctx context.Context, sessionId strin
 	outcome := ConfirmPaymentOutcomeIgnored
 	cancelledCash := false
 
-	err := usecase.paymentRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
-		payment, err := usecase.paymentRepository.GetPaymentByPartnerReferenceNoForUpdate(ctxWithTx, partnerReferenceNo)
+	err := usecase.paymentRepoPort.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+		payment, err := usecase.paymentRepoPort.GetPaymentByPartnerReferenceNoForUpdate(ctxWithTx, partnerReferenceNo)
 		if err != nil {
 			if err.Type == NotFound {
 				return &Error{Type: NotFound, Message: "payment not found"}
@@ -476,7 +476,7 @@ func (usecase PaymentUsecase) CancelPayment(ctx context.Context, sessionId strin
 		}
 
 		if payment.RequiresGateway() {
-			gatewayStatus, gatewayErr := usecase.paymentGatewayRepository.QueryQris(ctxWithTx, QueryQrisInput{
+			gatewayStatus, gatewayErr := usecase.paymentGatewayPort.QueryQris(ctxWithTx, QueryQrisInput{
 				PartnerReferenceNo: payment.PartnerReferenceNo,
 				GatewayReferenceNo: payment.GatewayReferenceNo,
 			})
@@ -495,7 +495,7 @@ func (usecase PaymentUsecase) CancelPayment(ctx context.Context, sessionId strin
 				return usecase.paymentService.LoadPaymentTransaction(ctxWithTx, updatedPayment, &resultTransaction)
 			}
 
-			if cancelErr := usecase.paymentGatewayRepository.CancelQris(ctxWithTx, CancelQrisInput{
+			if cancelErr := usecase.paymentGatewayPort.CancelQris(ctxWithTx, CancelQrisInput{
 				PartnerReferenceNo: payment.PartnerReferenceNo,
 				GatewayReferenceNo: payment.GatewayReferenceNo,
 			}); cancelErr != nil {
@@ -527,7 +527,7 @@ func (usecase PaymentUsecase) CancelPayment(ctx context.Context, sessionId strin
 
 func (usecase PaymentUsecase) ExpireStalePayments(ctx context.Context) *Error {
 	now := time.Now()
-	payments, err := usecase.paymentRepository.GetExpirablePayments(ctx, now, paymentExpiryBatchSize)
+	payments, err := usecase.paymentRepoPort.GetExpirablePayments(ctx, now, paymentExpiryBatchSize)
 	if err != nil {
 		return err
 	}
@@ -540,7 +540,7 @@ func (usecase PaymentUsecase) ExpireStalePayments(ctx context.Context) *Error {
 }
 
 func (usecase PaymentUsecase) DeleteOrphanedVerificationPhotos(ctx context.Context) *Error {
-	deleted, err := usecase.paymentVerificationRepository.DeleteOrphaned(ctx, paymentVerificationOrphanBatchSize)
+	deleted, err := usecase.paymentVerificationRepoPort.DeleteOrphaned(ctx, paymentVerificationOrphanBatchSize)
 	if err != nil {
 		return err
 	}

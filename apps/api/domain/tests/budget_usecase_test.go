@@ -13,13 +13,13 @@ import (
 func TestBudgetUsecase_GetBudgetList(t *testing.T) {
 	tests := []struct {
 		name          string
-		setupMock     func(r *mock.MockBudgetRepository)
+		setupMock     func(r *mock.MockBudgetRepoPort)
 		expectedLen   int
 		expectedError *domain.Error
 	}{
 		{
 			name: "success",
-			setupMock: func(r *mock.MockBudgetRepository) {
+			setupMock: func(r *mock.MockBudgetRepoPort) {
 				r.EXPECT().GetBudgetList(gomock.Any()).Return([]domain.Budget{
 					{Id: 1, Name: "Operations", Percentage: 25},
 					{Id: 2, Name: "Marketing", Percentage: 10},
@@ -29,7 +29,7 @@ func TestBudgetUsecase_GetBudgetList(t *testing.T) {
 		},
 		{
 			name: "repository error",
-			setupMock: func(r *mock.MockBudgetRepository) {
+			setupMock: func(r *mock.MockBudgetRepoPort) {
 				r.EXPECT().GetBudgetList(gomock.Any()).Return(nil, &domain.Error{Type: domain.InternalServerError, Message: "db error"})
 			},
 			expectedError: &domain.Error{Type: domain.InternalServerError},
@@ -41,7 +41,7 @@ func TestBudgetUsecase_GetBudgetList(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockRepo := mock.NewMockBudgetRepository(ctrl)
+			mockRepo := mock.NewMockBudgetRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 
 			usecase := domain.NewBudgetUsecase(mockRepo)
@@ -62,14 +62,14 @@ func TestBudgetUsecase_GetBudgetById(t *testing.T) {
 	tests := []struct {
 		name          string
 		id            int64
-		setupMock     func(r *mock.MockBudgetRepository)
+		setupMock     func(r *mock.MockBudgetRepoPort)
 		expectedName  string
 		expectedError *domain.Error
 	}{
 		{
 			name: "success",
 			id:   1,
-			setupMock: func(r *mock.MockBudgetRepository) {
+			setupMock: func(r *mock.MockBudgetRepoPort) {
 				r.EXPECT().GetBudgetById(gomock.Any(), int64(1)).Return(domain.Budget{Id: 1, Name: "Operations", Percentage: 25}, nil)
 			},
 			expectedName: "Operations",
@@ -77,7 +77,7 @@ func TestBudgetUsecase_GetBudgetById(t *testing.T) {
 		{
 			name: "not found",
 			id:   99,
-			setupMock: func(r *mock.MockBudgetRepository) {
+			setupMock: func(r *mock.MockBudgetRepoPort) {
 				r.EXPECT().GetBudgetById(gomock.Any(), int64(99)).Return(domain.Budget{}, &domain.Error{Type: domain.NotFound, Message: "budget not found"})
 			},
 			expectedError: &domain.Error{Type: domain.NotFound},
@@ -89,7 +89,7 @@ func TestBudgetUsecase_GetBudgetById(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockRepo := mock.NewMockBudgetRepository(ctrl)
+			mockRepo := mock.NewMockBudgetRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 
 			usecase := domain.NewBudgetUsecase(mockRepo)
@@ -110,14 +110,14 @@ func TestBudgetUsecase_CreateBudget(t *testing.T) {
 	tests := []struct {
 		name          string
 		input         domain.Budget
-		setupMock     func(r *mock.MockBudgetRepository)
+		setupMock     func(r *mock.MockBudgetRepoPort)
 		expectedId    int64
 		expectedError *domain.Error
 	}{
 		{
 			name:  "success",
 			input: domain.Budget{Name: "Savings", Percentage: 10},
-			setupMock: func(r *mock.MockBudgetRepository) {
+			setupMock: func(r *mock.MockBudgetRepoPort) {
 				r.EXPECT().CreateBudget(gomock.Any(), gomock.Any()).Return(domain.Budget{Id: 3, Name: "Savings"}, nil)
 			},
 			expectedId: 3,
@@ -125,7 +125,7 @@ func TestBudgetUsecase_CreateBudget(t *testing.T) {
 		{
 			name:  "repository error",
 			input: domain.Budget{Name: "Savings"},
-			setupMock: func(r *mock.MockBudgetRepository) {
+			setupMock: func(r *mock.MockBudgetRepoPort) {
 				r.EXPECT().CreateBudget(gomock.Any(), gomock.Any()).Return(domain.Budget{}, &domain.Error{Type: domain.InternalServerError})
 			},
 			expectedError: &domain.Error{Type: domain.InternalServerError},
@@ -137,7 +137,7 @@ func TestBudgetUsecase_CreateBudget(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockRepo := mock.NewMockBudgetRepository(ctrl)
+			mockRepo := mock.NewMockBudgetRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 
 			usecase := domain.NewBudgetUsecase(mockRepo)
@@ -159,7 +159,7 @@ func TestBudgetUsecase_UpdateBudgetById(t *testing.T) {
 		name               string
 		id                 int64
 		input              domain.Budget
-		setupMock          func(r *mock.MockBudgetRepository)
+		setupMock          func(r *mock.MockBudgetRepoPort)
 		expectedPercentage float32
 		expectedError      *domain.Error
 	}{
@@ -167,7 +167,7 @@ func TestBudgetUsecase_UpdateBudgetById(t *testing.T) {
 			name:  "success",
 			id:    1,
 			input: domain.Budget{Percentage: 25},
-			setupMock: func(r *mock.MockBudgetRepository) {
+			setupMock: func(r *mock.MockBudgetRepoPort) {
 				r.EXPECT().UpdateBudgetById(gomock.Any(), domain.Budget{Percentage: 25}, int64(1)).Return(domain.Budget{Id: 1, Percentage: 25}, nil)
 			},
 			expectedPercentage: 25,
@@ -176,7 +176,7 @@ func TestBudgetUsecase_UpdateBudgetById(t *testing.T) {
 			name:  "not found",
 			id:    99,
 			input: domain.Budget{Percentage: 25},
-			setupMock: func(r *mock.MockBudgetRepository) {
+			setupMock: func(r *mock.MockBudgetRepoPort) {
 				r.EXPECT().UpdateBudgetById(gomock.Any(), gomock.Any(), int64(99)).Return(domain.Budget{}, &domain.Error{Type: domain.NotFound})
 			},
 			expectedError: &domain.Error{Type: domain.NotFound},
@@ -188,7 +188,7 @@ func TestBudgetUsecase_UpdateBudgetById(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockRepo := mock.NewMockBudgetRepository(ctrl)
+			mockRepo := mock.NewMockBudgetRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 
 			usecase := domain.NewBudgetUsecase(mockRepo)
@@ -209,20 +209,20 @@ func TestBudgetUsecase_DeleteBudgetById(t *testing.T) {
 	tests := []struct {
 		name          string
 		id            int64
-		setupMock     func(r *mock.MockBudgetRepository)
+		setupMock     func(r *mock.MockBudgetRepoPort)
 		expectedError *domain.Error
 	}{
 		{
 			name: "success",
 			id:   1,
-			setupMock: func(r *mock.MockBudgetRepository) {
+			setupMock: func(r *mock.MockBudgetRepoPort) {
 				r.EXPECT().DeleteBudgetById(gomock.Any(), int64(1)).Return(nil)
 			},
 		},
 		{
 			name: "not found",
 			id:   99,
-			setupMock: func(r *mock.MockBudgetRepository) {
+			setupMock: func(r *mock.MockBudgetRepoPort) {
 				r.EXPECT().DeleteBudgetById(gomock.Any(), int64(99)).Return(&domain.Error{Type: domain.NotFound})
 			},
 			expectedError: &domain.Error{Type: domain.NotFound},
@@ -234,7 +234,7 @@ func TestBudgetUsecase_DeleteBudgetById(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockRepo := mock.NewMockBudgetRepository(ctrl)
+			mockRepo := mock.NewMockBudgetRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 
 			usecase := domain.NewBudgetUsecase(mockRepo)

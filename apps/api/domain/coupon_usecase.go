@@ -5,29 +5,29 @@ import (
 )
 
 type CouponUsecase struct {
-	repository CouponRepository
+	couponRepoPort CouponRepoPort
 }
 
-func NewCouponUsecase(repository CouponRepository) CouponUsecase {
-	return CouponUsecase{repository: repository}
+func NewCouponUsecase(couponRepoPort CouponRepoPort) CouponUsecase {
+	return CouponUsecase{couponRepoPort: couponRepoPort}
 }
 
 func (usecase CouponUsecase) GetCouponList(ctx context.Context) ([]Coupon, *Error) {
-	return usecase.repository.GetCouponList(ctx)
+	return usecase.couponRepoPort.GetCouponList(ctx)
 }
 
 func (usecase CouponUsecase) GetCouponById(ctx context.Context, id int64) (Coupon, *Error) {
-	return usecase.repository.GetCouponById(ctx, id)
+	return usecase.couponRepoPort.GetCouponById(ctx, id)
 }
 
 func (usecase CouponUsecase) CreateCoupon(ctx context.Context, coupon Coupon) (Coupon, *Error) {
-	return usecase.repository.CreateCoupon(ctx, coupon)
+	return usecase.couponRepoPort.CreateCoupon(ctx, coupon)
 }
 
 func (usecase CouponUsecase) UpdateCouponById(ctx context.Context, coupon Coupon, id int64) (Coupon, *Error) {
-	return usecase.repository.UpdateCouponById(ctx, coupon, id)
+	return usecase.couponRepoPort.UpdateCouponById(ctx, coupon, id)
 }
 
 func (usecase CouponUsecase) DeleteCouponById(ctx context.Context, id int64) *Error {
-	return usecase.repository.DeleteCouponById(ctx, id)
+	return usecase.couponRepoPort.DeleteCouponById(ctx, id)
 }

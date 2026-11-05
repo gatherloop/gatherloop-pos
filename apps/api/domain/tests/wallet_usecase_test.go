@@ -13,13 +13,13 @@ import (
 func TestWalletUsecase_GetWalletList(t *testing.T) {
 	tests := []struct {
 		name          string
-		setupMock     func(r *mock.MockWalletRepository)
+		setupMock     func(r *mock.MockWalletRepoPort)
 		expectedLen   int
 		expectedError *domain.Error
 	}{
 		{
 			name: "success",
-			setupMock: func(r *mock.MockWalletRepository) {
+			setupMock: func(r *mock.MockWalletRepoPort) {
 				r.EXPECT().GetWalletList(gomock.Any()).Return([]domain.Wallet{
 					{Id: 1, Name: "Cash", Balance: 1000},
 					{Id: 2, Name: "Bank", Balance: 5000},
@@ -29,7 +29,7 @@ func TestWalletUsecase_GetWalletList(t *testing.T) {
 		},
 		{
 			name: "repository error",
-			setupMock: func(r *mock.MockWalletRepository) {
+			setupMock: func(r *mock.MockWalletRepoPort) {
 				r.EXPECT().GetWalletList(gomock.Any()).Return(nil, &domain.Error{Type: domain.InternalServerError})
 			},
 			expectedError: &domain.Error{Type: domain.InternalServerError},
@@ -41,7 +41,7 @@ func TestWalletUsecase_GetWalletList(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockRepo := mock.NewMockWalletRepository(ctrl)
+			mockRepo := mock.NewMockWalletRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 
 			usecase := domain.NewWalletUsecase(mockRepo)
@@ -63,14 +63,14 @@ func TestWalletUsecase_CreateWalletTransfer(t *testing.T) {
 		name          string
 		input         domain.WalletTransfer
 		fromWalletId  int64
-		setupMock     func(r *mock.MockWalletRepository)
+		setupMock     func(r *mock.MockWalletRepoPort)
 		expectedError *domain.Error
 	}{
 		{
 			name:         "success — deducts from and credits to",
 			fromWalletId: 1,
 			input:        domain.WalletTransfer{ToWalletId: 2, Amount: 300},
-			setupMock: func(r *mock.MockWalletRepository) {
+			setupMock: func(r *mock.MockWalletRepoPort) {
 				r.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				r.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1, Name: "Cash", Balance: 1000}, nil)
@@ -84,7 +84,7 @@ func TestWalletUsecase_CreateWalletTransfer(t *testing.T) {
 			name:         "insufficient balance",
 			fromWalletId: 1,
 			input:        domain.WalletTransfer{ToWalletId: 2, Amount: 5000},
-			setupMock: func(r *mock.MockWalletRepository) {
+			setupMock: func(r *mock.MockWalletRepoPort) {
 				r.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				r.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1, Name: "Cash", Balance: 100}, nil)
@@ -95,7 +95,7 @@ func TestWalletUsecase_CreateWalletTransfer(t *testing.T) {
 			name:         "from wallet not found",
 			fromWalletId: 99,
 			input:        domain.WalletTransfer{ToWalletId: 2, Amount: 100},
-			setupMock: func(r *mock.MockWalletRepository) {
+			setupMock: func(r *mock.MockWalletRepoPort) {
 				r.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				r.EXPECT().GetWalletById(gomock.Any(), int64(99)).Return(domain.Wallet{}, &domain.Error{Type: domain.NotFound})
@@ -109,7 +109,7 @@ func TestWalletUsecase_CreateWalletTransfer(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockRepo := mock.NewMockWalletRepository(ctrl)
+			mockRepo := mock.NewMockWalletRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 
 			usecase := domain.NewWalletUsecase(mockRepo)
@@ -129,20 +129,20 @@ func TestWalletUsecase_DeleteWalletById(t *testing.T) {
 	tests := []struct {
 		name          string
 		id            int64
-		setupMock     func(r *mock.MockWalletRepository)
+		setupMock     func(r *mock.MockWalletRepoPort)
 		expectedError *domain.Error
 	}{
 		{
 			name: "success",
 			id:   1,
-			setupMock: func(r *mock.MockWalletRepository) {
+			setupMock: func(r *mock.MockWalletRepoPort) {
 				r.EXPECT().DeleteWalletById(gomock.Any(), int64(1)).Return(nil)
 			},
 		},
 		{
 			name: "not found",
 			id:   99,
-			setupMock: func(r *mock.MockWalletRepository) {
+			setupMock: func(r *mock.MockWalletRepoPort) {
 				r.EXPECT().DeleteWalletById(gomock.Any(), int64(99)).Return(&domain.Error{Type: domain.NotFound})
 			},
 			expectedError: &domain.Error{Type: domain.NotFound},
@@ -154,7 +154,7 @@ func TestWalletUsecase_DeleteWalletById(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockRepo := mock.NewMockWalletRepository(ctrl)
+			mockRepo := mock.NewMockWalletRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 
 			usecase := domain.NewWalletUsecase(mockRepo)

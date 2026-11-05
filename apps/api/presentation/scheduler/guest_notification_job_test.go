@@ -23,7 +23,7 @@ func TestGuestNotificationDispatchJob_RunClaimsPendingNotifications(t *testing.T
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	repository := mock.NewMockGuestNotificationRepository(ctrl)
+	repository := mock.NewMockGuestNotificationRepoPort(ctrl)
 	repository.EXPECT().ClaimPendingGuestNotifications(gomock.Any(), gomock.Any()).Return(nil, nil)
 
 	job := GuestNotificationDispatchJob{
@@ -41,7 +41,7 @@ func TestGuestNotificationStaleSendingJob_RunExpiresStaleSending(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	repository := mock.NewMockGuestNotificationRepository(ctrl)
+	repository := mock.NewMockGuestNotificationRepoPort(ctrl)
 	repository.EXPECT().ExpireStaleSending(gomock.Any(), gomock.Any()).Return(nil)
 
 	job := GuestNotificationStaleSendingJob{

@@ -11,9 +11,9 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-func newProductUsecase(ctrl *gomock.Controller) (domain.ProductUsecase, *mock.MockProductRepository, *mock.MockVariantRepository) {
-	mockRepo := mock.NewMockProductRepository(ctrl)
-	mockVariantRepo := mock.NewMockVariantRepository(ctrl)
+func newProductUsecase(ctrl *gomock.Controller) (domain.ProductUsecase, *mock.MockProductRepoPort, *mock.MockVariantRepoPort) {
+	mockRepo := mock.NewMockProductRepoPort(ctrl)
+	mockVariantRepo := mock.NewMockVariantRepoPort(ctrl)
 	return domain.NewProductUsecase(mockRepo, mockVariantRepo), mockRepo, mockVariantRepo
 }
 
@@ -23,14 +23,14 @@ func TestProductUsecase_GetProductList(t *testing.T) {
 	tests := []struct {
 		name              string
 		status            *domain.ProductStatus
-		setupMock         func(r *mock.MockProductRepository)
-		setupVariantsMock func(r *mock.MockVariantRepository)
+		setupMock         func(r *mock.MockProductRepoPort)
+		setupVariantsMock func(r *mock.MockVariantRepoPort)
 		expectedLen       int
 		expectedError     *domain.Error
 	}{
 		{
 			name: "success",
-			setupMock: func(r *mock.MockProductRepository) {
+			setupMock: func(r *mock.MockProductRepoPort) {
 				r.EXPECT().GetProductList(gomock.Any(), "", domain.CreatedAt, domain.Ascending, 0, 10, nil, nil).
 					Return([]domain.Product{{Id: 1, Name: "Coffee"}, {Id: 2, Name: "Tea"}}, nil)
 				r.EXPECT().GetProductListTotal(gomock.Any(), "", nil, nil).Return(int64(2), nil)
@@ -40,7 +40,7 @@ func TestProductUsecase_GetProductList(t *testing.T) {
 		{
 			name:   "filters by status",
 			status: &draft,
-			setupMock: func(r *mock.MockProductRepository) {
+			setupMock: func(r *mock.MockProductRepoPort) {
 				r.EXPECT().GetProductList(gomock.Any(), "", domain.CreatedAt, domain.Ascending, 0, 10, nil, &draft).
 					Return([]domain.Product{{Id: 1, Name: "Coffee", Status: domain.ProductStatusDraft}}, nil)
 				r.EXPECT().GetProductListTotal(gomock.Any(), "", nil, &draft).Return(int64(1), nil)
@@ -49,7 +49,7 @@ func TestProductUsecase_GetProductList(t *testing.T) {
 		},
 		{
 			name: "error on list",
-			setupMock: func(r *mock.MockProductRepository) {
+			setupMock: func(r *mock.MockProductRepoPort) {
 				r.EXPECT().GetProductList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil, &domain.Error{Type: domain.InternalServerError})
 			},
@@ -134,15 +134,15 @@ func TestProductUsecase_GetProductById(t *testing.T) {
 	tests := []struct {
 		name              string
 		id                int64
-		setupMock         func(r *mock.MockProductRepository)
-		setupVariantsMock func(r *mock.MockVariantRepository)
+		setupMock         func(r *mock.MockProductRepoPort)
+		setupVariantsMock func(r *mock.MockVariantRepoPort)
 		expectedName      string
 		expectedError     *domain.Error
 	}{
 		{
 			name: "success",
 			id:   1,
-			setupMock: func(r *mock.MockProductRepository) {
+			setupMock: func(r *mock.MockProductRepoPort) {
 				r.EXPECT().GetProductById(gomock.Any(), int64(1)).Return(domain.Product{Id: 1, Name: "Coffee"}, nil)
 			},
 			expectedName: "Coffee",
@@ -150,7 +150,7 @@ func TestProductUsecase_GetProductById(t *testing.T) {
 		{
 			name: "not found",
 			id:   99,
-			setupMock: func(r *mock.MockProductRepository) {
+			setupMock: func(r *mock.MockProductRepoPort) {
 				r.EXPECT().GetProductById(gomock.Any(), int64(99)).Return(domain.Product{}, &domain.Error{Type: domain.NotFound})
 			},
 			expectedError: &domain.Error{Type: domain.NotFound},
@@ -185,15 +185,15 @@ func TestProductUsecase_CreateProduct(t *testing.T) {
 	tests := []struct {
 		name              string
 		input             domain.Product
-		setupMock         func(r *mock.MockProductRepository)
-		setupVariantsMock func(r *mock.MockVariantRepository)
+		setupMock         func(r *mock.MockProductRepoPort)
+		setupVariantsMock func(r *mock.MockVariantRepoPort)
 		expectedName      string
 		expectedError     *domain.Error
 	}{
 		{
 			name:  "success",
 			input: domain.Product{Name: "Espresso", Description: ptrString("Rich and bold espresso shot")},
-			setupMock: func(r *mock.MockProductRepository) {
+			setupMock: func(r *mock.MockProductRepoPort) {
 				r.EXPECT().CreateProduct(gomock.Any(), gomock.Any()).Return(domain.Product{Id: 1, Name: "Espresso"}, nil)
 			},
 			expectedName: "Espresso",
@@ -229,8 +229,8 @@ func TestProductUsecase_UpdateProductById(t *testing.T) {
 		name              string
 		id                int64
 		input             domain.Product
-		setupMock         func(r *mock.MockProductRepository)
-		setupVariantsMock func(r *mock.MockVariantRepository)
+		setupMock         func(r *mock.MockProductRepoPort)
+		setupVariantsMock func(r *mock.MockVariantRepoPort)
 		expectedName      string
 		expectedError     *domain.Error
 	}{
@@ -238,7 +238,7 @@ func TestProductUsecase_UpdateProductById(t *testing.T) {
 			name:  "success — uses BeginTransaction",
 			id:    1,
 			input: domain.Product{Name: "Espresso"},
-			setupMock: func(r *mock.MockProductRepository) {
+			setupMock: func(r *mock.MockProductRepoPort) {
 				r.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				r.EXPECT().GetProductById(gomock.Any(), int64(1)).
@@ -251,7 +251,7 @@ func TestProductUsecase_UpdateProductById(t *testing.T) {
 			name:  "not found inside transaction",
 			id:    99,
 			input: domain.Product{Name: "Espresso"},
-			setupMock: func(r *mock.MockProductRepository) {
+			setupMock: func(r *mock.MockProductRepoPort) {
 				r.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				r.EXPECT().GetProductById(gomock.Any(), int64(99)).
@@ -266,7 +266,7 @@ func TestProductUsecase_UpdateProductById(t *testing.T) {
 				Name:                 "Pancong",
 				AvailabilityTracking: domain.AvailabilityTrackingVariant,
 			},
-			setupMock: func(r *mock.MockProductRepository) {
+			setupMock: func(r *mock.MockProductRepoPort) {
 				r.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				r.EXPECT().GetProductById(gomock.Any(), int64(1)).
@@ -276,7 +276,7 @@ func TestProductUsecase_UpdateProductById(t *testing.T) {
 					Return(domain.Product{Id: 1, Name: "Pancong", AvailabilityTracking: domain.AvailabilityTrackingVariant, AvailableQuantity: &availableQuantity}, nil)
 				r.EXPECT().ClearAvailableQuantity(gomock.Any(), int64(1)).Return(nil)
 			},
-			setupVariantsMock: func(r *mock.MockVariantRepository) {
+			setupVariantsMock: func(r *mock.MockVariantRepoPort) {
 				r.EXPECT().ClearAvailableQuantityByProductId(gomock.Any(), int64(1)).Return(nil)
 			},
 			expectedName: "Pancong",
@@ -288,7 +288,7 @@ func TestProductUsecase_UpdateProductById(t *testing.T) {
 				Name:                 "Pancong",
 				AvailabilityTracking: domain.AvailabilityTrackingProduct,
 			},
-			setupMock: func(r *mock.MockProductRepository) {
+			setupMock: func(r *mock.MockProductRepoPort) {
 				r.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				r.EXPECT().GetProductById(gomock.Any(), int64(1)).
@@ -329,20 +329,20 @@ func TestProductUsecase_DeleteProductById(t *testing.T) {
 	tests := []struct {
 		name          string
 		id            int64
-		setupMock     func(r *mock.MockProductRepository)
+		setupMock     func(r *mock.MockProductRepoPort)
 		expectedError *domain.Error
 	}{
 		{
 			name: "success",
 			id:   1,
-			setupMock: func(r *mock.MockProductRepository) {
+			setupMock: func(r *mock.MockProductRepoPort) {
 				r.EXPECT().DeleteProductById(gomock.Any(), int64(1)).Return(nil)
 			},
 		},
 		{
 			name: "not found",
 			id:   99,
-			setupMock: func(r *mock.MockProductRepository) {
+			setupMock: func(r *mock.MockProductRepoPort) {
 				r.EXPECT().DeleteProductById(gomock.Any(), int64(99)).Return(&domain.Error{Type: domain.NotFound})
 			},
 			expectedError: &domain.Error{Type: domain.NotFound},

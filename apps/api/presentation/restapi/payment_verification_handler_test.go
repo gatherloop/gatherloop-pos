@@ -15,14 +15,14 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-func newPaymentVerificationHandler(t *testing.T, setupMocks func(paymentRepo *mock.MockPaymentRepository, verificationRepo *mock.MockPaymentVerificationRepository, transactionRepo *mock.MockTransactionRepository, cartRepo *mock.MockCartRepository)) (restapi.PaymentVerificationHandler, *gomock.Controller) {
+func newPaymentVerificationHandler(t *testing.T, setupMocks func(paymentRepo *mock.MockPaymentRepoPort, verificationRepo *mock.MockPaymentVerificationRepoPort, transactionRepo *mock.MockTransactionRepoPort, cartRepo *mock.MockCartRepoPort)) (restapi.PaymentVerificationHandler, *gomock.Controller) {
 	ctrl := gomock.NewController(t)
-	paymentRepo := mock.NewMockPaymentRepository(ctrl)
-	verificationRepo := mock.NewMockPaymentVerificationRepository(ctrl)
-	transactionRepo := mock.NewMockTransactionRepository(ctrl)
-	cartRepo := mock.NewMockCartRepository(ctrl)
-	availabilityRepo := mock.NewMockAvailabilityRepository(ctrl)
-	kdsNotificationRepo := mock.NewMockKdsNotificationRepository(ctrl)
+	paymentRepo := mock.NewMockPaymentRepoPort(ctrl)
+	verificationRepo := mock.NewMockPaymentVerificationRepoPort(ctrl)
+	transactionRepo := mock.NewMockTransactionRepoPort(ctrl)
+	cartRepo := mock.NewMockCartRepoPort(ctrl)
+	availabilityRepo := mock.NewMockAvailabilityRepoPort(ctrl)
+	kdsNotificationRepo := mock.NewMockKdsNotificationRepoPort(ctrl)
 	kdsNotificationRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 	kdsNotificationDispatcher := permissiveKdsNotificationService(ctrl)
 	paymentRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
@@ -39,13 +39,13 @@ func TestPaymentVerificationHandler_GetVerification(t *testing.T) {
 	tests := []struct {
 		name           string
 		transactionId  string
-		setupMocks     func(paymentRepo *mock.MockPaymentRepository, verificationRepo *mock.MockPaymentVerificationRepository)
+		setupMocks     func(paymentRepo *mock.MockPaymentRepoPort, verificationRepo *mock.MockPaymentVerificationRepoPort)
 		expectedStatus int
 	}{
 		{
 			name:          "success",
 			transactionId: "99",
-			setupMocks: func(paymentRepo *mock.MockPaymentRepository, verificationRepo *mock.MockPaymentVerificationRepository) {
+			setupMocks: func(paymentRepo *mock.MockPaymentRepoPort, verificationRepo *mock.MockPaymentVerificationRepoPort) {
 				paymentRepo.EXPECT().GetPaymentByTransactionId(gomock.Any(), int64(99)).Return(domain.Payment{Id: 1, Method: domain.PaymentMethodCod}, nil)
 				verificationRepo.EXPECT().GetByPaymentId(gomock.Any(), int64(1)).Return(domain.PaymentVerificationPhoto{ContentType: "image/jpeg", Data: []byte("photo"), CreatedAt: time.Now()}, nil)
 			},
@@ -54,14 +54,14 @@ func TestPaymentVerificationHandler_GetVerification(t *testing.T) {
 		{
 			name:          "invalid transaction id",
 			transactionId: "abc",
-			setupMocks: func(paymentRepo *mock.MockPaymentRepository, verificationRepo *mock.MockPaymentVerificationRepository) {
+			setupMocks: func(paymentRepo *mock.MockPaymentRepoPort, verificationRepo *mock.MockPaymentVerificationRepoPort) {
 			},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:          "not found",
 			transactionId: "99",
-			setupMocks: func(paymentRepo *mock.MockPaymentRepository, verificationRepo *mock.MockPaymentVerificationRepository) {
+			setupMocks: func(paymentRepo *mock.MockPaymentRepoPort, verificationRepo *mock.MockPaymentVerificationRepoPort) {
 				paymentRepo.EXPECT().GetPaymentByTransactionId(gomock.Any(), int64(99)).Return(domain.Payment{}, &domain.Error{Type: domain.NotFound})
 			},
 			expectedStatus: http.StatusNotFound,
@@ -70,7 +70,7 @@ func TestPaymentVerificationHandler_GetVerification(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			handler, ctrl := newPaymentVerificationHandler(t, func(paymentRepo *mock.MockPaymentRepository, verificationRepo *mock.MockPaymentVerificationRepository, transactionRepo *mock.MockTransactionRepository, cartRepo *mock.MockCartRepository) {
+			handler, ctrl := newPaymentVerificationHandler(t, func(paymentRepo *mock.MockPaymentRepoPort, verificationRepo *mock.MockPaymentVerificationRepoPort, transactionRepo *mock.MockTransactionRepoPort, cartRepo *mock.MockCartRepoPort) {
 				tt.setupMocks(paymentRepo, verificationRepo)
 			})
 			defer ctrl.Finish()
@@ -90,13 +90,13 @@ func TestPaymentVerificationHandler_Approve(t *testing.T) {
 	tests := []struct {
 		name           string
 		transactionId  string
-		setupMocks     func(paymentRepo *mock.MockPaymentRepository, verificationRepo *mock.MockPaymentVerificationRepository, transactionRepo *mock.MockTransactionRepository, cartRepo *mock.MockCartRepository)
+		setupMocks     func(paymentRepo *mock.MockPaymentRepoPort, verificationRepo *mock.MockPaymentVerificationRepoPort, transactionRepo *mock.MockTransactionRepoPort, cartRepo *mock.MockCartRepoPort)
 		expectedStatus int
 	}{
 		{
 			name:          "success",
 			transactionId: "99",
-			setupMocks: func(paymentRepo *mock.MockPaymentRepository, verificationRepo *mock.MockPaymentVerificationRepository, transactionRepo *mock.MockTransactionRepository, cartRepo *mock.MockCartRepository) {
+			setupMocks: func(paymentRepo *mock.MockPaymentRepoPort, verificationRepo *mock.MockPaymentVerificationRepoPort, transactionRepo *mock.MockTransactionRepoPort, cartRepo *mock.MockCartRepoPort) {
 				awaiting := domain.PaymentVerificationStatusAwaiting
 				txId := int64(99)
 				payment := domain.Payment{Id: 1, CartId: 7, TransactionId: &txId, Method: domain.PaymentMethodCod, Status: domain.PaymentStatePending, VerificationStatus: &awaiting}
@@ -114,14 +114,14 @@ func TestPaymentVerificationHandler_Approve(t *testing.T) {
 		{
 			name:          "invalid transaction id",
 			transactionId: "abc",
-			setupMocks: func(paymentRepo *mock.MockPaymentRepository, verificationRepo *mock.MockPaymentVerificationRepository, transactionRepo *mock.MockTransactionRepository, cartRepo *mock.MockCartRepository) {
+			setupMocks: func(paymentRepo *mock.MockPaymentRepoPort, verificationRepo *mock.MockPaymentVerificationRepoPort, transactionRepo *mock.MockTransactionRepoPort, cartRepo *mock.MockCartRepoPort) {
 			},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:          "not a cod order",
 			transactionId: "99",
-			setupMocks: func(paymentRepo *mock.MockPaymentRepository, verificationRepo *mock.MockPaymentVerificationRepository, transactionRepo *mock.MockTransactionRepository, cartRepo *mock.MockCartRepository) {
+			setupMocks: func(paymentRepo *mock.MockPaymentRepoPort, verificationRepo *mock.MockPaymentVerificationRepoPort, transactionRepo *mock.MockTransactionRepoPort, cartRepo *mock.MockCartRepoPort) {
 				paymentRepo.EXPECT().GetPaymentByTransactionIdForUpdate(gomock.Any(), int64(99)).Return(domain.Payment{Method: domain.PaymentMethodQris, Status: domain.PaymentStatePending}, nil)
 			},
 			expectedStatus: http.StatusBadRequest,
@@ -129,7 +129,7 @@ func TestPaymentVerificationHandler_Approve(t *testing.T) {
 		{
 			name:          "no linked payment",
 			transactionId: "99",
-			setupMocks: func(paymentRepo *mock.MockPaymentRepository, verificationRepo *mock.MockPaymentVerificationRepository, transactionRepo *mock.MockTransactionRepository, cartRepo *mock.MockCartRepository) {
+			setupMocks: func(paymentRepo *mock.MockPaymentRepoPort, verificationRepo *mock.MockPaymentVerificationRepoPort, transactionRepo *mock.MockTransactionRepoPort, cartRepo *mock.MockCartRepoPort) {
 				paymentRepo.EXPECT().GetPaymentByTransactionIdForUpdate(gomock.Any(), int64(99)).Return(domain.Payment{}, &domain.Error{Type: domain.NotFound})
 			},
 			expectedStatus: http.StatusNotFound,
@@ -156,13 +156,13 @@ func TestPaymentVerificationHandler_Reject(t *testing.T) {
 	tests := []struct {
 		name           string
 		transactionId  string
-		setupMocks     func(paymentRepo *mock.MockPaymentRepository, verificationRepo *mock.MockPaymentVerificationRepository, transactionRepo *mock.MockTransactionRepository, cartRepo *mock.MockCartRepository)
+		setupMocks     func(paymentRepo *mock.MockPaymentRepoPort, verificationRepo *mock.MockPaymentVerificationRepoPort, transactionRepo *mock.MockTransactionRepoPort, cartRepo *mock.MockCartRepoPort)
 		expectedStatus int
 	}{
 		{
 			name:          "success",
 			transactionId: "99",
-			setupMocks: func(paymentRepo *mock.MockPaymentRepository, verificationRepo *mock.MockPaymentVerificationRepository, transactionRepo *mock.MockTransactionRepository, cartRepo *mock.MockCartRepository) {
+			setupMocks: func(paymentRepo *mock.MockPaymentRepoPort, verificationRepo *mock.MockPaymentVerificationRepoPort, transactionRepo *mock.MockTransactionRepoPort, cartRepo *mock.MockCartRepoPort) {
 				awaiting := domain.PaymentVerificationStatusAwaiting
 				txId := int64(99)
 				payment := domain.Payment{Id: 1, TransactionId: &txId, Method: domain.PaymentMethodCod, Status: domain.PaymentStatePending, VerificationStatus: &awaiting}
@@ -178,14 +178,14 @@ func TestPaymentVerificationHandler_Reject(t *testing.T) {
 		{
 			name:          "invalid transaction id",
 			transactionId: "abc",
-			setupMocks: func(paymentRepo *mock.MockPaymentRepository, verificationRepo *mock.MockPaymentVerificationRepository, transactionRepo *mock.MockTransactionRepository, cartRepo *mock.MockCartRepository) {
+			setupMocks: func(paymentRepo *mock.MockPaymentRepoPort, verificationRepo *mock.MockPaymentVerificationRepoPort, transactionRepo *mock.MockTransactionRepoPort, cartRepo *mock.MockCartRepoPort) {
 			},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:          "already decided",
 			transactionId: "99",
-			setupMocks: func(paymentRepo *mock.MockPaymentRepository, verificationRepo *mock.MockPaymentVerificationRepository, transactionRepo *mock.MockTransactionRepository, cartRepo *mock.MockCartRepository) {
+			setupMocks: func(paymentRepo *mock.MockPaymentRepoPort, verificationRepo *mock.MockPaymentVerificationRepoPort, transactionRepo *mock.MockTransactionRepoPort, cartRepo *mock.MockCartRepoPort) {
 				approved := domain.PaymentVerificationStatusApproved
 				paymentRepo.EXPECT().GetPaymentByTransactionIdForUpdate(gomock.Any(), int64(99)).Return(domain.Payment{Method: domain.PaymentMethodCod, Status: domain.PaymentStatePending, VerificationStatus: &approved}, nil)
 			},
@@ -194,7 +194,7 @@ func TestPaymentVerificationHandler_Reject(t *testing.T) {
 		{
 			name:          "no linked payment",
 			transactionId: "99",
-			setupMocks: func(paymentRepo *mock.MockPaymentRepository, verificationRepo *mock.MockPaymentVerificationRepository, transactionRepo *mock.MockTransactionRepository, cartRepo *mock.MockCartRepository) {
+			setupMocks: func(paymentRepo *mock.MockPaymentRepoPort, verificationRepo *mock.MockPaymentVerificationRepoPort, transactionRepo *mock.MockTransactionRepoPort, cartRepo *mock.MockCartRepoPort) {
 				paymentRepo.EXPECT().GetPaymentByTransactionIdForUpdate(gomock.Any(), int64(99)).Return(domain.Payment{}, &domain.Error{Type: domain.NotFound})
 			},
 			expectedStatus: http.StatusNotFound,
@@ -221,13 +221,13 @@ func TestPaymentVerificationRoutes_RequireAuth(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	paymentRepo := mock.NewMockPaymentRepository(ctrl)
-	verificationRepo := mock.NewMockPaymentVerificationRepository(ctrl)
-	transactionRepo := mock.NewMockTransactionRepository(ctrl)
-	cartRepo := mock.NewMockCartRepository(ctrl)
-	kdsNotificationRepo := mock.NewMockKdsNotificationRepository(ctrl)
+	paymentRepo := mock.NewMockPaymentRepoPort(ctrl)
+	verificationRepo := mock.NewMockPaymentVerificationRepoPort(ctrl)
+	transactionRepo := mock.NewMockTransactionRepoPort(ctrl)
+	cartRepo := mock.NewMockCartRepoPort(ctrl)
+	kdsNotificationRepo := mock.NewMockKdsNotificationRepoPort(ctrl)
 	kdsNotificationDispatcher := permissiveKdsNotificationService(ctrl)
-	paymentService := domain.NewPaymentService(transactionRepo, paymentRepo, verificationRepo, nil, cartRepo, nil, kdsNotificationRepo, domain.NewAvailabilityService(nil, nil, mock.NewMockAvailabilityRepository(ctrl)), kdsNotificationDispatcher, 0)
+	paymentService := domain.NewPaymentService(transactionRepo, paymentRepo, verificationRepo, nil, cartRepo, nil, kdsNotificationRepo, domain.NewAvailabilityService(nil, nil, mock.NewMockAvailabilityRepoPort(ctrl)), kdsNotificationDispatcher, 0)
 	usecase := domain.NewPaymentVerificationUsecase(
 		paymentRepo,
 		verificationRepo,

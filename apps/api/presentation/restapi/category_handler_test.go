@@ -17,19 +17,19 @@ import (
 func TestCategoryHandler_GetCategoryList(t *testing.T) {
 	tests := []struct {
 		name           string
-		setupMock      func(r *mock.MockCategoryRepository)
+		setupMock      func(r *mock.MockCategoryRepoPort)
 		expectedStatus int
 	}{
 		{
 			name: "success",
-			setupMock: func(r *mock.MockCategoryRepository) {
+			setupMock: func(r *mock.MockCategoryRepoPort) {
 				r.EXPECT().GetCategoryList(gomock.Any()).Return([]domain.Category{{Id: 1, Name: "Food", Station: "KITCHEN"}, {Id: 2, Name: "Drink", Station: "BAR"}}, nil)
 			},
 			expectedStatus: http.StatusOK,
 		},
 		{
 			name: "repo error",
-			setupMock: func(r *mock.MockCategoryRepository) {
+			setupMock: func(r *mock.MockCategoryRepoPort) {
 				r.EXPECT().GetCategoryList(gomock.Any()).Return(nil, &domain.Error{Type: domain.InternalServerError, Message: "db error"})
 			},
 			expectedStatus: http.StatusInternalServerError,
@@ -40,7 +40,7 @@ func TestCategoryHandler_GetCategoryList(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRepo := mock.NewMockCategoryRepository(ctrl)
+			mockRepo := mock.NewMockCategoryRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 			handler := restapi.NewCategoryHandler(domain.NewCategoryUsecase(mockRepo))
 			req := httptest.NewRequest(http.MethodGet, "/categories", nil)
@@ -55,13 +55,13 @@ func TestCategoryHandler_GetCategoryById(t *testing.T) {
 	tests := []struct {
 		name           string
 		categoryId     string
-		setupMock      func(r *mock.MockCategoryRepository)
+		setupMock      func(r *mock.MockCategoryRepoPort)
 		expectedStatus int
 	}{
 		{
 			name:       "success",
 			categoryId: "1",
-			setupMock: func(r *mock.MockCategoryRepository) {
+			setupMock: func(r *mock.MockCategoryRepoPort) {
 				r.EXPECT().GetCategoryById(gomock.Any(), int64(1)).Return(domain.Category{Id: 1, Name: "Food", Station: "KITCHEN"}, nil)
 			},
 			expectedStatus: http.StatusOK,
@@ -69,7 +69,7 @@ func TestCategoryHandler_GetCategoryById(t *testing.T) {
 		{
 			name:       "not found",
 			categoryId: "99",
-			setupMock: func(r *mock.MockCategoryRepository) {
+			setupMock: func(r *mock.MockCategoryRepoPort) {
 				r.EXPECT().GetCategoryById(gomock.Any(), int64(99)).Return(domain.Category{}, &domain.Error{Type: domain.NotFound, Message: "not found"})
 			},
 			expectedStatus: http.StatusNotFound,
@@ -77,7 +77,7 @@ func TestCategoryHandler_GetCategoryById(t *testing.T) {
 		{
 			name:           "invalid id",
 			categoryId:     "abc",
-			setupMock:      func(r *mock.MockCategoryRepository) {},
+			setupMock:      func(r *mock.MockCategoryRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 	}
@@ -86,7 +86,7 @@ func TestCategoryHandler_GetCategoryById(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRepo := mock.NewMockCategoryRepository(ctrl)
+			mockRepo := mock.NewMockCategoryRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 			handler := restapi.NewCategoryHandler(domain.NewCategoryUsecase(mockRepo))
 			req := httptest.NewRequest(http.MethodGet, "/categories/"+tt.categoryId, nil)
@@ -102,13 +102,13 @@ func TestCategoryHandler_CreateCategory(t *testing.T) {
 	tests := []struct {
 		name           string
 		body           string
-		setupMock      func(r *mock.MockCategoryRepository)
+		setupMock      func(r *mock.MockCategoryRepoPort)
 		expectedStatus int
 	}{
 		{
 			name: "success",
 			body: `{"name": "Snacks", "station": "KITCHEN"}`,
-			setupMock: func(r *mock.MockCategoryRepository) {
+			setupMock: func(r *mock.MockCategoryRepoPort) {
 				r.EXPECT().CreateCategory(gomock.Any(), domain.Category{Name: "Snacks", Station: "KITCHEN"}).Return(domain.Category{Id: 3, Name: "Snacks", Station: "KITCHEN"}, nil)
 			},
 			expectedStatus: http.StatusOK,
@@ -116,13 +116,13 @@ func TestCategoryHandler_CreateCategory(t *testing.T) {
 		{
 			name:           "invalid JSON body",
 			body:           `{invalid json`,
-			setupMock:      func(r *mock.MockCategoryRepository) {},
+			setupMock:      func(r *mock.MockCategoryRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name: "repo error",
 			body: `{"name": "Snacks", "station": "KITCHEN"}`,
-			setupMock: func(r *mock.MockCategoryRepository) {
+			setupMock: func(r *mock.MockCategoryRepoPort) {
 				r.EXPECT().CreateCategory(gomock.Any(), gomock.Any()).Return(domain.Category{}, &domain.Error{Type: domain.InternalServerError, Message: "db error"})
 			},
 			expectedStatus: http.StatusInternalServerError,
@@ -133,7 +133,7 @@ func TestCategoryHandler_CreateCategory(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRepo := mock.NewMockCategoryRepository(ctrl)
+			mockRepo := mock.NewMockCategoryRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 			handler := restapi.NewCategoryHandler(domain.NewCategoryUsecase(mockRepo))
 			req := httptest.NewRequest(http.MethodPost, "/categories", bytes.NewBufferString(tt.body))
@@ -150,14 +150,14 @@ func TestCategoryHandler_UpdateCategoryById(t *testing.T) {
 		name           string
 		categoryId     string
 		body           string
-		setupMock      func(r *mock.MockCategoryRepository)
+		setupMock      func(r *mock.MockCategoryRepoPort)
 		expectedStatus int
 	}{
 		{
 			name:       "success",
 			categoryId: "2",
 			body:       `{"name": "Beverages", "station": "BAR"}`,
-			setupMock: func(r *mock.MockCategoryRepository) {
+			setupMock: func(r *mock.MockCategoryRepoPort) {
 				r.EXPECT().UpdateCategoryById(gomock.Any(), domain.Category{Name: "Beverages", Station: "BAR"}, int64(2)).Return(domain.Category{Id: 2, Name: "Beverages", Station: "BAR"}, nil)
 			},
 			expectedStatus: http.StatusOK,
@@ -166,14 +166,14 @@ func TestCategoryHandler_UpdateCategoryById(t *testing.T) {
 			name:           "invalid id",
 			categoryId:     "abc",
 			body:           `{"name": "Beverages", "station": "BAR"}`,
-			setupMock:      func(r *mock.MockCategoryRepository) {},
+			setupMock:      func(r *mock.MockCategoryRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:       "not found",
 			categoryId: "99",
 			body:       `{"name": "Beverages", "station": "BAR"}`,
-			setupMock: func(r *mock.MockCategoryRepository) {
+			setupMock: func(r *mock.MockCategoryRepoPort) {
 				r.EXPECT().UpdateCategoryById(gomock.Any(), gomock.Any(), int64(99)).Return(domain.Category{}, &domain.Error{Type: domain.NotFound, Message: "not found"})
 			},
 			expectedStatus: http.StatusNotFound,
@@ -184,7 +184,7 @@ func TestCategoryHandler_UpdateCategoryById(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRepo := mock.NewMockCategoryRepository(ctrl)
+			mockRepo := mock.NewMockCategoryRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 			handler := restapi.NewCategoryHandler(domain.NewCategoryUsecase(mockRepo))
 			req := httptest.NewRequest(http.MethodPut, "/categories/"+tt.categoryId, bytes.NewBufferString(tt.body))
@@ -201,13 +201,13 @@ func TestCategoryHandler_DeleteCategoryById(t *testing.T) {
 	tests := []struct {
 		name           string
 		categoryId     string
-		setupMock      func(r *mock.MockCategoryRepository)
+		setupMock      func(r *mock.MockCategoryRepoPort)
 		expectedStatus int
 	}{
 		{
 			name:       "success",
 			categoryId: "1",
-			setupMock: func(r *mock.MockCategoryRepository) {
+			setupMock: func(r *mock.MockCategoryRepoPort) {
 				r.EXPECT().DeleteCategoryById(gomock.Any(), int64(1)).Return(nil)
 			},
 			expectedStatus: http.StatusOK,
@@ -215,13 +215,13 @@ func TestCategoryHandler_DeleteCategoryById(t *testing.T) {
 		{
 			name:           "invalid id",
 			categoryId:     "abc",
-			setupMock:      func(r *mock.MockCategoryRepository) {},
+			setupMock:      func(r *mock.MockCategoryRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:       "not found",
 			categoryId: "99",
-			setupMock: func(r *mock.MockCategoryRepository) {
+			setupMock: func(r *mock.MockCategoryRepoPort) {
 				r.EXPECT().DeleteCategoryById(gomock.Any(), int64(99)).Return(&domain.Error{Type: domain.NotFound, Message: "not found"})
 			},
 			expectedStatus: http.StatusNotFound,
@@ -232,7 +232,7 @@ func TestCategoryHandler_DeleteCategoryById(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRepo := mock.NewMockCategoryRepository(ctrl)
+			mockRepo := mock.NewMockCategoryRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 			handler := restapi.NewCategoryHandler(domain.NewCategoryUsecase(mockRepo))
 			req := httptest.NewRequest(http.MethodDelete, "/categories/"+tt.categoryId, nil)

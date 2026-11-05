@@ -5,26 +5,26 @@ import (
 )
 
 type VariantUsecase struct {
-	variantRepository VariantRepository
-	productRepository ProductRepository
-	variantService    VariantService
+	variantRepoPort VariantRepoPort
+	productRepoPort ProductRepoPort
+	variantService  VariantService
 }
 
-func NewVariantUsecase(variantRepository VariantRepository, productRepository ProductRepository, variantService VariantService) VariantUsecase {
+func NewVariantUsecase(variantRepoPort VariantRepoPort, productRepoPort ProductRepoPort, variantService VariantService) VariantUsecase {
 	return VariantUsecase{
-		variantRepository: variantRepository,
-		productRepository: productRepository,
-		variantService:    variantService,
+		variantRepoPort: variantRepoPort,
+		productRepoPort: productRepoPort,
+		variantService:  variantService,
 	}
 }
 
 func (usecase VariantUsecase) GetVariantList(ctx context.Context, query string, sortBy SortBy, order Order, skip int, limit int, productId *int, optionValueIds []int) ([]Variant, int64, *Error) {
-	variants, err := usecase.variantRepository.GetVariantList(ctx, query, sortBy, order, skip, limit, productId, optionValueIds)
+	variants, err := usecase.variantRepoPort.GetVariantList(ctx, query, sortBy, order, skip, limit, productId, optionValueIds)
 	if err != nil {
 		return []Variant{}, 0, err
 	}
 
-	total, err := usecase.variantRepository.GetVariantListTotal(ctx, query)
+	total, err := usecase.variantRepoPort.GetVariantListTotal(ctx, query)
 	if err != nil {
 		return []Variant{}, 0, err
 	}
@@ -33,11 +33,11 @@ func (usecase VariantUsecase) GetVariantList(ctx context.Context, query string, 
 }
 
 func (usecase VariantUsecase) GetVariantById(ctx context.Context, id int64) (Variant, *Error) {
-	return usecase.variantRepository.GetVariantById(ctx, id)
+	return usecase.variantRepoPort.GetVariantById(ctx, id)
 }
 
 func (usecase VariantUsecase) CreateVariant(ctx context.Context, variant Variant) (Variant, *Error) {
-	product, err := usecase.productRepository.GetProductById(ctx, variant.ProductId)
+	product, err := usecase.productRepoPort.GetProductById(ctx, variant.ProductId)
 	if err != nil {
 		return Variant{}, err
 	}
@@ -47,7 +47,7 @@ func (usecase VariantUsecase) CreateVariant(ctx context.Context, variant Variant
 	}
 
 	if variant.TagIds == nil {
-		created, err := usecase.variantRepository.CreateVariant(ctx, variant)
+		created, err := usecase.variantRepoPort.CreateVariant(ctx, variant)
 		if err != nil {
 			return Variant{}, err
 		}
@@ -57,12 +57,12 @@ func (usecase VariantUsecase) CreateVariant(ctx context.Context, variant Variant
 	}
 
 	var created Variant
-	err = usecase.variantRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+	err = usecase.variantRepoPort.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
 		if err := usecase.variantService.ValidateTagIds(ctxWithTx, variant.TagIds); err != nil {
 			return err
 		}
 
-		createdVariant, err := usecase.variantRepository.CreateVariant(ctxWithTx, variant)
+		createdVariant, err := usecase.variantRepoPort.CreateVariant(ctxWithTx, variant)
 		if err != nil {
 			return err
 		}
@@ -71,7 +71,7 @@ func (usecase VariantUsecase) CreateVariant(ctx context.Context, variant Variant
 			return err
 		}
 
-		created, err = usecase.variantRepository.GetVariantById(ctxWithTx, createdVariant.Id)
+		created, err = usecase.variantRepoPort.GetVariantById(ctxWithTx, createdVariant.Id)
 		return err
 	})
 	if err != nil {
@@ -85,13 +85,13 @@ func (usecase VariantUsecase) CreateVariant(ctx context.Context, variant Variant
 func (usecase VariantUsecase) UpdateVariantById(ctx context.Context, variant Variant, id int64) (Variant, *Error) {
 	var updateResult Variant
 	var product Product
-	err := usecase.variantRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
-		existing, err := usecase.variantRepository.GetVariantById(ctxWithTx, id)
+	err := usecase.variantRepoPort.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+		existing, err := usecase.variantRepoPort.GetVariantById(ctxWithTx, id)
 		if err != nil {
 			return err
 		}
 
-		existingProduct, err := usecase.productRepository.GetProductById(ctxWithTx, existing.ProductId)
+		existingProduct, err := usecase.productRepoPort.GetProductById(ctxWithTx, existing.ProductId)
 		if err != nil {
 			return err
 		}
@@ -110,7 +110,7 @@ func (usecase VariantUsecase) UpdateVariantById(ctx context.Context, variant Var
 			}
 		}
 
-		updated, err := usecase.variantRepository.UpdateVariantById(ctxWithTx, variant, id)
+		updated, err := usecase.variantRepoPort.UpdateVariantById(ctxWithTx, variant, id)
 		if err != nil {
 			return err
 		}
@@ -127,5 +127,5 @@ func (usecase VariantUsecase) UpdateVariantById(ctx context.Context, variant Var
 }
 
 func (usecase VariantUsecase) DeleteVariantById(ctx context.Context, id int64) *Error {
-	return usecase.variantRepository.DeleteVariantById(ctx, id)
+	return usecase.variantRepoPort.DeleteVariantById(ctx, id)
 }

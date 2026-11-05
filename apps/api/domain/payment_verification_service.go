@@ -3,17 +3,17 @@ package domain
 import "context"
 
 type PaymentVerificationService struct {
-	paymentRepository PaymentRepository
+	paymentRepoPort PaymentRepoPort
 }
 
-func NewPaymentVerificationService(paymentRepository PaymentRepository) PaymentVerificationService {
+func NewPaymentVerificationService(paymentRepoPort PaymentRepoPort) PaymentVerificationService {
 	return PaymentVerificationService{
-		paymentRepository: paymentRepository,
+		paymentRepoPort: paymentRepoPort,
 	}
 }
 
 func (service PaymentVerificationService) ResolveAwaitingCodPayment(ctxWithTx context.Context, transactionId int64) (Payment, *Error) {
-	payment, err := service.paymentRepository.GetPaymentByTransactionIdForUpdate(ctxWithTx, transactionId)
+	payment, err := service.paymentRepoPort.GetPaymentByTransactionIdForUpdate(ctxWithTx, transactionId)
 	if err != nil {
 		if err.Type == NotFound {
 			return Payment{}, &Error{Type: NotFound, Message: "order not found"}

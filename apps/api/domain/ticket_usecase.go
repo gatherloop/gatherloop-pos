@@ -6,19 +6,19 @@ import (
 )
 
 type TicketUsecase struct {
-	repository TicketRepository
+	ticketRepoPort TicketRepoPort
 }
 
-func NewTicketUsecase(repository TicketRepository) TicketUsecase {
-	return TicketUsecase{repository: repository}
+func NewTicketUsecase(ticketRepoPort TicketRepoPort) TicketUsecase {
+	return TicketUsecase{ticketRepoPort: ticketRepoPort}
 }
 
 func (usecase TicketUsecase) GetTicketList(ctx context.Context) ([]Ticket, *Error) {
-	return usecase.repository.GetTicketList(ctx)
+	return usecase.ticketRepoPort.GetTicketList(ctx)
 }
 
 func (usecase TicketUsecase) GetTicketById(ctx context.Context, id int64) (Ticket, *Error) {
-	return usecase.repository.GetTicketById(ctx, id)
+	return usecase.ticketRepoPort.GetTicketById(ctx, id)
 }
 
 func (usecase TicketUsecase) CreateTicket(ctx context.Context, ticket Ticket) (Ticket, *Error) {
@@ -33,15 +33,15 @@ func (usecase TicketUsecase) CreateTicket(ctx context.Context, ticket Ticket) (T
 	}
 
 	var created Ticket
-	err := usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
-		if existing, existingErr := usecase.repository.GetTicketByCode(ctxWithTx, ticket.Code); existingErr == nil && existing.Id > 0 {
+	err := usecase.ticketRepoPort.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+		if existing, existingErr := usecase.ticketRepoPort.GetTicketByCode(ctxWithTx, ticket.Code); existingErr == nil && existing.Id > 0 {
 			return &Error{Type: BadRequest, Message: "ticket code already exists"}
 		}
-		if existing, existingErr := usecase.repository.GetTicketByName(ctxWithTx, ticket.Name); existingErr == nil && existing.Id > 0 {
+		if existing, existingErr := usecase.ticketRepoPort.GetTicketByName(ctxWithTx, ticket.Name); existingErr == nil && existing.Id > 0 {
 			return &Error{Type: BadRequest, Message: "ticket name already exists"}
 		}
 
-		result, createErr := usecase.repository.CreateTicket(ctxWithTx, ticket)
+		result, createErr := usecase.ticketRepoPort.CreateTicket(ctxWithTx, ticket)
 		if createErr != nil {
 			return createErr
 		}
@@ -64,15 +64,15 @@ func (usecase TicketUsecase) UpdateTicketById(ctx context.Context, ticket Ticket
 	}
 
 	var updated Ticket
-	err := usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
-		if existing, existingErr := usecase.repository.GetTicketByCode(ctxWithTx, ticket.Code); existingErr == nil && existing.Id > 0 && existing.Id != id {
+	err := usecase.ticketRepoPort.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+		if existing, existingErr := usecase.ticketRepoPort.GetTicketByCode(ctxWithTx, ticket.Code); existingErr == nil && existing.Id > 0 && existing.Id != id {
 			return &Error{Type: BadRequest, Message: "ticket code already exists"}
 		}
-		if existing, existingErr := usecase.repository.GetTicketByName(ctxWithTx, ticket.Name); existingErr == nil && existing.Id > 0 && existing.Id != id {
+		if existing, existingErr := usecase.ticketRepoPort.GetTicketByName(ctxWithTx, ticket.Name); existingErr == nil && existing.Id > 0 && existing.Id != id {
 			return &Error{Type: BadRequest, Message: "ticket name already exists"}
 		}
 
-		result, updateErr := usecase.repository.UpdateTicketById(ctxWithTx, ticket, id)
+		result, updateErr := usecase.ticketRepoPort.UpdateTicketById(ctxWithTx, ticket, id)
 		if updateErr != nil {
 			return updateErr
 		}
@@ -84,5 +84,5 @@ func (usecase TicketUsecase) UpdateTicketById(ctx context.Context, ticket Ticket
 }
 
 func (usecase TicketUsecase) DeleteTicketById(ctx context.Context, id int64) *Error {
-	return usecase.repository.DeleteTicketById(ctx, id)
+	return usecase.ticketRepoPort.DeleteTicketById(ctx, id)
 }

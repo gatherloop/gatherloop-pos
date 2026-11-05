@@ -10,22 +10,22 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-func newChecklistTemplateUsecase(ctrl *gomock.Controller) (domain.ChecklistTemplateUsecase, *mock.MockChecklistTemplateRepository) {
-	repo := mock.NewMockChecklistTemplateRepository(ctrl)
+func newChecklistTemplateUsecase(ctrl *gomock.Controller) (domain.ChecklistTemplateUsecase, *mock.MockChecklistTemplateRepoPort) {
+	repo := mock.NewMockChecklistTemplateRepoPort(ctrl)
 	return domain.NewChecklistTemplateUsecase(repo), repo
 }
 
 func TestChecklistTemplateUsecase_GetChecklistTemplateList(t *testing.T) {
 	tests := []struct {
 		name          string
-		setupMock     func(repo *mock.MockChecklistTemplateRepository)
+		setupMock     func(repo *mock.MockChecklistTemplateRepoPort)
 		expectedLen   int
 		expectedTotal int64
 		expectedError *domain.Error
 	}{
 		{
 			name: "success",
-			setupMock: func(repo *mock.MockChecklistTemplateRepository) {
+			setupMock: func(repo *mock.MockChecklistTemplateRepoPort) {
 				repo.EXPECT().GetChecklistTemplateList(gomock.Any(), "", 0, 10).
 					Return([]domain.ChecklistTemplate{{Id: 1, Name: "Opening"}, {Id: 2, Name: "Closing"}}, nil)
 				repo.EXPECT().GetChecklistTemplateListTotal(gomock.Any(), "").Return(int64(2), nil)
@@ -35,7 +35,7 @@ func TestChecklistTemplateUsecase_GetChecklistTemplateList(t *testing.T) {
 		},
 		{
 			name: "error on list",
-			setupMock: func(repo *mock.MockChecklistTemplateRepository) {
+			setupMock: func(repo *mock.MockChecklistTemplateRepoPort) {
 				repo.EXPECT().GetChecklistTemplateList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil, &domain.Error{Type: domain.InternalServerError, Message: "db error"})
 			},
@@ -43,7 +43,7 @@ func TestChecklistTemplateUsecase_GetChecklistTemplateList(t *testing.T) {
 		},
 		{
 			name: "error on total",
-			setupMock: func(repo *mock.MockChecklistTemplateRepository) {
+			setupMock: func(repo *mock.MockChecklistTemplateRepoPort) {
 				repo.EXPECT().GetChecklistTemplateList(gomock.Any(), "", 0, 10).
 					Return([]domain.ChecklistTemplate{{Id: 1}}, nil)
 				repo.EXPECT().GetChecklistTemplateListTotal(gomock.Any(), "").
@@ -79,14 +79,14 @@ func TestChecklistTemplateUsecase_GetChecklistTemplateById(t *testing.T) {
 	tests := []struct {
 		name          string
 		id            int64
-		setupMock     func(repo *mock.MockChecklistTemplateRepository)
+		setupMock     func(repo *mock.MockChecklistTemplateRepoPort)
 		expectedId    int64
 		expectedError *domain.Error
 	}{
 		{
 			name: "success",
 			id:   1,
-			setupMock: func(repo *mock.MockChecklistTemplateRepository) {
+			setupMock: func(repo *mock.MockChecklistTemplateRepoPort) {
 				repo.EXPECT().GetChecklistTemplateById(gomock.Any(), int64(1)).
 					Return(domain.ChecklistTemplate{Id: 1, Name: "Opening"}, nil)
 			},
@@ -95,7 +95,7 @@ func TestChecklistTemplateUsecase_GetChecklistTemplateById(t *testing.T) {
 		{
 			name: "not found",
 			id:   99,
-			setupMock: func(repo *mock.MockChecklistTemplateRepository) {
+			setupMock: func(repo *mock.MockChecklistTemplateRepoPort) {
 				repo.EXPECT().GetChecklistTemplateById(gomock.Any(), int64(99)).
 					Return(domain.ChecklistTemplate{}, &domain.Error{Type: domain.NotFound, Message: "not found"})
 			},
@@ -134,14 +134,14 @@ func TestChecklistTemplateUsecase_CreateChecklistTemplate(t *testing.T) {
 	tests := []struct {
 		name          string
 		input         domain.ChecklistTemplate
-		setupMock     func(repo *mock.MockChecklistTemplateRepository)
+		setupMock     func(repo *mock.MockChecklistTemplateRepoPort)
 		expectedId    int64
 		expectedError *domain.Error
 	}{
 		{
 			name:  "success",
 			input: validTemplate,
-			setupMock: func(repo *mock.MockChecklistTemplateRepository) {
+			setupMock: func(repo *mock.MockChecklistTemplateRepoPort) {
 				repo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				repo.EXPECT().GetChecklistTemplateByName(gomock.Any(), "Opening Checklist").
@@ -166,7 +166,7 @@ func TestChecklistTemplateUsecase_CreateChecklistTemplate(t *testing.T) {
 					},
 				},
 			},
-			setupMock: func(repo *mock.MockChecklistTemplateRepository) {
+			setupMock: func(repo *mock.MockChecklistTemplateRepoPort) {
 				repo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				repo.EXPECT().GetChecklistTemplateByName(gomock.Any(), "Closing Checklist").
@@ -179,14 +179,14 @@ func TestChecklistTemplateUsecase_CreateChecklistTemplate(t *testing.T) {
 		{
 			name:  "empty name",
 			input: domain.ChecklistTemplate{Name: "", Items: []domain.ChecklistTemplateItem{validItem}},
-			setupMock: func(repo *mock.MockChecklistTemplateRepository) {
+			setupMock: func(repo *mock.MockChecklistTemplateRepoPort) {
 			},
 			expectedError: &domain.Error{Type: domain.BadRequest},
 		},
 		{
 			name:  "no items",
 			input: domain.ChecklistTemplate{Name: "Opening", Items: []domain.ChecklistTemplateItem{}},
-			setupMock: func(repo *mock.MockChecklistTemplateRepository) {
+			setupMock: func(repo *mock.MockChecklistTemplateRepoPort) {
 			},
 			expectedError: &domain.Error{Type: domain.BadRequest},
 		},
@@ -196,7 +196,7 @@ func TestChecklistTemplateUsecase_CreateChecklistTemplate(t *testing.T) {
 				Name:  "Opening",
 				Items: []domain.ChecklistTemplateItem{{Name: "", DisplayOrder: 1}},
 			},
-			setupMock: func(repo *mock.MockChecklistTemplateRepository) {
+			setupMock: func(repo *mock.MockChecklistTemplateRepoPort) {
 			},
 			expectedError: &domain.Error{Type: domain.BadRequest},
 		},
@@ -212,14 +212,14 @@ func TestChecklistTemplateUsecase_CreateChecklistTemplate(t *testing.T) {
 					},
 				},
 			},
-			setupMock: func(repo *mock.MockChecklistTemplateRepository) {
+			setupMock: func(repo *mock.MockChecklistTemplateRepoPort) {
 			},
 			expectedError: &domain.Error{Type: domain.BadRequest},
 		},
 		{
 			name:  "duplicate name",
 			input: validTemplate,
-			setupMock: func(repo *mock.MockChecklistTemplateRepository) {
+			setupMock: func(repo *mock.MockChecklistTemplateRepoPort) {
 				repo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				repo.EXPECT().GetChecklistTemplateByName(gomock.Any(), "Opening Checklist").
@@ -230,7 +230,7 @@ func TestChecklistTemplateUsecase_CreateChecklistTemplate(t *testing.T) {
 		{
 			name:  "repo error on create",
 			input: validTemplate,
-			setupMock: func(repo *mock.MockChecklistTemplateRepository) {
+			setupMock: func(repo *mock.MockChecklistTemplateRepoPort) {
 				repo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				repo.EXPECT().GetChecklistTemplateByName(gomock.Any(), "Opening Checklist").
@@ -274,7 +274,7 @@ func TestChecklistTemplateUsecase_UpdateChecklistTemplateById(t *testing.T) {
 		name          string
 		id            int64
 		input         domain.ChecklistTemplate
-		setupMock     func(repo *mock.MockChecklistTemplateRepository)
+		setupMock     func(repo *mock.MockChecklistTemplateRepoPort)
 		expectedId    int64
 		expectedError *domain.Error
 	}{
@@ -282,7 +282,7 @@ func TestChecklistTemplateUsecase_UpdateChecklistTemplateById(t *testing.T) {
 			name:  "success",
 			id:    1,
 			input: validTemplate,
-			setupMock: func(repo *mock.MockChecklistTemplateRepository) {
+			setupMock: func(repo *mock.MockChecklistTemplateRepoPort) {
 				repo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				repo.EXPECT().GetChecklistTemplateByName(gomock.Any(), "Opening Checklist").
@@ -296,7 +296,7 @@ func TestChecklistTemplateUsecase_UpdateChecklistTemplateById(t *testing.T) {
 			name:  "success — rename to unique name",
 			id:    1,
 			input: domain.ChecklistTemplate{Name: "New Name", Items: []domain.ChecklistTemplateItem{validItem}},
-			setupMock: func(repo *mock.MockChecklistTemplateRepository) {
+			setupMock: func(repo *mock.MockChecklistTemplateRepoPort) {
 				repo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				repo.EXPECT().GetChecklistTemplateByName(gomock.Any(), "New Name").
@@ -310,7 +310,7 @@ func TestChecklistTemplateUsecase_UpdateChecklistTemplateById(t *testing.T) {
 			name:  "duplicate name — name belongs to another template",
 			id:    1,
 			input: validTemplate,
-			setupMock: func(repo *mock.MockChecklistTemplateRepository) {
+			setupMock: func(repo *mock.MockChecklistTemplateRepoPort) {
 				repo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				repo.EXPECT().GetChecklistTemplateByName(gomock.Any(), "Opening Checklist").
@@ -322,7 +322,7 @@ func TestChecklistTemplateUsecase_UpdateChecklistTemplateById(t *testing.T) {
 			name:  "empty name",
 			id:    1,
 			input: domain.ChecklistTemplate{Name: "", Items: []domain.ChecklistTemplateItem{validItem}},
-			setupMock: func(repo *mock.MockChecklistTemplateRepository) {
+			setupMock: func(repo *mock.MockChecklistTemplateRepoPort) {
 			},
 			expectedError: &domain.Error{Type: domain.BadRequest},
 		},
@@ -330,7 +330,7 @@ func TestChecklistTemplateUsecase_UpdateChecklistTemplateById(t *testing.T) {
 			name:  "no items",
 			id:    1,
 			input: domain.ChecklistTemplate{Name: "Opening", Items: []domain.ChecklistTemplateItem{}},
-			setupMock: func(repo *mock.MockChecklistTemplateRepository) {
+			setupMock: func(repo *mock.MockChecklistTemplateRepoPort) {
 			},
 			expectedError: &domain.Error{Type: domain.BadRequest},
 		},
@@ -361,13 +361,13 @@ func TestChecklistTemplateUsecase_DeleteChecklistTemplateById(t *testing.T) {
 	tests := []struct {
 		name          string
 		id            int64
-		setupMock     func(repo *mock.MockChecklistTemplateRepository)
+		setupMock     func(repo *mock.MockChecklistTemplateRepoPort)
 		expectedError *domain.Error
 	}{
 		{
 			name: "success",
 			id:   1,
-			setupMock: func(repo *mock.MockChecklistTemplateRepository) {
+			setupMock: func(repo *mock.MockChecklistTemplateRepoPort) {
 				repo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				repo.EXPECT().GetChecklistTemplateById(gomock.Any(), int64(1)).
@@ -378,7 +378,7 @@ func TestChecklistTemplateUsecase_DeleteChecklistTemplateById(t *testing.T) {
 		{
 			name: "not found",
 			id:   99,
-			setupMock: func(repo *mock.MockChecklistTemplateRepository) {
+			setupMock: func(repo *mock.MockChecklistTemplateRepoPort) {
 				repo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				repo.EXPECT().GetChecklistTemplateById(gomock.Any(), int64(99)).
@@ -389,7 +389,7 @@ func TestChecklistTemplateUsecase_DeleteChecklistTemplateById(t *testing.T) {
 		{
 			name: "repo error on delete",
 			id:   1,
-			setupMock: func(repo *mock.MockChecklistTemplateRepository) {
+			setupMock: func(repo *mock.MockChecklistTemplateRepoPort) {
 				repo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				repo.EXPECT().GetChecklistTemplateById(gomock.Any(), int64(1)).

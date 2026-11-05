@@ -5,29 +5,29 @@ import (
 )
 
 type CategoryUsecase struct {
-	repository CategoryRepository
+	categoryRepoPort CategoryRepoPort
 }
 
-func NewCategoryUsecase(repository CategoryRepository) CategoryUsecase {
-	return CategoryUsecase{repository: repository}
+func NewCategoryUsecase(categoryRepoPort CategoryRepoPort) CategoryUsecase {
+	return CategoryUsecase{categoryRepoPort: categoryRepoPort}
 }
 
 func (usecase CategoryUsecase) GetCategoryList(ctx context.Context) ([]Category, *Error) {
-	return usecase.repository.GetCategoryList(ctx)
+	return usecase.categoryRepoPort.GetCategoryList(ctx)
 }
 
 func (usecase CategoryUsecase) GetCategoryById(ctx context.Context, id int64) (Category, *Error) {
-	return usecase.repository.GetCategoryById(ctx, id)
+	return usecase.categoryRepoPort.GetCategoryById(ctx, id)
 }
 
 func (usecase CategoryUsecase) CreateCategory(ctx context.Context, category Category) (Category, *Error) {
-	return usecase.repository.CreateCategory(ctx, category)
+	return usecase.categoryRepoPort.CreateCategory(ctx, category)
 }
 
 func (usecase CategoryUsecase) UpdateCategoryById(ctx context.Context, category Category, id int64) (Category, *Error) {
-	return usecase.repository.UpdateCategoryById(ctx, category, id)
+	return usecase.categoryRepoPort.UpdateCategoryById(ctx, category, id)
 }
 
 func (usecase CategoryUsecase) DeleteCategoryById(ctx context.Context, id int64) *Error {
-	return usecase.repository.DeleteCategoryById(ctx, id)
+	return usecase.categoryRepoPort.DeleteCategoryById(ctx, id)
 }

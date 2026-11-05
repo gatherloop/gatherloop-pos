@@ -18,19 +18,19 @@ import (
 func TestTagHandler_GetTagList(t *testing.T) {
 	tests := []struct {
 		name           string
-		setupMock      func(r *mock.MockTagRepository)
+		setupMock      func(r *mock.MockTagRepoPort)
 		expectedStatus int
 	}{
 		{
 			name: "success",
-			setupMock: func(r *mock.MockTagRepository) {
+			setupMock: func(r *mock.MockTagRepoPort) {
 				r.EXPECT().GetTagList(gomock.Any()).Return([]domain.Tag{{Id: 1, Name: "New", Color: domain.TagColorGreen}}, nil)
 			},
 			expectedStatus: http.StatusOK,
 		},
 		{
 			name: "repo error",
-			setupMock: func(r *mock.MockTagRepository) {
+			setupMock: func(r *mock.MockTagRepoPort) {
 				r.EXPECT().GetTagList(gomock.Any()).Return(nil, &domain.Error{Type: domain.InternalServerError, Message: "db error"})
 			},
 			expectedStatus: http.StatusInternalServerError,
@@ -41,7 +41,7 @@ func TestTagHandler_GetTagList(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRepo := mock.NewMockTagRepository(ctrl)
+			mockRepo := mock.NewMockTagRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 			handler := restapi.NewTagHandler(domain.NewTagUsecase(mockRepo, domain.NewTagService(mockRepo)))
 			req := httptest.NewRequest(http.MethodGet, "/tags", nil)
@@ -56,13 +56,13 @@ func TestTagHandler_GetTagById(t *testing.T) {
 	tests := []struct {
 		name           string
 		tagId          string
-		setupMock      func(r *mock.MockTagRepository)
+		setupMock      func(r *mock.MockTagRepoPort)
 		expectedStatus int
 	}{
 		{
 			name:  "success",
 			tagId: "1",
-			setupMock: func(r *mock.MockTagRepository) {
+			setupMock: func(r *mock.MockTagRepoPort) {
 				r.EXPECT().GetTagById(gomock.Any(), int64(1)).Return(domain.Tag{Id: 1, Name: "New", Color: domain.TagColorGreen}, nil)
 			},
 			expectedStatus: http.StatusOK,
@@ -70,7 +70,7 @@ func TestTagHandler_GetTagById(t *testing.T) {
 		{
 			name:  "not found",
 			tagId: "99",
-			setupMock: func(r *mock.MockTagRepository) {
+			setupMock: func(r *mock.MockTagRepoPort) {
 				r.EXPECT().GetTagById(gomock.Any(), int64(99)).Return(domain.Tag{}, &domain.Error{Type: domain.NotFound, Message: "not found"})
 			},
 			expectedStatus: http.StatusNotFound,
@@ -78,7 +78,7 @@ func TestTagHandler_GetTagById(t *testing.T) {
 		{
 			name:           "invalid id",
 			tagId:          "abc",
-			setupMock:      func(r *mock.MockTagRepository) {},
+			setupMock:      func(r *mock.MockTagRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 	}
@@ -87,7 +87,7 @@ func TestTagHandler_GetTagById(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRepo := mock.NewMockTagRepository(ctrl)
+			mockRepo := mock.NewMockTagRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 			handler := restapi.NewTagHandler(domain.NewTagUsecase(mockRepo, domain.NewTagService(mockRepo)))
 			req := httptest.NewRequest(http.MethodGet, "/tags/"+tt.tagId, nil)
@@ -105,13 +105,13 @@ func TestTagHandler_CreateTag(t *testing.T) {
 	tests := []struct {
 		name           string
 		body           string
-		setupMock      func(r *mock.MockTagRepository)
+		setupMock      func(r *mock.MockTagRepoPort)
 		expectedStatus int
 	}{
 		{
 			name: "success",
 			body: `{"name": "Best Seller", "color": "orange", "isHighlighted": true, "sortOrder": 2}`,
-			setupMock: func(r *mock.MockTagRepository) {
+			setupMock: func(r *mock.MockTagRepoPort) {
 				r.EXPECT().GetTagList(gomock.Any()).Return(existing, nil)
 				r.EXPECT().CreateTag(gomock.Any(), domain.Tag{Name: "Best Seller", Color: domain.TagColorOrange, IsHighlighted: true, SortOrder: 2}).
 					Return(domain.Tag{Id: 2, Name: "Best Seller", Color: domain.TagColorOrange, IsHighlighted: true, SortOrder: 2}, nil)
@@ -121,13 +121,13 @@ func TestTagHandler_CreateTag(t *testing.T) {
 		{
 			name:           "invalid JSON body",
 			body:           `{invalid json`,
-			setupMock:      func(r *mock.MockTagRepository) {},
+			setupMock:      func(r *mock.MockTagRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name: "duplicate name",
 			body: `{"name": "new", "color": "orange", "isHighlighted": false, "sortOrder": 0}`,
-			setupMock: func(r *mock.MockTagRepository) {
+			setupMock: func(r *mock.MockTagRepoPort) {
 				r.EXPECT().GetTagList(gomock.Any()).Return(existing, nil)
 			},
 			expectedStatus: http.StatusBadRequest,
@@ -135,13 +135,13 @@ func TestTagHandler_CreateTag(t *testing.T) {
 		{
 			name:           "unknown color",
 			body:           `{"name": "Vegan", "color": "teal", "isHighlighted": false, "sortOrder": 0}`,
-			setupMock:      func(r *mock.MockTagRepository) {},
+			setupMock:      func(r *mock.MockTagRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name: "repo error",
 			body: `{"name": "Vegan", "color": "green", "isHighlighted": false, "sortOrder": 0}`,
-			setupMock: func(r *mock.MockTagRepository) {
+			setupMock: func(r *mock.MockTagRepoPort) {
 				r.EXPECT().GetTagList(gomock.Any()).Return(existing, nil)
 				r.EXPECT().CreateTag(gomock.Any(), gomock.Any()).Return(domain.Tag{}, &domain.Error{Type: domain.InternalServerError, Message: "db error"})
 			},
@@ -153,7 +153,7 @@ func TestTagHandler_CreateTag(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRepo := mock.NewMockTagRepository(ctrl)
+			mockRepo := mock.NewMockTagRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 			handler := restapi.NewTagHandler(domain.NewTagUsecase(mockRepo, domain.NewTagService(mockRepo)))
 			req := httptest.NewRequest(http.MethodPost, "/tags", bytes.NewBufferString(tt.body))
@@ -172,14 +172,14 @@ func TestTagHandler_UpdateTagById(t *testing.T) {
 		name           string
 		tagId          string
 		body           string
-		setupMock      func(r *mock.MockTagRepository)
+		setupMock      func(r *mock.MockTagRepoPort)
 		expectedStatus int
 	}{
 		{
 			name:  "success",
 			tagId: "1",
 			body:  `{"name": "Brand New", "color": "pink", "isHighlighted": false, "sortOrder": 0}`,
-			setupMock: func(r *mock.MockTagRepository) {
+			setupMock: func(r *mock.MockTagRepoPort) {
 				r.EXPECT().GetTagList(gomock.Any()).Return(existing, nil)
 				r.EXPECT().UpdateTagById(gomock.Any(), domain.Tag{Name: "Brand New", Color: domain.TagColorPink}, int64(1)).
 					Return(domain.Tag{Id: 1, Name: "Brand New", Color: domain.TagColorPink}, nil)
@@ -190,21 +190,21 @@ func TestTagHandler_UpdateTagById(t *testing.T) {
 			name:           "invalid id",
 			tagId:          "abc",
 			body:           `{"name": "Brand New", "color": "pink", "isHighlighted": false, "sortOrder": 0}`,
-			setupMock:      func(r *mock.MockTagRepository) {},
+			setupMock:      func(r *mock.MockTagRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:           "invalid JSON body",
 			tagId:          "1",
 			body:           `{invalid json`,
-			setupMock:      func(r *mock.MockTagRepository) {},
+			setupMock:      func(r *mock.MockTagRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:  "not found",
 			tagId: "99",
 			body:  `{"name": "Brand New", "color": "pink", "isHighlighted": false, "sortOrder": 0}`,
-			setupMock: func(r *mock.MockTagRepository) {
+			setupMock: func(r *mock.MockTagRepoPort) {
 				r.EXPECT().GetTagList(gomock.Any()).Return(existing, nil)
 				r.EXPECT().UpdateTagById(gomock.Any(), gomock.Any(), int64(99)).Return(domain.Tag{}, &domain.Error{Type: domain.NotFound, Message: "not found"})
 			},
@@ -216,7 +216,7 @@ func TestTagHandler_UpdateTagById(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRepo := mock.NewMockTagRepository(ctrl)
+			mockRepo := mock.NewMockTagRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 			handler := restapi.NewTagHandler(domain.NewTagUsecase(mockRepo, domain.NewTagService(mockRepo)))
 			req := httptest.NewRequest(http.MethodPut, "/tags/"+tt.tagId, bytes.NewBufferString(tt.body))
@@ -233,13 +233,13 @@ func TestTagHandler_DeleteTagById(t *testing.T) {
 	tests := []struct {
 		name           string
 		tagId          string
-		setupMock      func(r *mock.MockTagRepository)
+		setupMock      func(r *mock.MockTagRepoPort)
 		expectedStatus int
 	}{
 		{
 			name:  "success",
 			tagId: "1",
-			setupMock: func(r *mock.MockTagRepository) {
+			setupMock: func(r *mock.MockTagRepoPort) {
 				r.EXPECT().GetTagById(gomock.Any(), int64(1)).Return(domain.Tag{Id: 1}, nil)
 				r.EXPECT().DeleteTagById(gomock.Any(), int64(1)).Return(nil)
 			},
@@ -248,13 +248,13 @@ func TestTagHandler_DeleteTagById(t *testing.T) {
 		{
 			name:           "invalid id",
 			tagId:          "abc",
-			setupMock:      func(r *mock.MockTagRepository) {},
+			setupMock:      func(r *mock.MockTagRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:  "not found",
 			tagId: "99",
-			setupMock: func(r *mock.MockTagRepository) {
+			setupMock: func(r *mock.MockTagRepoPort) {
 				r.EXPECT().GetTagById(gomock.Any(), int64(99)).Return(domain.Tag{}, &domain.Error{Type: domain.NotFound, Message: "not found"})
 			},
 			expectedStatus: http.StatusNotFound,
@@ -265,7 +265,7 @@ func TestTagHandler_DeleteTagById(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRepo := mock.NewMockTagRepository(ctrl)
+			mockRepo := mock.NewMockTagRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 			handler := restapi.NewTagHandler(domain.NewTagUsecase(mockRepo, domain.NewTagService(mockRepo)))
 			req := httptest.NewRequest(http.MethodDelete, "/tags/"+tt.tagId, nil)
@@ -282,14 +282,14 @@ func TestTagHandler_SetTagVariants(t *testing.T) {
 		name           string
 		tagId          string
 		body           string
-		setupMock      func(r *mock.MockTagRepository)
+		setupMock      func(r *mock.MockTagRepoPort)
 		expectedStatus int
 	}{
 		{
 			name:  "success returns the tag with its new variant count",
 			tagId: "1",
 			body:  `{"variantIds": [2, 3]}`,
-			setupMock: func(r *mock.MockTagRepository) {
+			setupMock: func(r *mock.MockTagRepoPort) {
 				r.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				r.EXPECT().GetTagById(gomock.Any(), int64(1)).Return(domain.Tag{Id: 1, Name: "New", Color: domain.TagColorGreen, VariantCount: 2}, nil).Times(2)
@@ -303,7 +303,7 @@ func TestTagHandler_SetTagVariants(t *testing.T) {
 			name:  "unknown variant is a validation error",
 			tagId: "1",
 			body:  `{"variantIds": [99]}`,
-			setupMock: func(r *mock.MockTagRepository) {
+			setupMock: func(r *mock.MockTagRepoPort) {
 				r.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				r.EXPECT().GetTagById(gomock.Any(), int64(1)).Return(domain.Tag{Id: 1}, nil)
@@ -315,7 +315,7 @@ func TestTagHandler_SetTagVariants(t *testing.T) {
 			name:  "tag not found",
 			tagId: "9",
 			body:  `{"variantIds": []}`,
-			setupMock: func(r *mock.MockTagRepository) {
+			setupMock: func(r *mock.MockTagRepoPort) {
 				r.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				r.EXPECT().GetTagById(gomock.Any(), int64(9)).Return(domain.Tag{}, &domain.Error{Type: domain.NotFound})
@@ -326,14 +326,14 @@ func TestTagHandler_SetTagVariants(t *testing.T) {
 			name:           "invalid id",
 			tagId:          "abc",
 			body:           `{"variantIds": []}`,
-			setupMock:      func(r *mock.MockTagRepository) {},
+			setupMock:      func(r *mock.MockTagRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:           "malformed body",
 			tagId:          "1",
 			body:           `{`,
-			setupMock:      func(r *mock.MockTagRepository) {},
+			setupMock:      func(r *mock.MockTagRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 	}
@@ -342,7 +342,7 @@ func TestTagHandler_SetTagVariants(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRepo := mock.NewMockTagRepository(ctrl)
+			mockRepo := mock.NewMockTagRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 			handler := restapi.NewTagHandler(domain.NewTagUsecase(mockRepo, domain.NewTagService(mockRepo)))
 			req := httptest.NewRequest(http.MethodPut, "/tags/"+tt.tagId+"/variants", bytes.NewBufferString(tt.body))

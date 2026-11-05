@@ -19,20 +19,20 @@ var existingTags = []domain.Tag{
 func TestTagUsecase_GetTagList(t *testing.T) {
 	tests := []struct {
 		name          string
-		setupMock     func(r *mock.MockTagRepository)
+		setupMock     func(r *mock.MockTagRepoPort)
 		expectedLen   int
 		expectedError *domain.Error
 	}{
 		{
 			name: "success",
-			setupMock: func(r *mock.MockTagRepository) {
+			setupMock: func(r *mock.MockTagRepoPort) {
 				r.EXPECT().GetTagList(gomock.Any()).Return(existingTags, nil)
 			},
 			expectedLen: 2,
 		},
 		{
 			name: "repository error",
-			setupMock: func(r *mock.MockTagRepository) {
+			setupMock: func(r *mock.MockTagRepoPort) {
 				r.EXPECT().GetTagList(gomock.Any()).Return(nil, &domain.Error{Type: domain.InternalServerError, Message: "db error"})
 			},
 			expectedError: &domain.Error{Type: domain.InternalServerError},
@@ -44,7 +44,7 @@ func TestTagUsecase_GetTagList(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockRepo := mock.NewMockTagRepository(ctrl)
+			mockRepo := mock.NewMockTagRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 
 			tags, err := domain.NewTagUsecase(mockRepo, domain.NewTagService(mockRepo)).GetTagList(context.Background())
@@ -63,18 +63,18 @@ func TestTagUsecase_GetTagList(t *testing.T) {
 func TestTagUsecase_GetTagById(t *testing.T) {
 	tests := []struct {
 		name          string
-		setupMock     func(r *mock.MockTagRepository)
+		setupMock     func(r *mock.MockTagRepoPort)
 		expectedError *domain.Error
 	}{
 		{
 			name: "success",
-			setupMock: func(r *mock.MockTagRepository) {
+			setupMock: func(r *mock.MockTagRepoPort) {
 				r.EXPECT().GetTagById(gomock.Any(), int64(1)).Return(existingTags[0], nil)
 			},
 		},
 		{
 			name: "not found",
-			setupMock: func(r *mock.MockTagRepository) {
+			setupMock: func(r *mock.MockTagRepoPort) {
 				r.EXPECT().GetTagById(gomock.Any(), int64(1)).Return(domain.Tag{}, &domain.Error{Type: domain.NotFound, Message: "not found"})
 			},
 			expectedError: &domain.Error{Type: domain.NotFound},
@@ -86,7 +86,7 @@ func TestTagUsecase_GetTagById(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockRepo := mock.NewMockTagRepository(ctrl)
+			mockRepo := mock.NewMockTagRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 
 			tag, err := domain.NewTagUsecase(mockRepo, domain.NewTagService(mockRepo)).GetTagById(context.Background(), 1)
@@ -106,14 +106,14 @@ func TestTagUsecase_CreateTag(t *testing.T) {
 	tests := []struct {
 		name          string
 		input         domain.Tag
-		setupMock     func(r *mock.MockTagRepository)
+		setupMock     func(r *mock.MockTagRepoPort)
 		expectedName  string
 		expectedError *domain.Error
 	}{
 		{
 			name:  "success trims the name",
 			input: domain.Tag{Name: "  Vegan  ", Color: domain.TagColorBlue, IsHighlighted: true, SortOrder: 3},
-			setupMock: func(r *mock.MockTagRepository) {
+			setupMock: func(r *mock.MockTagRepoPort) {
 				r.EXPECT().GetTagList(gomock.Any()).Return(existingTags, nil)
 				r.EXPECT().CreateTag(gomock.Any(), domain.Tag{Name: "Vegan", Color: domain.TagColorBlue, IsHighlighted: true, SortOrder: 3}).
 					Return(domain.Tag{Id: 3, Name: "Vegan", Color: domain.TagColorBlue, IsHighlighted: true, SortOrder: 3}, nil)
@@ -123,31 +123,31 @@ func TestTagUsecase_CreateTag(t *testing.T) {
 		{
 			name:          "duplicate name differing only in case",
 			input:         domain.Tag{Name: "best seller", Color: domain.TagColorRed},
-			setupMock:     func(r *mock.MockTagRepository) { r.EXPECT().GetTagList(gomock.Any()).Return(existingTags, nil) },
+			setupMock:     func(r *mock.MockTagRepoPort) { r.EXPECT().GetTagList(gomock.Any()).Return(existingTags, nil) },
 			expectedError: &domain.Error{Type: domain.BadRequest},
 		},
 		{
 			name:          "unknown color",
 			input:         domain.Tag{Name: "Vegan", Color: "teal"},
-			setupMock:     func(r *mock.MockTagRepository) {},
+			setupMock:     func(r *mock.MockTagRepoPort) {},
 			expectedError: &domain.Error{Type: domain.BadRequest},
 		},
 		{
 			name:          "blank name",
 			input:         domain.Tag{Name: "   ", Color: domain.TagColorRed},
-			setupMock:     func(r *mock.MockTagRepository) {},
+			setupMock:     func(r *mock.MockTagRepoPort) {},
 			expectedError: &domain.Error{Type: domain.BadRequest},
 		},
 		{
 			name:          "name longer than 100 characters",
 			input:         domain.Tag{Name: strings.Repeat("a", 101), Color: domain.TagColorRed},
-			setupMock:     func(r *mock.MockTagRepository) {},
+			setupMock:     func(r *mock.MockTagRepoPort) {},
 			expectedError: &domain.Error{Type: domain.BadRequest},
 		},
 		{
 			name:  "list error",
 			input: domain.Tag{Name: "Vegan", Color: domain.TagColorRed},
-			setupMock: func(r *mock.MockTagRepository) {
+			setupMock: func(r *mock.MockTagRepoPort) {
 				r.EXPECT().GetTagList(gomock.Any()).Return(nil, &domain.Error{Type: domain.InternalServerError, Message: "db error"})
 			},
 			expectedError: &domain.Error{Type: domain.InternalServerError},
@@ -155,7 +155,7 @@ func TestTagUsecase_CreateTag(t *testing.T) {
 		{
 			name:  "create error",
 			input: domain.Tag{Name: "Vegan", Color: domain.TagColorRed},
-			setupMock: func(r *mock.MockTagRepository) {
+			setupMock: func(r *mock.MockTagRepoPort) {
 				r.EXPECT().GetTagList(gomock.Any()).Return(existingTags, nil)
 				r.EXPECT().CreateTag(gomock.Any(), gomock.Any()).Return(domain.Tag{}, &domain.Error{Type: domain.InternalServerError, Message: "db error"})
 			},
@@ -168,7 +168,7 @@ func TestTagUsecase_CreateTag(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockRepo := mock.NewMockTagRepository(ctrl)
+			mockRepo := mock.NewMockTagRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 
 			tag, err := domain.NewTagUsecase(mockRepo, domain.NewTagService(mockRepo)).CreateTag(context.Background(), tt.input)
@@ -189,14 +189,14 @@ func TestTagUsecase_UpdateTagById(t *testing.T) {
 		name          string
 		id            int64
 		input         domain.Tag
-		setupMock     func(r *mock.MockTagRepository)
+		setupMock     func(r *mock.MockTagRepoPort)
 		expectedError *domain.Error
 	}{
 		{
 			name:  "success keeping its own name",
 			id:    1,
 			input: domain.Tag{Name: "new", Color: domain.TagColorPurple, SortOrder: 5},
-			setupMock: func(r *mock.MockTagRepository) {
+			setupMock: func(r *mock.MockTagRepoPort) {
 				r.EXPECT().GetTagList(gomock.Any()).Return(existingTags, nil)
 				r.EXPECT().UpdateTagById(gomock.Any(), domain.Tag{Name: "new", Color: domain.TagColorPurple, SortOrder: 5}, int64(1)).
 					Return(domain.Tag{Id: 1, Name: "new", Color: domain.TagColorPurple, SortOrder: 5}, nil)
@@ -206,21 +206,21 @@ func TestTagUsecase_UpdateTagById(t *testing.T) {
 			name:          "name taken by another tag",
 			id:            1,
 			input:         domain.Tag{Name: "BEST SELLER", Color: domain.TagColorPurple},
-			setupMock:     func(r *mock.MockTagRepository) { r.EXPECT().GetTagList(gomock.Any()).Return(existingTags, nil) },
+			setupMock:     func(r *mock.MockTagRepoPort) { r.EXPECT().GetTagList(gomock.Any()).Return(existingTags, nil) },
 			expectedError: &domain.Error{Type: domain.BadRequest},
 		},
 		{
 			name:          "unknown color",
 			id:            1,
 			input:         domain.Tag{Name: "New", Color: "teal"},
-			setupMock:     func(r *mock.MockTagRepository) {},
+			setupMock:     func(r *mock.MockTagRepoPort) {},
 			expectedError: &domain.Error{Type: domain.BadRequest},
 		},
 		{
 			name:  "not found",
 			id:    99,
 			input: domain.Tag{Name: "Vegan", Color: domain.TagColorGreen},
-			setupMock: func(r *mock.MockTagRepository) {
+			setupMock: func(r *mock.MockTagRepoPort) {
 				r.EXPECT().GetTagList(gomock.Any()).Return(existingTags, nil)
 				r.EXPECT().UpdateTagById(gomock.Any(), gomock.Any(), int64(99)).Return(domain.Tag{}, &domain.Error{Type: domain.NotFound, Message: "not found"})
 			},
@@ -233,7 +233,7 @@ func TestTagUsecase_UpdateTagById(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockRepo := mock.NewMockTagRepository(ctrl)
+			mockRepo := mock.NewMockTagRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 
 			tag, err := domain.NewTagUsecase(mockRepo, domain.NewTagService(mockRepo)).UpdateTagById(context.Background(), tt.input, tt.id)
@@ -252,26 +252,26 @@ func TestTagUsecase_UpdateTagById(t *testing.T) {
 func TestTagUsecase_DeleteTagById(t *testing.T) {
 	tests := []struct {
 		name          string
-		setupMock     func(r *mock.MockTagRepository)
+		setupMock     func(r *mock.MockTagRepoPort)
 		expectedError *domain.Error
 	}{
 		{
 			name: "success",
-			setupMock: func(r *mock.MockTagRepository) {
+			setupMock: func(r *mock.MockTagRepoPort) {
 				r.EXPECT().GetTagById(gomock.Any(), int64(1)).Return(existingTags[0], nil)
 				r.EXPECT().DeleteTagById(gomock.Any(), int64(1)).Return(nil)
 			},
 		},
 		{
 			name: "not found",
-			setupMock: func(r *mock.MockTagRepository) {
+			setupMock: func(r *mock.MockTagRepoPort) {
 				r.EXPECT().GetTagById(gomock.Any(), int64(1)).Return(domain.Tag{}, &domain.Error{Type: domain.NotFound, Message: "not found"})
 			},
 			expectedError: &domain.Error{Type: domain.NotFound},
 		},
 		{
 			name: "repository error",
-			setupMock: func(r *mock.MockTagRepository) {
+			setupMock: func(r *mock.MockTagRepoPort) {
 				r.EXPECT().GetTagById(gomock.Any(), int64(1)).Return(existingTags[0], nil)
 				r.EXPECT().DeleteTagById(gomock.Any(), int64(1)).Return(&domain.Error{Type: domain.InternalServerError, Message: "db error"})
 			},
@@ -284,7 +284,7 @@ func TestTagUsecase_DeleteTagById(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockRepo := mock.NewMockTagRepository(ctrl)
+			mockRepo := mock.NewMockTagRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 
 			err := domain.NewTagUsecase(mockRepo, domain.NewTagService(mockRepo)).DeleteTagById(context.Background(), 1)
@@ -299,7 +299,7 @@ func TestTagUsecase_DeleteTagById(t *testing.T) {
 	}
 }
 
-func runTransactionCallback(r *mock.MockTagRepository) {
+func runTransactionCallback(r *mock.MockTagRepoPort) {
 	r.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 		func(ctx context.Context, callback func(context.Context) *domain.Error) *domain.Error {
 			return callback(ctx)
@@ -314,13 +314,13 @@ func TestTagUsecase_SetTagVariants(t *testing.T) {
 	tests := []struct {
 		name          string
 		variantIds    []int64
-		setupMock     func(r *mock.MockTagRepository)
+		setupMock     func(r *mock.MockTagRepoPort)
 		expectedError *domain.Error
 	}{
 		{
 			name:       "replace diffs the set and only touches changed pairs",
 			variantIds: []int64{2, 3},
-			setupMock: func(r *mock.MockTagRepository) {
+			setupMock: func(r *mock.MockTagRepoPort) {
 				runTransactionCallback(r)
 				r.EXPECT().GetTagById(gomock.Any(), int64(1)).Return(existingTags[0], nil).Times(2)
 				r.EXPECT().GetLiveVariantIds(gomock.Any(), []int64{2, 3}).Return([]int64{2, 3}, nil)
@@ -332,7 +332,7 @@ func TestTagUsecase_SetTagVariants(t *testing.T) {
 		{
 			name:       "empty set clears every assignment",
 			variantIds: []int64{},
-			setupMock: func(r *mock.MockTagRepository) {
+			setupMock: func(r *mock.MockTagRepoPort) {
 				runTransactionCallback(r)
 				r.EXPECT().GetTagById(gomock.Any(), int64(1)).Return(existingTags[0], nil).Times(2)
 				r.EXPECT().GetLiveVariantIds(gomock.Any(), []int64{}).Return([]int64{}, nil)
@@ -343,7 +343,7 @@ func TestTagUsecase_SetTagVariants(t *testing.T) {
 		{
 			name:       "unchanged set writes nothing",
 			variantIds: []int64{1, 2},
-			setupMock: func(r *mock.MockTagRepository) {
+			setupMock: func(r *mock.MockTagRepoPort) {
 				runTransactionCallback(r)
 				r.EXPECT().GetTagById(gomock.Any(), int64(1)).Return(existingTags[0], nil).Times(2)
 				r.EXPECT().GetLiveVariantIds(gomock.Any(), []int64{1, 2}).Return([]int64{1, 2}, nil)
@@ -353,7 +353,7 @@ func TestTagUsecase_SetTagVariants(t *testing.T) {
 		{
 			name:       "duplicate ids are collapsed",
 			variantIds: []int64{2, 2},
-			setupMock: func(r *mock.MockTagRepository) {
+			setupMock: func(r *mock.MockTagRepoPort) {
 				runTransactionCallback(r)
 				r.EXPECT().GetTagById(gomock.Any(), int64(1)).Return(existingTags[0], nil).Times(2)
 				r.EXPECT().GetLiveVariantIds(gomock.Any(), []int64{2}).Return([]int64{2}, nil)
@@ -364,7 +364,7 @@ func TestTagUsecase_SetTagVariants(t *testing.T) {
 		{
 			name:       "unknown or deleted variant id is rejected without writes",
 			variantIds: []int64{2, 99},
-			setupMock: func(r *mock.MockTagRepository) {
+			setupMock: func(r *mock.MockTagRepoPort) {
 				runTransactionCallback(r)
 				r.EXPECT().GetTagById(gomock.Any(), int64(1)).Return(existingTags[0], nil)
 				r.EXPECT().GetLiveVariantIds(gomock.Any(), []int64{2, 99}).Return([]int64{2}, nil)
@@ -374,7 +374,7 @@ func TestTagUsecase_SetTagVariants(t *testing.T) {
 		{
 			name:       "tag not found",
 			variantIds: []int64{2},
-			setupMock: func(r *mock.MockTagRepository) {
+			setupMock: func(r *mock.MockTagRepoPort) {
 				runTransactionCallback(r)
 				r.EXPECT().GetTagById(gomock.Any(), int64(1)).Return(domain.Tag{}, &domain.Error{Type: domain.NotFound})
 			},
@@ -383,7 +383,7 @@ func TestTagUsecase_SetTagVariants(t *testing.T) {
 		{
 			name:       "repository error while inserting",
 			variantIds: []int64{2},
-			setupMock: func(r *mock.MockTagRepository) {
+			setupMock: func(r *mock.MockTagRepoPort) {
 				runTransactionCallback(r)
 				r.EXPECT().GetTagById(gomock.Any(), int64(1)).Return(existingTags[0], nil)
 				r.EXPECT().GetLiveVariantIds(gomock.Any(), []int64{2}).Return([]int64{2}, nil)
@@ -399,7 +399,7 @@ func TestTagUsecase_SetTagVariants(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockRepo := mock.NewMockTagRepository(ctrl)
+			mockRepo := mock.NewMockTagRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 
 			tag, err := domain.NewTagUsecase(mockRepo, domain.NewTagService(mockRepo)).SetTagVariants(context.Background(), 1, tt.variantIds)

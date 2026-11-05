@@ -13,14 +13,14 @@ import (
 func TestSupplierUsecase_GetSupplierList(t *testing.T) {
 	tests := []struct {
 		name          string
-		setupMock     func(r *mock.MockSupplierRepository)
+		setupMock     func(r *mock.MockSupplierRepoPort)
 		expectedLen   int
 		expectedTotal int64
 		expectedError *domain.Error
 	}{
 		{
 			name: "success",
-			setupMock: func(r *mock.MockSupplierRepository) {
+			setupMock: func(r *mock.MockSupplierRepoPort) {
 				r.EXPECT().GetSupplierList(gomock.Any(), "", domain.CreatedAt, domain.Ascending, 0, 10).
 					Return([]domain.Supplier{{Id: 1, Name: "SupplierA"}, {Id: 2, Name: "SupplierB"}}, nil)
 				r.EXPECT().GetSupplierListTotal(gomock.Any(), "").Return(int64(2), nil)
@@ -30,7 +30,7 @@ func TestSupplierUsecase_GetSupplierList(t *testing.T) {
 		},
 		{
 			name: "error on GetSupplierList",
-			setupMock: func(r *mock.MockSupplierRepository) {
+			setupMock: func(r *mock.MockSupplierRepoPort) {
 				r.EXPECT().GetSupplierList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil, &domain.Error{Type: domain.InternalServerError})
 			},
@@ -38,7 +38,7 @@ func TestSupplierUsecase_GetSupplierList(t *testing.T) {
 		},
 		{
 			name: "error on GetSupplierListTotal",
-			setupMock: func(r *mock.MockSupplierRepository) {
+			setupMock: func(r *mock.MockSupplierRepoPort) {
 				r.EXPECT().GetSupplierList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return([]domain.Supplier{{Id: 1}}, nil)
 				r.EXPECT().GetSupplierListTotal(gomock.Any(), gomock.Any()).Return(int64(0), &domain.Error{Type: domain.InternalServerError})
@@ -52,7 +52,7 @@ func TestSupplierUsecase_GetSupplierList(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockRepo := mock.NewMockSupplierRepository(ctrl)
+			mockRepo := mock.NewMockSupplierRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 
 			usecase := domain.NewSupplierUsecase(mockRepo)
@@ -74,14 +74,14 @@ func TestSupplierUsecase_GetSupplierById(t *testing.T) {
 	tests := []struct {
 		name          string
 		id            int64
-		setupMock     func(r *mock.MockSupplierRepository)
+		setupMock     func(r *mock.MockSupplierRepoPort)
 		expectedName  string
 		expectedError *domain.Error
 	}{
 		{
 			name: "success",
 			id:   1,
-			setupMock: func(r *mock.MockSupplierRepository) {
+			setupMock: func(r *mock.MockSupplierRepoPort) {
 				r.EXPECT().GetSupplierById(gomock.Any(), int64(1)).Return(domain.Supplier{Id: 1, Name: "SupplierA"}, nil)
 			},
 			expectedName: "SupplierA",
@@ -89,7 +89,7 @@ func TestSupplierUsecase_GetSupplierById(t *testing.T) {
 		{
 			name: "not found",
 			id:   99,
-			setupMock: func(r *mock.MockSupplierRepository) {
+			setupMock: func(r *mock.MockSupplierRepoPort) {
 				r.EXPECT().GetSupplierById(gomock.Any(), int64(99)).Return(domain.Supplier{}, &domain.Error{Type: domain.NotFound})
 			},
 			expectedError: &domain.Error{Type: domain.NotFound},
@@ -101,7 +101,7 @@ func TestSupplierUsecase_GetSupplierById(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockRepo := mock.NewMockSupplierRepository(ctrl)
+			mockRepo := mock.NewMockSupplierRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 
 			usecase := domain.NewSupplierUsecase(mockRepo)
@@ -122,14 +122,14 @@ func TestSupplierUsecase_CreateSupplier(t *testing.T) {
 	tests := []struct {
 		name          string
 		input         domain.Supplier
-		setupMock     func(r *mock.MockSupplierRepository)
+		setupMock     func(r *mock.MockSupplierRepoPort)
 		expectedId    int64
 		expectedError *domain.Error
 	}{
 		{
 			name:  "success",
 			input: domain.Supplier{Name: "NewSupplier"},
-			setupMock: func(r *mock.MockSupplierRepository) {
+			setupMock: func(r *mock.MockSupplierRepoPort) {
 				r.EXPECT().CreateSupplier(gomock.Any(), gomock.Any()).Return(domain.Supplier{Id: 3, Name: "NewSupplier"}, nil)
 			},
 			expectedId: 3,
@@ -137,7 +137,7 @@ func TestSupplierUsecase_CreateSupplier(t *testing.T) {
 		{
 			name:  "repository error",
 			input: domain.Supplier{Name: "NewSupplier"},
-			setupMock: func(r *mock.MockSupplierRepository) {
+			setupMock: func(r *mock.MockSupplierRepoPort) {
 				r.EXPECT().CreateSupplier(gomock.Any(), gomock.Any()).Return(domain.Supplier{}, &domain.Error{Type: domain.InternalServerError})
 			},
 			expectedError: &domain.Error{Type: domain.InternalServerError},
@@ -149,7 +149,7 @@ func TestSupplierUsecase_CreateSupplier(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockRepo := mock.NewMockSupplierRepository(ctrl)
+			mockRepo := mock.NewMockSupplierRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 
 			usecase := domain.NewSupplierUsecase(mockRepo)
@@ -170,13 +170,13 @@ func TestSupplierUsecase_DeleteSupplierById(t *testing.T) {
 	tests := []struct {
 		name          string
 		id            int64
-		setupMock     func(r *mock.MockSupplierRepository)
+		setupMock     func(r *mock.MockSupplierRepoPort)
 		expectedError *domain.Error
 	}{
 		{
 			name: "success — soft-deletes material_suppliers in same transaction",
 			id:   1,
-			setupMock: func(r *mock.MockSupplierRepository) {
+			setupMock: func(r *mock.MockSupplierRepoPort) {
 				r.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error {
 						return cb(ctx)
@@ -188,7 +188,7 @@ func TestSupplierUsecase_DeleteSupplierById(t *testing.T) {
 		{
 			name: "not found — rolls back transaction",
 			id:   99,
-			setupMock: func(r *mock.MockSupplierRepository) {
+			setupMock: func(r *mock.MockSupplierRepoPort) {
 				r.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error {
 						return cb(ctx)
@@ -200,7 +200,7 @@ func TestSupplierUsecase_DeleteSupplierById(t *testing.T) {
 		{
 			name: "cascade failure rolls back transaction",
 			id:   2,
-			setupMock: func(r *mock.MockSupplierRepository) {
+			setupMock: func(r *mock.MockSupplierRepoPort) {
 				r.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error {
 						return cb(ctx)
@@ -217,7 +217,7 @@ func TestSupplierUsecase_DeleteSupplierById(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockRepo := mock.NewMockSupplierRepository(ctrl)
+			mockRepo := mock.NewMockSupplierRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 
 			usecase := domain.NewSupplierUsecase(mockRepo)

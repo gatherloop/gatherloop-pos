@@ -13,23 +13,23 @@ import (
 )
 
 type paymentVerificationUsecaseMocks struct {
-	paymentRepo               *mock.MockPaymentRepository
-	verificationRepo          *mock.MockPaymentVerificationRepository
-	transactionRepo           *mock.MockTransactionRepository
-	cartRepo                  *mock.MockCartRepository
-	availabilityRepo          *mock.MockAvailabilityRepository
-	kdsNotificationRepo       *mock.MockKdsNotificationRepository
+	paymentRepo               *mock.MockPaymentRepoPort
+	verificationRepo          *mock.MockPaymentVerificationRepoPort
+	transactionRepo           *mock.MockTransactionRepoPort
+	cartRepo                  *mock.MockCartRepoPort
+	availabilityRepo          *mock.MockAvailabilityRepoPort
+	kdsNotificationRepo       *mock.MockKdsNotificationRepoPort
 	kdsNotificationDispatcher domain.KdsNotificationService
 }
 
 func newPaymentVerificationUsecaseMocks(ctrl *gomock.Controller) paymentVerificationUsecaseMocks {
-	kdsNotificationRepo := mock.NewMockKdsNotificationRepository(ctrl)
+	kdsNotificationRepo := mock.NewMockKdsNotificationRepoPort(ctrl)
 	return paymentVerificationUsecaseMocks{
-		paymentRepo:               mock.NewMockPaymentRepository(ctrl),
-		verificationRepo:          mock.NewMockPaymentVerificationRepository(ctrl),
-		transactionRepo:           mock.NewMockTransactionRepository(ctrl),
-		cartRepo:                  mock.NewMockCartRepository(ctrl),
-		availabilityRepo:          mock.NewMockAvailabilityRepository(ctrl),
+		paymentRepo:               mock.NewMockPaymentRepoPort(ctrl),
+		verificationRepo:          mock.NewMockPaymentVerificationRepoPort(ctrl),
+		transactionRepo:           mock.NewMockTransactionRepoPort(ctrl),
+		cartRepo:                  mock.NewMockCartRepoPort(ctrl),
+		availabilityRepo:          mock.NewMockAvailabilityRepoPort(ctrl),
 		kdsNotificationRepo:       kdsNotificationRepo,
 		kdsNotificationDispatcher: domain.NewKdsNotificationService(kdsNotificationRepo, nil, nil, nil, ""),
 	}
@@ -42,7 +42,7 @@ func (m paymentVerificationUsecaseMocks) usecase() domain.PaymentVerificationUse
 	return domain.NewPaymentVerificationUsecase(m.paymentRepo, m.verificationRepo, m.transactionRepo, m.cartRepo, m.kdsNotificationRepo, paymentVerificationService, paymentService, m.kdsNotificationDispatcher)
 }
 
-func withVerificationPaymentTransactionMock(r *mock.MockPaymentRepository) {
+func withVerificationPaymentTransactionMock(r *mock.MockPaymentRepoPort) {
 	r.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 		func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 }

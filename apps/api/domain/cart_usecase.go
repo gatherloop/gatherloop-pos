@@ -7,25 +7,25 @@ import (
 )
 
 type CartUsecase struct {
-	cartRepository  CartRepository
-	tableRepository TableRepository
-	cartService     CartService
+	cartRepoPort  CartRepoPort
+	tableRepoPort TableRepoPort
+	cartService   CartService
 }
 
 func NewCartUsecase(
-	cartRepository CartRepository,
-	tableRepository TableRepository,
+	cartRepoPort CartRepoPort,
+	tableRepoPort TableRepoPort,
 	cartService CartService,
 ) CartUsecase {
 	return CartUsecase{
-		cartRepository:  cartRepository,
-		tableRepository: tableRepository,
-		cartService:     cartService,
+		cartRepoPort:  cartRepoPort,
+		tableRepoPort: tableRepoPort,
+		cartService:   cartService,
 	}
 }
 
 func (usecase CartUsecase) GetCurrentCart(ctx context.Context, sessionId string) (Cart, *Error) {
-	cart, err := usecase.cartRepository.GetActiveCartBySessionId(ctx, sessionId)
+	cart, err := usecase.cartRepoPort.GetActiveCartBySessionId(ctx, sessionId)
 	if err != nil {
 		if err.Type == NotFound {
 			return Cart{SessionId: sessionId, Status: CartStatusActive, Items: []CartItem{}}, nil
@@ -42,8 +42,8 @@ func (usecase CartUsecase) UpdateCartTable(ctx context.Context, sessionId string
 	}
 
 	var result Cart
-	err := usecase.cartRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
-		table, tableErr := usecase.tableRepository.GetTableByCode(ctxWithTx, tableCode)
+	err := usecase.cartRepoPort.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+		table, tableErr := usecase.tableRepoPort.GetTableByCode(ctxWithTx, tableCode)
 		if tableErr != nil {
 			return tableErr
 		}
@@ -57,7 +57,7 @@ func (usecase CartUsecase) UpdateCartTable(ctx context.Context, sessionId string
 		}
 
 		cart.TableId = &table.Id
-		updated, updateErr := usecase.cartRepository.UpdateCartById(ctxWithTx, cart, cart.Id)
+		updated, updateErr := usecase.cartRepoPort.UpdateCartById(ctxWithTx, cart, cart.Id)
 		if updateErr != nil {
 			return updateErr
 		}
@@ -76,7 +76,7 @@ func (usecase CartUsecase) AddCartItem(ctx context.Context, sessionId string, va
 	}
 
 	var result Cart
-	err := usecase.cartRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+	err := usecase.cartRepoPort.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
 		variant, err := usecase.cartService.ValidatePurchasableVariant(ctxWithTx, variantId)
 		if err != nil {
 			return err
@@ -96,17 +96,17 @@ func (usecase CartUsecase) AddCartItem(ctx context.Context, sessionId string, va
 
 		if existing, found := cart.FindMatchingCartItem(variantId, note); found {
 			existing.Amount += amount
-			if _, updateErr := usecase.cartRepository.UpdateCartItemById(ctxWithTx, existing, existing.Id); updateErr != nil {
+			if _, updateErr := usecase.cartRepoPort.UpdateCartItemById(ctxWithTx, existing, existing.Id); updateErr != nil {
 				return updateErr
 			}
 		} else {
 			item.CartId = cart.Id
-			if _, createErr := usecase.cartRepository.CreateCartItem(ctxWithTx, item); createErr != nil {
+			if _, createErr := usecase.cartRepoPort.CreateCartItem(ctxWithTx, item); createErr != nil {
 				return createErr
 			}
 		}
 
-		refreshed, refreshErr := usecase.cartRepository.GetCartById(ctxWithTx, cart.Id)
+		refreshed, refreshErr := usecase.cartRepoPort.GetCartById(ctxWithTx, cart.Id)
 		if refreshErr != nil {
 			return refreshErr
 		}
@@ -125,7 +125,7 @@ func (usecase CartUsecase) UpdateCartItem(ctx context.Context, sessionId string,
 	}
 
 	var result Cart
-	err := usecase.cartRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+	err := usecase.cartRepoPort.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
 		cart, existing, ownedErr := usecase.cartService.GetOwnedCart(ctxWithTx, sessionId, cartItemId)
 		if ownedErr != nil {
 			return ownedErr
@@ -138,11 +138,11 @@ func (usecase CartUsecase) UpdateCartItem(ctx context.Context, sessionId string,
 			return capacityErr
 		}
 
-		if _, updateErr := usecase.cartRepository.UpdateCartItemById(ctxWithTx, item, cartItemId); updateErr != nil {
+		if _, updateErr := usecase.cartRepoPort.UpdateCartItemById(ctxWithTx, item, cartItemId); updateErr != nil {
 			return updateErr
 		}
 
-		refreshed, refreshErr := usecase.cartRepository.GetCartById(ctxWithTx, cart.Id)
+		refreshed, refreshErr := usecase.cartRepoPort.GetCartById(ctxWithTx, cart.Id)
 		if refreshErr != nil {
 			return refreshErr
 		}
@@ -155,7 +155,7 @@ func (usecase CartUsecase) UpdateCartItem(ctx context.Context, sessionId string,
 
 func (usecase CartUsecase) RemoveCartItem(ctx context.Context, sessionId string, cartItemId int64) (Cart, *Error) {
 	var result Cart
-	err := usecase.cartRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+	err := usecase.cartRepoPort.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
 		cart, _, ownedErr := usecase.cartService.GetOwnedCart(ctxWithTx, sessionId, cartItemId)
 		if ownedErr != nil {
 			return ownedErr
@@ -164,11 +164,11 @@ func (usecase CartUsecase) RemoveCartItem(ctx context.Context, sessionId string,
 			return lockErr
 		}
 
-		if deleteErr := usecase.cartRepository.DeleteCartItemById(ctxWithTx, cartItemId); deleteErr != nil {
+		if deleteErr := usecase.cartRepoPort.DeleteCartItemById(ctxWithTx, cartItemId); deleteErr != nil {
 			return deleteErr
 		}
 
-		refreshed, refreshErr := usecase.cartRepository.GetCartById(ctxWithTx, cart.Id)
+		refreshed, refreshErr := usecase.cartRepoPort.GetCartById(ctxWithTx, cart.Id)
 		if refreshErr != nil {
 			return refreshErr
 		}
@@ -180,7 +180,7 @@ func (usecase CartUsecase) RemoveCartItem(ctx context.Context, sessionId string,
 }
 
 func (usecase CartUsecase) ClearCart(ctx context.Context, sessionId string) (Cart, *Error) {
-	cart, err := usecase.cartRepository.GetActiveCartBySessionId(ctx, sessionId)
+	cart, err := usecase.cartRepoPort.GetActiveCartBySessionId(ctx, sessionId)
 	if err != nil {
 		if err.Type == NotFound {
 			return Cart{SessionId: sessionId, Status: CartStatusActive, Items: []CartItem{}}, nil
@@ -192,11 +192,11 @@ func (usecase CartUsecase) ClearCart(ctx context.Context, sessionId string) (Car
 		return Cart{}, lockErr
 	}
 
-	if clearErr := usecase.cartRepository.DeleteCartItemsByCartId(ctx, cart.Id); clearErr != nil {
+	if clearErr := usecase.cartRepoPort.DeleteCartItemsByCartId(ctx, cart.Id); clearErr != nil {
 		return Cart{}, clearErr
 	}
 
-	cleared, clearedErr := usecase.cartRepository.GetCartById(ctx, cart.Id)
+	cleared, clearedErr := usecase.cartRepoPort.GetCartById(ctx, cart.Id)
 	if clearedErr != nil {
 		return Cart{}, clearedErr
 	}

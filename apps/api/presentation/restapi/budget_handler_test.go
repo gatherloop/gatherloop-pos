@@ -17,19 +17,19 @@ import (
 func TestBudgetHandler_GetBudgetList(t *testing.T) {
 	tests := []struct {
 		name           string
-		setupMock      func(r *mock.MockBudgetRepository)
+		setupMock      func(r *mock.MockBudgetRepoPort)
 		expectedStatus int
 	}{
 		{
 			name: "success",
-			setupMock: func(r *mock.MockBudgetRepository) {
+			setupMock: func(r *mock.MockBudgetRepoPort) {
 				r.EXPECT().GetBudgetList(gomock.Any()).Return([]domain.Budget{{Id: 1, Name: "Operations"}}, nil)
 			},
 			expectedStatus: http.StatusOK,
 		},
 		{
 			name: "repo error",
-			setupMock: func(r *mock.MockBudgetRepository) {
+			setupMock: func(r *mock.MockBudgetRepoPort) {
 				r.EXPECT().GetBudgetList(gomock.Any()).Return(nil, &domain.Error{Type: domain.InternalServerError, Message: "db error"})
 			},
 			expectedStatus: http.StatusInternalServerError,
@@ -40,7 +40,7 @@ func TestBudgetHandler_GetBudgetList(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRepo := mock.NewMockBudgetRepository(ctrl)
+			mockRepo := mock.NewMockBudgetRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 			handler := restapi.NewBudgetHandler(domain.NewBudgetUsecase(mockRepo))
 			req := httptest.NewRequest(http.MethodGet, "/budgets", nil)
@@ -55,13 +55,13 @@ func TestBudgetHandler_GetBudgetById(t *testing.T) {
 	tests := []struct {
 		name           string
 		budgetId       string
-		setupMock      func(r *mock.MockBudgetRepository)
+		setupMock      func(r *mock.MockBudgetRepoPort)
 		expectedStatus int
 	}{
 		{
 			name:     "success",
 			budgetId: "1",
-			setupMock: func(r *mock.MockBudgetRepository) {
+			setupMock: func(r *mock.MockBudgetRepoPort) {
 				r.EXPECT().GetBudgetById(gomock.Any(), int64(1)).Return(domain.Budget{Id: 1, Name: "Operations"}, nil)
 			},
 			expectedStatus: http.StatusOK,
@@ -69,7 +69,7 @@ func TestBudgetHandler_GetBudgetById(t *testing.T) {
 		{
 			name:     "not found",
 			budgetId: "99",
-			setupMock: func(r *mock.MockBudgetRepository) {
+			setupMock: func(r *mock.MockBudgetRepoPort) {
 				r.EXPECT().GetBudgetById(gomock.Any(), int64(99)).Return(domain.Budget{}, &domain.Error{Type: domain.NotFound, Message: "not found"})
 			},
 			expectedStatus: http.StatusNotFound,
@@ -77,7 +77,7 @@ func TestBudgetHandler_GetBudgetById(t *testing.T) {
 		{
 			name:           "invalid id",
 			budgetId:       "abc",
-			setupMock:      func(r *mock.MockBudgetRepository) {},
+			setupMock:      func(r *mock.MockBudgetRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 	}
@@ -86,7 +86,7 @@ func TestBudgetHandler_GetBudgetById(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRepo := mock.NewMockBudgetRepository(ctrl)
+			mockRepo := mock.NewMockBudgetRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 			handler := restapi.NewBudgetHandler(domain.NewBudgetUsecase(mockRepo))
 			req := httptest.NewRequest(http.MethodGet, "/budgets/"+tt.budgetId, nil)
@@ -102,13 +102,13 @@ func TestBudgetHandler_CreateBudget(t *testing.T) {
 	tests := []struct {
 		name           string
 		body           string
-		setupMock      func(r *mock.MockBudgetRepository)
+		setupMock      func(r *mock.MockBudgetRepoPort)
 		expectedStatus int
 	}{
 		{
 			name: "success",
 			body: `{"name": "Operations", "percentage": 50}`,
-			setupMock: func(r *mock.MockBudgetRepository) {
+			setupMock: func(r *mock.MockBudgetRepoPort) {
 				r.EXPECT().CreateBudget(gomock.Any(), gomock.Any()).Return(domain.Budget{Id: 1, Name: "Operations"}, nil)
 			},
 			expectedStatus: http.StatusOK,
@@ -116,13 +116,13 @@ func TestBudgetHandler_CreateBudget(t *testing.T) {
 		{
 			name:           "invalid JSON body",
 			body:           `{invalid`,
-			setupMock:      func(r *mock.MockBudgetRepository) {},
+			setupMock:      func(r *mock.MockBudgetRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name: "repo error",
 			body: `{"name": "Operations", "percentage": 50}`,
-			setupMock: func(r *mock.MockBudgetRepository) {
+			setupMock: func(r *mock.MockBudgetRepoPort) {
 				r.EXPECT().CreateBudget(gomock.Any(), gomock.Any()).Return(domain.Budget{}, &domain.Error{Type: domain.InternalServerError, Message: "db error"})
 			},
 			expectedStatus: http.StatusInternalServerError,
@@ -133,7 +133,7 @@ func TestBudgetHandler_CreateBudget(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRepo := mock.NewMockBudgetRepository(ctrl)
+			mockRepo := mock.NewMockBudgetRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 			handler := restapi.NewBudgetHandler(domain.NewBudgetUsecase(mockRepo))
 			req := httptest.NewRequest(http.MethodPost, "/budgets", bytes.NewBufferString(tt.body))
@@ -150,14 +150,14 @@ func TestBudgetHandler_UpdateBudgetById(t *testing.T) {
 		name           string
 		budgetId       string
 		body           string
-		setupMock      func(r *mock.MockBudgetRepository)
+		setupMock      func(r *mock.MockBudgetRepoPort)
 		expectedStatus int
 	}{
 		{
 			name:     "success",
 			budgetId: "1",
 			body:     `{"name": "Operations", "percentage": 50}`,
-			setupMock: func(r *mock.MockBudgetRepository) {
+			setupMock: func(r *mock.MockBudgetRepoPort) {
 				r.EXPECT().UpdateBudgetById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Budget{Id: 1, Name: "Operations"}, nil)
 			},
 			expectedStatus: http.StatusOK,
@@ -166,14 +166,14 @@ func TestBudgetHandler_UpdateBudgetById(t *testing.T) {
 			name:           "invalid id",
 			budgetId:       "abc",
 			body:           `{}`,
-			setupMock:      func(r *mock.MockBudgetRepository) {},
+			setupMock:      func(r *mock.MockBudgetRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:     "not found",
 			budgetId: "99",
 			body:     `{"name": "Operations", "percentage": 50}`,
-			setupMock: func(r *mock.MockBudgetRepository) {
+			setupMock: func(r *mock.MockBudgetRepoPort) {
 				r.EXPECT().UpdateBudgetById(gomock.Any(), gomock.Any(), int64(99)).Return(domain.Budget{}, &domain.Error{Type: domain.NotFound, Message: "not found"})
 			},
 			expectedStatus: http.StatusNotFound,
@@ -184,7 +184,7 @@ func TestBudgetHandler_UpdateBudgetById(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRepo := mock.NewMockBudgetRepository(ctrl)
+			mockRepo := mock.NewMockBudgetRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 			handler := restapi.NewBudgetHandler(domain.NewBudgetUsecase(mockRepo))
 			req := httptest.NewRequest(http.MethodPut, "/budgets/"+tt.budgetId, bytes.NewBufferString(tt.body))
@@ -201,13 +201,13 @@ func TestBudgetHandler_DeleteBudgetById(t *testing.T) {
 	tests := []struct {
 		name           string
 		budgetId       string
-		setupMock      func(r *mock.MockBudgetRepository)
+		setupMock      func(r *mock.MockBudgetRepoPort)
 		expectedStatus int
 	}{
 		{
 			name:     "success",
 			budgetId: "1",
-			setupMock: func(r *mock.MockBudgetRepository) {
+			setupMock: func(r *mock.MockBudgetRepoPort) {
 				r.EXPECT().DeleteBudgetById(gomock.Any(), int64(1)).Return(nil)
 			},
 			expectedStatus: http.StatusOK,
@@ -215,13 +215,13 @@ func TestBudgetHandler_DeleteBudgetById(t *testing.T) {
 		{
 			name:           "invalid id",
 			budgetId:       "abc",
-			setupMock:      func(r *mock.MockBudgetRepository) {},
+			setupMock:      func(r *mock.MockBudgetRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:     "not found",
 			budgetId: "99",
-			setupMock: func(r *mock.MockBudgetRepository) {
+			setupMock: func(r *mock.MockBudgetRepoPort) {
 				r.EXPECT().DeleteBudgetById(gomock.Any(), int64(99)).Return(&domain.Error{Type: domain.NotFound, Message: "not found"})
 			},
 			expectedStatus: http.StatusNotFound,
@@ -232,7 +232,7 @@ func TestBudgetHandler_DeleteBudgetById(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRepo := mock.NewMockBudgetRepository(ctrl)
+			mockRepo := mock.NewMockBudgetRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 			handler := restapi.NewBudgetHandler(domain.NewBudgetUsecase(mockRepo))
 			req := httptest.NewRequest(http.MethodDelete, "/budgets/"+tt.budgetId, nil)

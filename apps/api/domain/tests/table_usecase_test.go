@@ -10,7 +10,7 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-func withTableTransaction(r *mock.MockTableRepository) {
+func withTableTransaction(r *mock.MockTableRepoPort) {
 	r.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 		func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 }
@@ -18,13 +18,13 @@ func withTableTransaction(r *mock.MockTableRepository) {
 func TestTableUsecase_GetTableList(t *testing.T) {
 	tests := []struct {
 		name          string
-		setupMock     func(r *mock.MockTableRepository)
+		setupMock     func(r *mock.MockTableRepoPort)
 		expectedLen   int
 		expectedError *domain.Error
 	}{
 		{
 			name: "success",
-			setupMock: func(r *mock.MockTableRepository) {
+			setupMock: func(r *mock.MockTableRepoPort) {
 				r.EXPECT().GetTableList(gomock.Any()).Return([]domain.Table{
 					{Id: 1, Code: "0123456789", Label: "Meja 1"},
 					{Id: 2, Code: "ABCDEFGHJK", Label: "Meja 2"},
@@ -34,7 +34,7 @@ func TestTableUsecase_GetTableList(t *testing.T) {
 		},
 		{
 			name: "repository error",
-			setupMock: func(r *mock.MockTableRepository) {
+			setupMock: func(r *mock.MockTableRepoPort) {
 				r.EXPECT().GetTableList(gomock.Any()).Return(nil, &domain.Error{Type: domain.InternalServerError})
 			},
 			expectedError: &domain.Error{Type: domain.InternalServerError},
@@ -46,7 +46,7 @@ func TestTableUsecase_GetTableList(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockRepo := mock.NewMockTableRepository(ctrl)
+			mockRepo := mock.NewMockTableRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 
 			usecase := domain.NewTableUsecase(mockRepo, domain.NewTableService(mockRepo))
@@ -67,14 +67,14 @@ func TestTableUsecase_GetTableById(t *testing.T) {
 	tests := []struct {
 		name          string
 		id            int64
-		setupMock     func(r *mock.MockTableRepository)
+		setupMock     func(r *mock.MockTableRepoPort)
 		expectedLabel string
 		expectedError *domain.Error
 	}{
 		{
 			name: "success",
 			id:   1,
-			setupMock: func(r *mock.MockTableRepository) {
+			setupMock: func(r *mock.MockTableRepoPort) {
 				r.EXPECT().GetTableById(gomock.Any(), int64(1)).Return(domain.Table{Id: 1, Code: "0123456789", Label: "Meja 1"}, nil)
 			},
 			expectedLabel: "Meja 1",
@@ -82,7 +82,7 @@ func TestTableUsecase_GetTableById(t *testing.T) {
 		{
 			name: "not found",
 			id:   99,
-			setupMock: func(r *mock.MockTableRepository) {
+			setupMock: func(r *mock.MockTableRepoPort) {
 				r.EXPECT().GetTableById(gomock.Any(), int64(99)).Return(domain.Table{}, &domain.Error{Type: domain.NotFound})
 			},
 			expectedError: &domain.Error{Type: domain.NotFound},
@@ -94,7 +94,7 @@ func TestTableUsecase_GetTableById(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockRepo := mock.NewMockTableRepository(ctrl)
+			mockRepo := mock.NewMockTableRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 
 			usecase := domain.NewTableUsecase(mockRepo, domain.NewTableService(mockRepo))
@@ -115,14 +115,14 @@ func TestTableUsecase_GetTableByCode(t *testing.T) {
 	tests := []struct {
 		name          string
 		code          string
-		setupMock     func(r *mock.MockTableRepository)
+		setupMock     func(r *mock.MockTableRepoPort)
 		expectedLabel string
 		expectedError *domain.Error
 	}{
 		{
 			name: "success",
 			code: "0123456789",
-			setupMock: func(r *mock.MockTableRepository) {
+			setupMock: func(r *mock.MockTableRepoPort) {
 				r.EXPECT().GetTableByCode(gomock.Any(), "0123456789").Return(domain.Table{Id: 1, Code: "0123456789", Label: "Meja 1"}, nil)
 			},
 			expectedLabel: "Meja 1",
@@ -130,7 +130,7 @@ func TestTableUsecase_GetTableByCode(t *testing.T) {
 		{
 			name: "unknown code",
 			code: "ZZZZZZZZZZ",
-			setupMock: func(r *mock.MockTableRepository) {
+			setupMock: func(r *mock.MockTableRepoPort) {
 				r.EXPECT().GetTableByCode(gomock.Any(), "ZZZZZZZZZZ").Return(domain.Table{}, &domain.Error{Type: domain.NotFound})
 			},
 			expectedError: &domain.Error{Type: domain.NotFound},
@@ -142,7 +142,7 @@ func TestTableUsecase_GetTableByCode(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockRepo := mock.NewMockTableRepository(ctrl)
+			mockRepo := mock.NewMockTableRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 
 			usecase := domain.NewTableUsecase(mockRepo, domain.NewTableService(mockRepo))
@@ -163,14 +163,14 @@ func TestTableUsecase_CreateTable(t *testing.T) {
 	tests := []struct {
 		name          string
 		input         domain.Table
-		setupMock     func(r *mock.MockTableRepository)
+		setupMock     func(r *mock.MockTableRepoPort)
 		expectedId    int64
 		expectedError *domain.Error
 	}{
 		{
 			name:  "success",
 			input: domain.Table{Label: "Meja 1", FloorNumber: 1},
-			setupMock: func(r *mock.MockTableRepository) {
+			setupMock: func(r *mock.MockTableRepoPort) {
 				withTableTransaction(r)
 				r.EXPECT().GetTableByLabel(gomock.Any(), "Meja 1").Return(domain.Table{}, &domain.Error{Type: domain.NotFound})
 				r.EXPECT().GetTableByCode(gomock.Any(), gomock.Any()).Return(domain.Table{}, &domain.Error{Type: domain.NotFound})
@@ -181,19 +181,19 @@ func TestTableUsecase_CreateTable(t *testing.T) {
 		{
 			name:          "empty label",
 			input:         domain.Table{Label: ""},
-			setupMock:     func(r *mock.MockTableRepository) {},
+			setupMock:     func(r *mock.MockTableRepoPort) {},
 			expectedError: &domain.Error{Type: domain.BadRequest},
 		},
 		{
 			name:          "floor number less than 1",
 			input:         domain.Table{Label: "Meja 1", FloorNumber: 0},
-			setupMock:     func(r *mock.MockTableRepository) {},
+			setupMock:     func(r *mock.MockTableRepoPort) {},
 			expectedError: &domain.Error{Type: domain.BadRequest},
 		},
 		{
 			name:  "duplicate label",
 			input: domain.Table{Label: "Meja 1", FloorNumber: 1},
-			setupMock: func(r *mock.MockTableRepository) {
+			setupMock: func(r *mock.MockTableRepoPort) {
 				withTableTransaction(r)
 				r.EXPECT().GetTableByLabel(gomock.Any(), "Meja 1").Return(domain.Table{Id: 1, Label: "Meja 1"}, nil)
 			},
@@ -202,7 +202,7 @@ func TestTableUsecase_CreateTable(t *testing.T) {
 		{
 			name:  "retries on code collision",
 			input: domain.Table{Label: "Meja 2", FloorNumber: 1},
-			setupMock: func(r *mock.MockTableRepository) {
+			setupMock: func(r *mock.MockTableRepoPort) {
 				withTableTransaction(r)
 				r.EXPECT().GetTableByLabel(gomock.Any(), "Meja 2").Return(domain.Table{}, &domain.Error{Type: domain.NotFound})
 				gomock.InOrder(
@@ -216,7 +216,7 @@ func TestTableUsecase_CreateTable(t *testing.T) {
 		{
 			name:  "exhausts attempts on repeated collision",
 			input: domain.Table{Label: "Meja 3", FloorNumber: 1},
-			setupMock: func(r *mock.MockTableRepository) {
+			setupMock: func(r *mock.MockTableRepoPort) {
 				withTableTransaction(r)
 				r.EXPECT().GetTableByLabel(gomock.Any(), "Meja 3").Return(domain.Table{}, &domain.Error{Type: domain.NotFound})
 				r.EXPECT().GetTableByCode(gomock.Any(), gomock.Any()).Return(domain.Table{Id: 9, Label: "Meja 9"}, nil).Times(5)
@@ -226,7 +226,7 @@ func TestTableUsecase_CreateTable(t *testing.T) {
 		{
 			name:  "repo error on create",
 			input: domain.Table{Label: "Meja 4", FloorNumber: 1},
-			setupMock: func(r *mock.MockTableRepository) {
+			setupMock: func(r *mock.MockTableRepoPort) {
 				withTableTransaction(r)
 				r.EXPECT().GetTableByLabel(gomock.Any(), "Meja 4").Return(domain.Table{}, &domain.Error{Type: domain.NotFound})
 				r.EXPECT().GetTableByCode(gomock.Any(), gomock.Any()).Return(domain.Table{}, &domain.Error{Type: domain.NotFound})
@@ -241,7 +241,7 @@ func TestTableUsecase_CreateTable(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockRepo := mock.NewMockTableRepository(ctrl)
+			mockRepo := mock.NewMockTableRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 
 			usecase := domain.NewTableUsecase(mockRepo, domain.NewTableService(mockRepo))
@@ -263,7 +263,7 @@ func TestTableUsecase_UpdateTableById(t *testing.T) {
 		name          string
 		id            int64
 		input         domain.Table
-		setupMock     func(r *mock.MockTableRepository)
+		setupMock     func(r *mock.MockTableRepoPort)
 		expectedLabel string
 		expectedError *domain.Error
 	}{
@@ -271,7 +271,7 @@ func TestTableUsecase_UpdateTableById(t *testing.T) {
 			name:  "success",
 			id:    1,
 			input: domain.Table{Label: "Meja 1 Renamed", FloorNumber: 1},
-			setupMock: func(r *mock.MockTableRepository) {
+			setupMock: func(r *mock.MockTableRepoPort) {
 				withTableTransaction(r)
 				r.EXPECT().GetTableByLabel(gomock.Any(), "Meja 1 Renamed").Return(domain.Table{}, &domain.Error{Type: domain.NotFound})
 				r.EXPECT().GetTableById(gomock.Any(), int64(1)).Return(domain.Table{Id: 1, Code: "0123456789", Label: "Meja 1"}, nil)
@@ -283,21 +283,21 @@ func TestTableUsecase_UpdateTableById(t *testing.T) {
 			name:          "empty label",
 			id:            1,
 			input:         domain.Table{Label: ""},
-			setupMock:     func(r *mock.MockTableRepository) {},
+			setupMock:     func(r *mock.MockTableRepoPort) {},
 			expectedError: &domain.Error{Type: domain.BadRequest},
 		},
 		{
 			name:          "floor number less than 1",
 			id:            1,
 			input:         domain.Table{Label: "Meja 1", FloorNumber: 0},
-			setupMock:     func(r *mock.MockTableRepository) {},
+			setupMock:     func(r *mock.MockTableRepoPort) {},
 			expectedError: &domain.Error{Type: domain.BadRequest},
 		},
 		{
 			name:  "duplicate label belongs to another table",
 			id:    1,
 			input: domain.Table{Label: "Meja 2", FloorNumber: 1},
-			setupMock: func(r *mock.MockTableRepository) {
+			setupMock: func(r *mock.MockTableRepoPort) {
 				withTableTransaction(r)
 				r.EXPECT().GetTableByLabel(gomock.Any(), "Meja 2").Return(domain.Table{Id: 2, Label: "Meja 2"}, nil)
 			},
@@ -307,7 +307,7 @@ func TestTableUsecase_UpdateTableById(t *testing.T) {
 			name:  "not found",
 			id:    99,
 			input: domain.Table{Label: "Meja 99", FloorNumber: 1},
-			setupMock: func(r *mock.MockTableRepository) {
+			setupMock: func(r *mock.MockTableRepoPort) {
 				withTableTransaction(r)
 				r.EXPECT().GetTableByLabel(gomock.Any(), "Meja 99").Return(domain.Table{}, &domain.Error{Type: domain.NotFound})
 				r.EXPECT().GetTableById(gomock.Any(), int64(99)).Return(domain.Table{}, &domain.Error{Type: domain.NotFound})
@@ -321,7 +321,7 @@ func TestTableUsecase_UpdateTableById(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockRepo := mock.NewMockTableRepository(ctrl)
+			mockRepo := mock.NewMockTableRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 
 			usecase := domain.NewTableUsecase(mockRepo, domain.NewTableService(mockRepo))
@@ -342,20 +342,20 @@ func TestTableUsecase_DeleteTableById(t *testing.T) {
 	tests := []struct {
 		name          string
 		id            int64
-		setupMock     func(r *mock.MockTableRepository)
+		setupMock     func(r *mock.MockTableRepoPort)
 		expectedError *domain.Error
 	}{
 		{
 			name: "success",
 			id:   1,
-			setupMock: func(r *mock.MockTableRepository) {
+			setupMock: func(r *mock.MockTableRepoPort) {
 				r.EXPECT().DeleteTableById(gomock.Any(), int64(1)).Return(nil)
 			},
 		},
 		{
 			name: "repository error",
 			id:   99,
-			setupMock: func(r *mock.MockTableRepository) {
+			setupMock: func(r *mock.MockTableRepoPort) {
 				r.EXPECT().DeleteTableById(gomock.Any(), int64(99)).Return(&domain.Error{Type: domain.InternalServerError})
 			},
 			expectedError: &domain.Error{Type: domain.InternalServerError},
@@ -367,7 +367,7 @@ func TestTableUsecase_DeleteTableById(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockRepo := mock.NewMockTableRepository(ctrl)
+			mockRepo := mock.NewMockTableRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 
 			usecase := domain.NewTableUsecase(mockRepo, domain.NewTableService(mockRepo))
@@ -387,14 +387,14 @@ func TestTableUsecase_RegenerateTableCode(t *testing.T) {
 	tests := []struct {
 		name          string
 		id            int64
-		setupMock     func(r *mock.MockTableRepository)
+		setupMock     func(r *mock.MockTableRepoPort)
 		expectedCode  string
 		expectedError *domain.Error
 	}{
 		{
 			name: "success",
 			id:   1,
-			setupMock: func(r *mock.MockTableRepository) {
+			setupMock: func(r *mock.MockTableRepoPort) {
 				withTableTransaction(r)
 				r.EXPECT().GetTableById(gomock.Any(), int64(1)).Return(domain.Table{Id: 1, Code: "0123456789", Label: "Meja 1"}, nil)
 				r.EXPECT().GetTableByCode(gomock.Any(), gomock.Any()).Return(domain.Table{}, &domain.Error{Type: domain.NotFound})
@@ -405,7 +405,7 @@ func TestTableUsecase_RegenerateTableCode(t *testing.T) {
 		{
 			name: "not found",
 			id:   99,
-			setupMock: func(r *mock.MockTableRepository) {
+			setupMock: func(r *mock.MockTableRepoPort) {
 				withTableTransaction(r)
 				r.EXPECT().GetTableById(gomock.Any(), int64(99)).Return(domain.Table{}, &domain.Error{Type: domain.NotFound})
 			},
@@ -418,7 +418,7 @@ func TestTableUsecase_RegenerateTableCode(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockRepo := mock.NewMockTableRepository(ctrl)
+			mockRepo := mock.NewMockTableRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 
 			usecase := domain.NewTableUsecase(mockRepo, domain.NewTableService(mockRepo))

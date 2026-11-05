@@ -3,20 +3,20 @@ package domain
 import "context"
 
 type ChecklistTemplateUsecase struct {
-	repository ChecklistTemplateRepository
+	checklistTemplateRepoPort ChecklistTemplateRepoPort
 }
 
-func NewChecklistTemplateUsecase(repository ChecklistTemplateRepository) ChecklistTemplateUsecase {
-	return ChecklistTemplateUsecase{repository: repository}
+func NewChecklistTemplateUsecase(checklistTemplateRepoPort ChecklistTemplateRepoPort) ChecklistTemplateUsecase {
+	return ChecklistTemplateUsecase{checklistTemplateRepoPort: checklistTemplateRepoPort}
 }
 
 func (usecase ChecklistTemplateUsecase) GetChecklistTemplateList(ctx context.Context, query string, skip int, limit int) ([]ChecklistTemplate, int64, *Error) {
-	templates, err := usecase.repository.GetChecklistTemplateList(ctx, query, skip, limit)
+	templates, err := usecase.checklistTemplateRepoPort.GetChecklistTemplateList(ctx, query, skip, limit)
 	if err != nil {
 		return []ChecklistTemplate{}, 0, err
 	}
 
-	total, err := usecase.repository.GetChecklistTemplateListTotal(ctx, query)
+	total, err := usecase.checklistTemplateRepoPort.GetChecklistTemplateListTotal(ctx, query)
 	if err != nil {
 		return []ChecklistTemplate{}, 0, err
 	}
@@ -25,7 +25,7 @@ func (usecase ChecklistTemplateUsecase) GetChecklistTemplateList(ctx context.Con
 }
 
 func (usecase ChecklistTemplateUsecase) GetChecklistTemplateById(ctx context.Context, id int64) (ChecklistTemplate, *Error) {
-	return usecase.repository.GetChecklistTemplateById(ctx, id)
+	return usecase.checklistTemplateRepoPort.GetChecklistTemplateById(ctx, id)
 }
 
 func (usecase ChecklistTemplateUsecase) CreateChecklistTemplate(ctx context.Context, template ChecklistTemplate) (ChecklistTemplate, *Error) {
@@ -49,13 +49,13 @@ func (usecase ChecklistTemplateUsecase) CreateChecklistTemplate(ctx context.Cont
 	}
 
 	var created ChecklistTemplate
-	err := usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
-		existing, existingErr := usecase.repository.GetChecklistTemplateByName(ctxWithTx, template.Name)
+	err := usecase.checklistTemplateRepoPort.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+		existing, existingErr := usecase.checklistTemplateRepoPort.GetChecklistTemplateByName(ctxWithTx, template.Name)
 		if existingErr == nil && existing.Id > 0 {
 			return &Error{Type: BadRequest, Message: "template name already exists"}
 		}
 
-		result, createErr := usecase.repository.CreateChecklistTemplate(ctxWithTx, template)
+		result, createErr := usecase.checklistTemplateRepoPort.CreateChecklistTemplate(ctxWithTx, template)
 		if createErr != nil {
 			return createErr
 		}
@@ -87,13 +87,13 @@ func (usecase ChecklistTemplateUsecase) UpdateChecklistTemplateById(ctx context.
 	}
 
 	var updated ChecklistTemplate
-	err := usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
-		existing, existingErr := usecase.repository.GetChecklistTemplateByName(ctxWithTx, template.Name)
+	err := usecase.checklistTemplateRepoPort.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+		existing, existingErr := usecase.checklistTemplateRepoPort.GetChecklistTemplateByName(ctxWithTx, template.Name)
 		if existingErr == nil && existing.Id > 0 && existing.Id != id {
 			return &Error{Type: BadRequest, Message: "template name already exists"}
 		}
 
-		result, updateErr := usecase.repository.UpdateChecklistTemplateById(ctxWithTx, template, id)
+		result, updateErr := usecase.checklistTemplateRepoPort.UpdateChecklistTemplateById(ctxWithTx, template, id)
 		if updateErr != nil {
 			return updateErr
 		}
@@ -105,11 +105,11 @@ func (usecase ChecklistTemplateUsecase) UpdateChecklistTemplateById(ctx context.
 }
 
 func (usecase ChecklistTemplateUsecase) DeleteChecklistTemplateById(ctx context.Context, id int64) *Error {
-	return usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
-		_, err := usecase.repository.GetChecklistTemplateById(ctxWithTx, id)
+	return usecase.checklistTemplateRepoPort.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+		_, err := usecase.checklistTemplateRepoPort.GetChecklistTemplateById(ctxWithTx, id)
 		if err != nil {
 			return err
 		}
-		return usecase.repository.DeleteChecklistTemplateById(ctxWithTx, id)
+		return usecase.checklistTemplateRepoPort.DeleteChecklistTemplateById(ctxWithTx, id)
 	})
 }

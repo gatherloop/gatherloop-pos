@@ -271,3 +271,30 @@ func IsStaleForNotification(transaction Transaction, now time.Time) bool {
 	const businessDayFormat = "2006-01-02"
 	return transaction.CreatedAt.Format(businessDayFormat) != now.Format(businessDayFormat)
 }
+
+const KdsPushPriorityHigh = "high"
+
+type KdsPushMessage struct {
+	To        string
+	Title     string
+	Body      string
+	Sound     string
+	ChannelId string
+	Priority  string
+	Data      map[string]any
+}
+
+type KdsPushReceiptStatus string
+
+const (
+	KdsPushReceiptStatusOk    KdsPushReceiptStatus = "ok"
+	KdsPushReceiptStatusError KdsPushReceiptStatus = "error"
+)
+
+const KdsPushErrorCodeDeviceNotRegistered = "DeviceNotRegistered"
+
+type KdsPushReceipt struct {
+	Status    KdsPushReceiptStatus
+	Message   string
+	ErrorCode string
+}

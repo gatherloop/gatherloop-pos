@@ -2,36 +2,35 @@ package domain
 
 import "context"
 
-// Versioned because an Android notification channel's sound is immutable after creation (D23).
 const kdsPushChannelId = "orders-v2"
 
 type KdsDeviceUsecase struct {
-	repository  KdsDeviceRepository
-	pushGateway KdsPushGatewayRepository
-	pushSound   string
+	kdsDeviceRepoPort          KdsDeviceRepoPort
+	kdsNotificationGatewayPort KdsNotificationGatewayPort
+	pushSound                  string
 }
 
-func NewKdsDeviceUsecase(repository KdsDeviceRepository, pushGateway KdsPushGatewayRepository, pushSound string) KdsDeviceUsecase {
-	return KdsDeviceUsecase{repository: repository, pushGateway: pushGateway, pushSound: pushSound}
+func NewKdsDeviceUsecase(kdsDeviceRepoPort KdsDeviceRepoPort, kdsNotificationGatewayPort KdsNotificationGatewayPort, pushSound string) KdsDeviceUsecase {
+	return KdsDeviceUsecase{kdsDeviceRepoPort: kdsDeviceRepoPort, kdsNotificationGatewayPort: kdsNotificationGatewayPort, pushSound: pushSound}
 }
 
 func (usecase KdsDeviceUsecase) RegisterKdsDevice(ctx context.Context, device KdsDevice) (KdsDevice, *Error) {
 	if err := device.Validate(); err != nil {
 		return KdsDevice{}, err
 	}
-	return usecase.repository.RegisterKdsDevice(ctx, device)
+	return usecase.kdsDeviceRepoPort.RegisterKdsDevice(ctx, device)
 }
 
 func (usecase KdsDeviceUsecase) GetKdsDeviceList(ctx context.Context) ([]KdsDevice, *Error) {
-	return usecase.repository.GetKdsDeviceList(ctx)
+	return usecase.kdsDeviceRepoPort.GetKdsDeviceList(ctx)
 }
 
 func (usecase KdsDeviceUsecase) DeleteKdsDeviceById(ctx context.Context, id int64) *Error {
-	return usecase.repository.DeleteKdsDeviceById(ctx, id)
+	return usecase.kdsDeviceRepoPort.DeleteKdsDeviceById(ctx, id)
 }
 
 func (usecase KdsDeviceUsecase) SendTestNotification(ctx context.Context, id int64) *Error {
-	device, err := usecase.repository.GetKdsDeviceById(ctx, id)
+	device, err := usecase.kdsDeviceRepoPort.GetKdsDeviceById(ctx, id)
 	if err != nil {
 		return err
 	}
@@ -45,7 +44,7 @@ func (usecase KdsDeviceUsecase) SendTestNotification(ctx context.Context, id int
 		Priority:  KdsPushPriorityHigh,
 	}
 
-	receipts, sendErr := usecase.pushGateway.Send(ctx, []KdsPushMessage{message})
+	receipts, sendErr := usecase.kdsNotificationGatewayPort.Send(ctx, []KdsPushMessage{message})
 	if sendErr != nil {
 		return sendErr
 	}

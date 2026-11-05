@@ -16,14 +16,14 @@ func TestCustomerUsecase_GetCurrentCustomer(t *testing.T) {
 	tests := []struct {
 		name           string
 		sessionId      string
-		setupMock      func(r *mock.MockCustomerRepository)
+		setupMock      func(r *mock.MockCustomerRepoPort)
 		expectedResult domain.Customer
 		expectedError  *domain.Error
 	}{
 		{
 			name:      "returns the name and whatsapp number this session gave before",
 			sessionId: "session-1",
-			setupMock: func(r *mock.MockCustomerRepository) {
+			setupMock: func(r *mock.MockCustomerRepoPort) {
 				r.EXPECT().GetCustomerBySessionId(gomock.Any(), "session-1").Return(domain.Customer{Id: 1, SessionId: "session-1", Name: "Budi", WhatsappNumber: &whatsappNumber}, nil)
 			},
 			expectedResult: domain.Customer{Id: 1, SessionId: "session-1", Name: "Budi", WhatsappNumber: &whatsappNumber},
@@ -31,7 +31,7 @@ func TestCustomerUsecase_GetCurrentCustomer(t *testing.T) {
 		{
 			name:      "a session that never gave a whatsapp number reads a nil one",
 			sessionId: "session-2",
-			setupMock: func(r *mock.MockCustomerRepository) {
+			setupMock: func(r *mock.MockCustomerRepoPort) {
 				r.EXPECT().GetCustomerBySessionId(gomock.Any(), "session-2").Return(domain.Customer{Id: 2, SessionId: "session-2", Name: "Budi"}, nil)
 			},
 			expectedResult: domain.Customer{Id: 2, SessionId: "session-2", Name: "Budi"},
@@ -39,7 +39,7 @@ func TestCustomerUsecase_GetCurrentCustomer(t *testing.T) {
 		{
 			name:      "unknown session returns an empty customer, never 404",
 			sessionId: "session-3",
-			setupMock: func(r *mock.MockCustomerRepository) {
+			setupMock: func(r *mock.MockCustomerRepoPort) {
 				r.EXPECT().GetCustomerBySessionId(gomock.Any(), "session-3").Return(domain.Customer{}, &domain.Error{Type: domain.NotFound})
 			},
 			expectedResult: domain.Customer{},
@@ -47,7 +47,7 @@ func TestCustomerUsecase_GetCurrentCustomer(t *testing.T) {
 		{
 			name:      "repository error",
 			sessionId: "session-4",
-			setupMock: func(r *mock.MockCustomerRepository) {
+			setupMock: func(r *mock.MockCustomerRepoPort) {
 				r.EXPECT().GetCustomerBySessionId(gomock.Any(), "session-4").Return(domain.Customer{}, &domain.Error{Type: domain.InternalServerError})
 			},
 			expectedError: &domain.Error{Type: domain.InternalServerError},
@@ -59,7 +59,7 @@ func TestCustomerUsecase_GetCurrentCustomer(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			repo := mock.NewMockCustomerRepository(ctrl)
+			repo := mock.NewMockCustomerRepoPort(ctrl)
 			tt.setupMock(repo)
 
 			usecase := domain.NewCustomerUsecase(repo)

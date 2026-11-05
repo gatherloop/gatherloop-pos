@@ -6,21 +6,21 @@ import (
 )
 
 type ChecklistSessionUsecase struct {
-	repository         ChecklistSessionRepository
-	templateRepository ChecklistTemplateRepository
+	checklistSessionRepoPort ChecklistSessionRepoPort
+	templateRepoPort         ChecklistTemplateRepoPort
 }
 
-func NewChecklistSessionUsecase(repository ChecklistSessionRepository, templateRepository ChecklistTemplateRepository) ChecklistSessionUsecase {
-	return ChecklistSessionUsecase{repository: repository, templateRepository: templateRepository}
+func NewChecklistSessionUsecase(checklistSessionRepoPort ChecklistSessionRepoPort, templateRepoPort ChecklistTemplateRepoPort) ChecklistSessionUsecase {
+	return ChecklistSessionUsecase{checklistSessionRepoPort: checklistSessionRepoPort, templateRepoPort: templateRepoPort}
 }
 
 func (usecase ChecklistSessionUsecase) GetChecklistSessionList(ctx context.Context, filter ChecklistSessionFilter, skip int, limit int) ([]ChecklistSession, int64, *Error) {
-	sessions, err := usecase.repository.GetChecklistSessionList(ctx, filter, skip, limit)
+	sessions, err := usecase.checklistSessionRepoPort.GetChecklistSessionList(ctx, filter, skip, limit)
 	if err != nil {
 		return []ChecklistSession{}, 0, err
 	}
 
-	total, err := usecase.repository.GetChecklistSessionListTotal(ctx, filter)
+	total, err := usecase.checklistSessionRepoPort.GetChecklistSessionListTotal(ctx, filter)
 	if err != nil {
 		return []ChecklistSession{}, 0, err
 	}
@@ -29,7 +29,7 @@ func (usecase ChecklistSessionUsecase) GetChecklistSessionList(ctx context.Conte
 }
 
 func (usecase ChecklistSessionUsecase) GetChecklistSessionById(ctx context.Context, id int64) (ChecklistSession, *Error) {
-	return usecase.repository.GetChecklistSessionById(ctx, id)
+	return usecase.checklistSessionRepoPort.GetChecklistSessionById(ctx, id)
 }
 
 func (usecase ChecklistSessionUsecase) CreateChecklistSession(ctx context.Context, session ChecklistSession) (ChecklistSession, *Error) {
@@ -42,13 +42,13 @@ func (usecase ChecklistSessionUsecase) CreateChecklistSession(ctx context.Contex
 	}
 
 	var created ChecklistSession
-	err := usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
-		template, templateErr := usecase.templateRepository.GetChecklistTemplateById(ctxWithTx, session.ChecklistTemplateId)
+	err := usecase.checklistSessionRepoPort.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+		template, templateErr := usecase.templateRepoPort.GetChecklistTemplateById(ctxWithTx, session.ChecklistTemplateId)
 		if templateErr != nil {
 			return templateErr
 		}
 
-		existing, existingErr := usecase.repository.GetChecklistSessionByTemplateAndDate(ctxWithTx, session.ChecklistTemplateId, session.Date)
+		existing, existingErr := usecase.checklistSessionRepoPort.GetChecklistSessionByTemplateAndDate(ctxWithTx, session.ChecklistTemplateId, session.Date)
 		if existingErr == nil && existing.Id > 0 {
 			return &Error{Type: BadRequest, Message: "a session for this template and date already exists"}
 		}
@@ -78,7 +78,7 @@ func (usecase ChecklistSessionUsecase) CreateChecklistSession(ctx context.Contex
 
 		session.Items = sessionItems
 
-		result, createErr := usecase.repository.CreateChecklistSession(ctxWithTx, session)
+		result, createErr := usecase.checklistSessionRepoPort.CreateChecklistSession(ctxWithTx, session)
 		if createErr != nil {
 			return createErr
 		}
@@ -90,19 +90,19 @@ func (usecase ChecklistSessionUsecase) CreateChecklistSession(ctx context.Contex
 }
 
 func (usecase ChecklistSessionUsecase) DeleteChecklistSessionById(ctx context.Context, id int64) *Error {
-	return usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
-		_, err := usecase.repository.GetChecklistSessionById(ctxWithTx, id)
+	return usecase.checklistSessionRepoPort.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+		_, err := usecase.checklistSessionRepoPort.GetChecklistSessionById(ctxWithTx, id)
 		if err != nil {
 			return err
 		}
-		return usecase.repository.DeleteChecklistSessionById(ctxWithTx, id)
+		return usecase.checklistSessionRepoPort.DeleteChecklistSessionById(ctxWithTx, id)
 	})
 }
 
 func (usecase ChecklistSessionUsecase) CheckSessionItem(ctx context.Context, itemId int64) (ChecklistSessionItem, *Error) {
 	var result ChecklistSessionItem
-	txErr := usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
-		item, err := usecase.repository.GetChecklistSessionItemById(ctxWithTx, itemId)
+	txErr := usecase.checklistSessionRepoPort.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+		item, err := usecase.checklistSessionRepoPort.GetChecklistSessionItemById(ctxWithTx, itemId)
 		if err != nil {
 			return err
 		}
@@ -112,7 +112,7 @@ func (usecase ChecklistSessionUsecase) CheckSessionItem(ctx context.Context, ite
 		}
 
 		now := time.Now()
-		if err := usecase.repository.UpdateChecklistSessionItemCompletedAt(ctxWithTx, itemId, &now); err != nil {
+		if err := usecase.checklistSessionRepoPort.UpdateChecklistSessionItemCompletedAt(ctxWithTx, itemId, &now); err != nil {
 			return err
 		}
 
@@ -126,8 +126,8 @@ func (usecase ChecklistSessionUsecase) CheckSessionItem(ctx context.Context, ite
 
 func (usecase ChecklistSessionUsecase) UncheckSessionItem(ctx context.Context, itemId int64) (ChecklistSessionItem, *Error) {
 	var result ChecklistSessionItem
-	txErr := usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
-		item, err := usecase.repository.GetChecklistSessionItemById(ctxWithTx, itemId)
+	txErr := usecase.checklistSessionRepoPort.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+		item, err := usecase.checklistSessionRepoPort.GetChecklistSessionItemById(ctxWithTx, itemId)
 		if err != nil {
 			return err
 		}
@@ -136,7 +136,7 @@ func (usecase ChecklistSessionUsecase) UncheckSessionItem(ctx context.Context, i
 			return &Error{Type: BadRequest, Message: "item has sub-items, uncheck individual sub-items instead"}
 		}
 
-		if err := usecase.repository.UpdateChecklistSessionItemCompletedAt(ctxWithTx, itemId, nil); err != nil {
+		if err := usecase.checklistSessionRepoPort.UpdateChecklistSessionItemCompletedAt(ctxWithTx, itemId, nil); err != nil {
 			return err
 		}
 
@@ -150,32 +150,32 @@ func (usecase ChecklistSessionUsecase) UncheckSessionItem(ctx context.Context, i
 
 func (usecase ChecklistSessionUsecase) CheckSessionSubItem(ctx context.Context, subItemId int64) (ChecklistSessionSubItem, *Error) {
 	var result ChecklistSessionSubItem
-	txErr := usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
-		subItem, err := usecase.repository.GetChecklistSessionSubItemById(ctxWithTx, subItemId)
+	txErr := usecase.checklistSessionRepoPort.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+		subItem, err := usecase.checklistSessionRepoPort.GetChecklistSessionSubItemById(ctxWithTx, subItemId)
 		if err != nil {
 			return err
 		}
 
 		now := time.Now()
-		if err := usecase.repository.UpdateChecklistSessionSubItemCompletedAt(ctxWithTx, subItemId, &now); err != nil {
+		if err := usecase.checklistSessionRepoPort.UpdateChecklistSessionSubItemCompletedAt(ctxWithTx, subItemId, &now); err != nil {
 			return err
 		}
 
 		subItem.CompletedAt = &now
 		result = subItem
 
-		subItems, err := usecase.repository.GetChecklistSessionSubItemsByItemId(ctxWithTx, subItem.ChecklistSessionItemId)
+		subItems, err := usecase.checklistSessionRepoPort.GetChecklistSessionSubItemsByItemId(ctxWithTx, subItem.ChecklistSessionItemId)
 		if err != nil {
 			return err
 		}
 
 		allSubItemsDone := allSubItemsCompleted(subItems)
 		if allSubItemsDone {
-			if err := usecase.repository.UpdateChecklistSessionItemCompletedAt(ctxWithTx, subItem.ChecklistSessionItemId, &now); err != nil {
+			if err := usecase.checklistSessionRepoPort.UpdateChecklistSessionItemCompletedAt(ctxWithTx, subItem.ChecklistSessionItemId, &now); err != nil {
 				return err
 			}
 
-			parentItem, err := usecase.repository.GetChecklistSessionItemById(ctxWithTx, subItem.ChecklistSessionItemId)
+			parentItem, err := usecase.checklistSessionRepoPort.GetChecklistSessionItemById(ctxWithTx, subItem.ChecklistSessionItemId)
 			if err != nil {
 				return err
 			}
@@ -190,26 +190,26 @@ func (usecase ChecklistSessionUsecase) CheckSessionSubItem(ctx context.Context, 
 
 func (usecase ChecklistSessionUsecase) UncheckSessionSubItem(ctx context.Context, subItemId int64) (ChecklistSessionSubItem, *Error) {
 	var result ChecklistSessionSubItem
-	txErr := usecase.repository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
-		subItem, err := usecase.repository.GetChecklistSessionSubItemById(ctxWithTx, subItemId)
+	txErr := usecase.checklistSessionRepoPort.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+		subItem, err := usecase.checklistSessionRepoPort.GetChecklistSessionSubItemById(ctxWithTx, subItemId)
 		if err != nil {
 			return err
 		}
 
-		if err := usecase.repository.UpdateChecklistSessionSubItemCompletedAt(ctxWithTx, subItemId, nil); err != nil {
+		if err := usecase.checklistSessionRepoPort.UpdateChecklistSessionSubItemCompletedAt(ctxWithTx, subItemId, nil); err != nil {
 			return err
 		}
 
 		subItem.CompletedAt = nil
 		result = subItem
 
-		parentItem, err := usecase.repository.GetChecklistSessionItemById(ctxWithTx, subItem.ChecklistSessionItemId)
+		parentItem, err := usecase.checklistSessionRepoPort.GetChecklistSessionItemById(ctxWithTx, subItem.ChecklistSessionItemId)
 		if err != nil {
 			return err
 		}
 
 		if parentItem.CompletedAt != nil {
-			if err := usecase.repository.UpdateChecklistSessionItemCompletedAt(ctxWithTx, subItem.ChecklistSessionItemId, nil); err != nil {
+			if err := usecase.checklistSessionRepoPort.UpdateChecklistSessionItemCompletedAt(ctxWithTx, subItem.ChecklistSessionItemId, nil); err != nil {
 				return err
 			}
 			return usecase.revertSessionCompletionIfNeeded(ctxWithTx, parentItem.ChecklistSessionId)
@@ -221,27 +221,27 @@ func (usecase ChecklistSessionUsecase) UncheckSessionSubItem(ctx context.Context
 }
 
 func (usecase ChecklistSessionUsecase) autoCompleteSessionIfNeeded(ctx context.Context, sessionId int64) *Error {
-	items, err := usecase.repository.GetChecklistSessionItemsBySessionId(ctx, sessionId)
+	items, err := usecase.checklistSessionRepoPort.GetChecklistSessionItemsBySessionId(ctx, sessionId)
 	if err != nil {
 		return err
 	}
 
 	if allItemsCompleted(items) {
 		now := time.Now()
-		return usecase.repository.UpdateChecklistSessionCompletedAt(ctx, sessionId, &now)
+		return usecase.checklistSessionRepoPort.UpdateChecklistSessionCompletedAt(ctx, sessionId, &now)
 	}
 
 	return nil
 }
 
 func (usecase ChecklistSessionUsecase) revertSessionCompletionIfNeeded(ctx context.Context, sessionId int64) *Error {
-	session, err := usecase.repository.GetChecklistSessionById(ctx, sessionId)
+	session, err := usecase.checklistSessionRepoPort.GetChecklistSessionById(ctx, sessionId)
 	if err != nil {
 		return err
 	}
 
 	if session.CompletedAt != nil {
-		return usecase.repository.UpdateChecklistSessionCompletedAt(ctx, sessionId, nil)
+		return usecase.checklistSessionRepoPort.UpdateChecklistSessionCompletedAt(ctx, sessionId, nil)
 	}
 
 	return nil

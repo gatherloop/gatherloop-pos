@@ -9,15 +9,15 @@ import (
 )
 
 type AuthUsecase struct {
-	repository AuthRepository
+	authRepoPort AuthRepoPort
 }
 
-func NewAuthUsecase(repository AuthRepository) AuthUsecase {
-	return AuthUsecase{repository: repository}
+func NewAuthUsecase(authRepoPort AuthRepoPort) AuthUsecase {
+	return AuthUsecase{authRepoPort: authRepoPort}
 }
 
 func (usecase AuthUsecase) Login(ctx context.Context, loginRequest LoginRequest) (string, *Error) {
-	user, err := usecase.repository.GetUserByUsername(ctx, loginRequest.Username)
+	user, err := usecase.authRepoPort.GetUserByUsername(ctx, loginRequest.Username)
 	if err != nil {
 		return "", err
 	}

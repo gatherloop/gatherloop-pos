@@ -12,18 +12,18 @@ import (
 )
 
 type kdsNotificationServiceMocks struct {
-	repo            *mock.MockKdsNotificationRepository
-	deviceRepo      *mock.MockKdsDeviceRepository
-	transactionRepo *mock.MockTransactionRepository
-	pushGateway     *mock.MockKdsPushGatewayRepository
+	repo            *mock.MockKdsNotificationRepoPort
+	deviceRepo      *mock.MockKdsDeviceRepoPort
+	transactionRepo *mock.MockTransactionRepoPort
+	pushGateway     *mock.MockKdsNotificationGatewayPort
 }
 
 func newKdsNotificationServiceMocks(ctrl *gomock.Controller) kdsNotificationServiceMocks {
 	return kdsNotificationServiceMocks{
-		repo:            mock.NewMockKdsNotificationRepository(ctrl),
-		deviceRepo:      mock.NewMockKdsDeviceRepository(ctrl),
-		transactionRepo: mock.NewMockTransactionRepository(ctrl),
-		pushGateway:     mock.NewMockKdsPushGatewayRepository(ctrl),
+		repo:            mock.NewMockKdsNotificationRepoPort(ctrl),
+		deviceRepo:      mock.NewMockKdsDeviceRepoPort(ctrl),
+		transactionRepo: mock.NewMockTransactionRepoPort(ctrl),
+		pushGateway:     mock.NewMockKdsNotificationGatewayPort(ctrl),
 	}
 }
 

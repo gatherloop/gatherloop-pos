@@ -20,29 +20,29 @@ import (
 
 const testSessionId = "3fa85f64-5717-4562-b3fc-2c963f66afa6"
 
-func withCartTransactionMock(r *mock.MockCartRepository) {
+func withCartTransactionMock(r *mock.MockCartRepoPort) {
 	r.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 		func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 }
 
-func newCartTestHandler(cartRepo *mock.MockCartRepository, variantRepo *mock.MockVariantRepository, tableRepo *mock.MockTableRepository, paymentRepo *mock.MockPaymentRepository) restapi.CartHandler {
+func newCartTestHandler(cartRepo *mock.MockCartRepoPort, variantRepo *mock.MockVariantRepoPort, tableRepo *mock.MockTableRepoPort, paymentRepo *mock.MockPaymentRepoPort) restapi.CartHandler {
 	return restapi.NewCartHandler(domain.NewCartUsecase(cartRepo, tableRepo, domain.NewCartService(cartRepo, paymentRepo, variantRepo)))
 }
 
-func unlockedCart(pr *mock.MockPaymentRepository, cartId int64) {
+func unlockedCart(pr *mock.MockPaymentRepoPort, cartId int64) {
 	pr.EXPECT().GetPendingPaymentByCartId(gomock.Any(), cartId).Return(domain.Payment{}, &domain.Error{Type: domain.NotFound})
 }
 
 func TestCartHandler_GetCurrentCart(t *testing.T) {
 	tests := []struct {
 		name           string
-		setupMock      func(r *mock.MockCartRepository, pr *mock.MockPaymentRepository)
+		setupMock      func(r *mock.MockCartRepoPort, pr *mock.MockPaymentRepoPort)
 		expectedStatus int
 		assertBody     func(t *testing.T, body string)
 	}{
 		{
 			name: "success",
-			setupMock: func(r *mock.MockCartRepository, pr *mock.MockPaymentRepository) {
+			setupMock: func(r *mock.MockCartRepoPort, pr *mock.MockPaymentRepoPort) {
 				r.EXPECT().GetActiveCartBySessionId(gomock.Any(), testSessionId).Return(domain.Cart{Id: 1, SessionId: testSessionId}, nil)
 				unlockedCart(pr, 1)
 			},
@@ -55,7 +55,7 @@ func TestCartHandler_GetCurrentCart(t *testing.T) {
 		},
 		{
 			name: "embedded table carries its floor number",
-			setupMock: func(r *mock.MockCartRepository, pr *mock.MockPaymentRepository) {
+			setupMock: func(r *mock.MockCartRepoPort, pr *mock.MockPaymentRepoPort) {
 				r.EXPECT().GetActiveCartBySessionId(gomock.Any(), testSessionId).Return(domain.Cart{
 					Id: 1, SessionId: testSessionId,
 					Table: &domain.Table{Id: 5, Label: "Meja 1", FloorNumber: 2},
@@ -72,7 +72,7 @@ func TestCartHandler_GetCurrentCart(t *testing.T) {
 		},
 		{
 			name: "a pending unexpired payment rides along as pendingPayment (FR-13)",
-			setupMock: func(r *mock.MockCartRepository, pr *mock.MockPaymentRepository) {
+			setupMock: func(r *mock.MockCartRepoPort, pr *mock.MockPaymentRepoPort) {
 				r.EXPECT().GetActiveCartBySessionId(gomock.Any(), testSessionId).Return(domain.Cart{Id: 1, SessionId: testSessionId}, nil)
 				pr.EXPECT().GetPendingPaymentByCartId(gomock.Any(), int64(1)).Return(domain.Payment{
 					Id: 900, CartId: 1, PartnerReferenceNo: "ORD1234567890AB", Method: domain.PaymentMethodQris,
@@ -93,14 +93,14 @@ func TestCartHandler_GetCurrentCart(t *testing.T) {
 		},
 		{
 			name: "no cart yet still returns 200 with an empty cart",
-			setupMock: func(r *mock.MockCartRepository, pr *mock.MockPaymentRepository) {
+			setupMock: func(r *mock.MockCartRepoPort, pr *mock.MockPaymentRepoPort) {
 				r.EXPECT().GetActiveCartBySessionId(gomock.Any(), testSessionId).Return(domain.Cart{}, &domain.Error{Type: domain.NotFound})
 			},
 			expectedStatus: http.StatusOK,
 		},
 		{
 			name: "repo error",
-			setupMock: func(r *mock.MockCartRepository, pr *mock.MockPaymentRepository) {
+			setupMock: func(r *mock.MockCartRepoPort, pr *mock.MockPaymentRepoPort) {
 				r.EXPECT().GetActiveCartBySessionId(gomock.Any(), testSessionId).Return(domain.Cart{}, &domain.Error{Type: domain.InternalServerError})
 			},
 			expectedStatus: http.StatusInternalServerError,
@@ -112,10 +112,10 @@ func TestCartHandler_GetCurrentCart(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			cartRepo := mock.NewMockCartRepository(ctrl)
-			variantRepo := mock.NewMockVariantRepository(ctrl)
-			tableRepo := mock.NewMockTableRepository(ctrl)
-			paymentRepo := mock.NewMockPaymentRepository(ctrl)
+			cartRepo := mock.NewMockCartRepoPort(ctrl)
+			variantRepo := mock.NewMockVariantRepoPort(ctrl)
+			tableRepo := mock.NewMockTableRepoPort(ctrl)
+			paymentRepo := mock.NewMockPaymentRepoPort(ctrl)
 			tt.setupMock(cartRepo, paymentRepo)
 
 			handler := newCartTestHandler(cartRepo, variantRepo, tableRepo, paymentRepo)
@@ -136,10 +136,10 @@ func TestCartHandler_GetCurrentCart_PendingPaymentCanCancelFollowsTheFlag(t *tes
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	cartRepo := mock.NewMockCartRepository(ctrl)
-	variantRepo := mock.NewMockVariantRepository(ctrl)
-	tableRepo := mock.NewMockTableRepository(ctrl)
-	paymentRepo := mock.NewMockPaymentRepository(ctrl)
+	cartRepo := mock.NewMockCartRepoPort(ctrl)
+	variantRepo := mock.NewMockVariantRepoPort(ctrl)
+	tableRepo := mock.NewMockTableRepoPort(ctrl)
+	paymentRepo := mock.NewMockPaymentRepoPort(ctrl)
 
 	cartRepo.EXPECT().GetActiveCartBySessionId(gomock.Any(), testSessionId).Return(domain.Cart{Id: 1, SessionId: testSessionId}, nil)
 	paymentRepo.EXPECT().GetPendingPaymentByCartId(gomock.Any(), int64(1)).Return(domain.Payment{
@@ -164,13 +164,13 @@ func TestCartHandler_UpdateCartTable(t *testing.T) {
 	tests := []struct {
 		name           string
 		body           string
-		setupMock      func(cr *mock.MockCartRepository, tr *mock.MockTableRepository, pr *mock.MockPaymentRepository)
+		setupMock      func(cr *mock.MockCartRepoPort, tr *mock.MockTableRepoPort, pr *mock.MockPaymentRepoPort)
 		expectedStatus int
 	}{
 		{
 			name: "success",
 			body: `{"tableCode": "0123456789"}`,
-			setupMock: func(cr *mock.MockCartRepository, tr *mock.MockTableRepository, pr *mock.MockPaymentRepository) {
+			setupMock: func(cr *mock.MockCartRepoPort, tr *mock.MockTableRepoPort, pr *mock.MockPaymentRepoPort) {
 				withCartTransactionMock(cr)
 				tr.EXPECT().GetTableByCode(gomock.Any(), "0123456789").Return(domain.Table{Id: 5, Label: "Meja 1"}, nil)
 				cr.EXPECT().GetActiveCartBySessionId(gomock.Any(), testSessionId).Return(domain.Cart{Id: 1, SessionId: testSessionId}, nil)
@@ -182,19 +182,19 @@ func TestCartHandler_UpdateCartTable(t *testing.T) {
 		{
 			name:           "invalid JSON body",
 			body:           `{invalid`,
-			setupMock:      func(cr *mock.MockCartRepository, tr *mock.MockTableRepository, pr *mock.MockPaymentRepository) {},
+			setupMock:      func(cr *mock.MockCartRepoPort, tr *mock.MockTableRepoPort, pr *mock.MockPaymentRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:           "malformed table code",
 			body:           `{"tableCode": "short"}`,
-			setupMock:      func(cr *mock.MockCartRepository, tr *mock.MockTableRepository, pr *mock.MockPaymentRepository) {},
+			setupMock:      func(cr *mock.MockCartRepoPort, tr *mock.MockTableRepoPort, pr *mock.MockPaymentRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name: "unknown table code",
 			body: `{"tableCode": "ZZZZZZZZZZ"}`,
-			setupMock: func(cr *mock.MockCartRepository, tr *mock.MockTableRepository, pr *mock.MockPaymentRepository) {
+			setupMock: func(cr *mock.MockCartRepoPort, tr *mock.MockTableRepoPort, pr *mock.MockPaymentRepoPort) {
 				withCartTransactionMock(cr)
 				tr.EXPECT().GetTableByCode(gomock.Any(), "ZZZZZZZZZZ").Return(domain.Table{}, &domain.Error{Type: domain.NotFound})
 			},
@@ -203,7 +203,7 @@ func TestCartHandler_UpdateCartTable(t *testing.T) {
 		{
 			name: "cart locked by a pending payment",
 			body: `{"tableCode": "0123456789"}`,
-			setupMock: func(cr *mock.MockCartRepository, tr *mock.MockTableRepository, pr *mock.MockPaymentRepository) {
+			setupMock: func(cr *mock.MockCartRepoPort, tr *mock.MockTableRepoPort, pr *mock.MockPaymentRepoPort) {
 				withCartTransactionMock(cr)
 				tr.EXPECT().GetTableByCode(gomock.Any(), "0123456789").Return(domain.Table{Id: 5, Label: "Meja 1"}, nil)
 				cr.EXPECT().GetActiveCartBySessionId(gomock.Any(), testSessionId).Return(domain.Cart{Id: 1, SessionId: testSessionId}, nil)
@@ -220,10 +220,10 @@ func TestCartHandler_UpdateCartTable(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			cartRepo := mock.NewMockCartRepository(ctrl)
-			variantRepo := mock.NewMockVariantRepository(ctrl)
-			tableRepo := mock.NewMockTableRepository(ctrl)
-			paymentRepo := mock.NewMockPaymentRepository(ctrl)
+			cartRepo := mock.NewMockCartRepoPort(ctrl)
+			variantRepo := mock.NewMockVariantRepoPort(ctrl)
+			tableRepo := mock.NewMockTableRepoPort(ctrl)
+			paymentRepo := mock.NewMockPaymentRepoPort(ctrl)
 			tt.setupMock(cartRepo, tableRepo, paymentRepo)
 
 			handler := newCartTestHandler(cartRepo, variantRepo, tableRepo, paymentRepo)
@@ -242,13 +242,13 @@ func TestCartHandler_AddCartItem(t *testing.T) {
 	tests := []struct {
 		name           string
 		body           string
-		setupMock      func(cr *mock.MockCartRepository, vr *mock.MockVariantRepository, pr *mock.MockPaymentRepository)
+		setupMock      func(cr *mock.MockCartRepoPort, vr *mock.MockVariantRepoPort, pr *mock.MockPaymentRepoPort)
 		expectedStatus int
 	}{
 		{
 			name: "success",
 			body: `{"variantId": 10, "amount": 2, "note": "less sugar"}`,
-			setupMock: func(cr *mock.MockCartRepository, vr *mock.MockVariantRepository, pr *mock.MockPaymentRepository) {
+			setupMock: func(cr *mock.MockCartRepoPort, vr *mock.MockVariantRepoPort, pr *mock.MockPaymentRepoPort) {
 				withCartTransactionMock(cr)
 				vr.EXPECT().GetVariantById(gomock.Any(), int64(10)).Return(domain.Variant{
 					Id: 10, Price: 15000, IsAvailable: true,
@@ -264,13 +264,13 @@ func TestCartHandler_AddCartItem(t *testing.T) {
 		{
 			name:           "invalid JSON body",
 			body:           `{invalid`,
-			setupMock:      func(cr *mock.MockCartRepository, vr *mock.MockVariantRepository, pr *mock.MockPaymentRepository) {},
+			setupMock:      func(cr *mock.MockCartRepoPort, vr *mock.MockVariantRepoPort, pr *mock.MockPaymentRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name: "draft product rejected",
 			body: `{"variantId": 11, "amount": 1}`,
-			setupMock: func(cr *mock.MockCartRepository, vr *mock.MockVariantRepository, pr *mock.MockPaymentRepository) {
+			setupMock: func(cr *mock.MockCartRepoPort, vr *mock.MockVariantRepoPort, pr *mock.MockPaymentRepoPort) {
 				withCartTransactionMock(cr)
 				vr.EXPECT().GetVariantById(gomock.Any(), int64(11)).Return(domain.Variant{
 					Id: 11, Product: domain.Product{Status: domain.ProductStatusDraft, SaleType: domain.SaleTypePurchase},
@@ -281,7 +281,7 @@ func TestCartHandler_AddCartItem(t *testing.T) {
 		{
 			name: "unknown variant",
 			body: `{"variantId": 999, "amount": 1}`,
-			setupMock: func(cr *mock.MockCartRepository, vr *mock.MockVariantRepository, pr *mock.MockPaymentRepository) {
+			setupMock: func(cr *mock.MockCartRepoPort, vr *mock.MockVariantRepoPort, pr *mock.MockPaymentRepoPort) {
 				withCartTransactionMock(cr)
 				vr.EXPECT().GetVariantById(gomock.Any(), int64(999)).Return(domain.Variant{}, &domain.Error{Type: domain.NotFound})
 			},
@@ -290,7 +290,7 @@ func TestCartHandler_AddCartItem(t *testing.T) {
 		{
 			name: "cart locked by a pending payment",
 			body: `{"variantId": 10, "amount": 1}`,
-			setupMock: func(cr *mock.MockCartRepository, vr *mock.MockVariantRepository, pr *mock.MockPaymentRepository) {
+			setupMock: func(cr *mock.MockCartRepoPort, vr *mock.MockVariantRepoPort, pr *mock.MockPaymentRepoPort) {
 				withCartTransactionMock(cr)
 				vr.EXPECT().GetVariantById(gomock.Any(), int64(10)).Return(domain.Variant{
 					Id: 10, Price: 15000, IsAvailable: true,
@@ -310,10 +310,10 @@ func TestCartHandler_AddCartItem(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			cartRepo := mock.NewMockCartRepository(ctrl)
-			variantRepo := mock.NewMockVariantRepository(ctrl)
-			tableRepo := mock.NewMockTableRepository(ctrl)
-			paymentRepo := mock.NewMockPaymentRepository(ctrl)
+			cartRepo := mock.NewMockCartRepoPort(ctrl)
+			variantRepo := mock.NewMockVariantRepoPort(ctrl)
+			tableRepo := mock.NewMockTableRepoPort(ctrl)
+			paymentRepo := mock.NewMockPaymentRepoPort(ctrl)
 			tt.setupMock(cartRepo, variantRepo, paymentRepo)
 
 			handler := newCartTestHandler(cartRepo, variantRepo, tableRepo, paymentRepo)
@@ -333,14 +333,14 @@ func TestCartHandler_UpdateCartItem(t *testing.T) {
 		name           string
 		cartItemId     string
 		body           string
-		setupMock      func(r *mock.MockCartRepository, pr *mock.MockPaymentRepository)
+		setupMock      func(r *mock.MockCartRepoPort, pr *mock.MockPaymentRepoPort)
 		expectedStatus int
 	}{
 		{
 			name:       "success",
 			cartItemId: "50",
 			body:       `{"amount": 3}`,
-			setupMock: func(r *mock.MockCartRepository, pr *mock.MockPaymentRepository) {
+			setupMock: func(r *mock.MockCartRepoPort, pr *mock.MockPaymentRepoPort) {
 				withCartTransactionMock(r)
 				r.EXPECT().GetActiveCartBySessionId(gomock.Any(), testSessionId).Return(domain.Cart{
 					Id: 1, Items: []domain.CartItem{{Id: 50, VariantId: 10, Amount: 1}},
@@ -355,21 +355,21 @@ func TestCartHandler_UpdateCartItem(t *testing.T) {
 			name:           "invalid cart item id",
 			cartItemId:     "abc",
 			body:           `{"amount": 1}`,
-			setupMock:      func(r *mock.MockCartRepository, pr *mock.MockPaymentRepository) {},
+			setupMock:      func(r *mock.MockCartRepoPort, pr *mock.MockPaymentRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:           "invalid JSON body",
 			cartItemId:     "50",
 			body:           `{invalid`,
-			setupMock:      func(r *mock.MockCartRepository, pr *mock.MockPaymentRepository) {},
+			setupMock:      func(r *mock.MockCartRepoPort, pr *mock.MockPaymentRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:       "item not owned by this session",
 			cartItemId: "999",
 			body:       `{"amount": 1}`,
-			setupMock: func(r *mock.MockCartRepository, pr *mock.MockPaymentRepository) {
+			setupMock: func(r *mock.MockCartRepoPort, pr *mock.MockPaymentRepoPort) {
 				withCartTransactionMock(r)
 				r.EXPECT().GetActiveCartBySessionId(gomock.Any(), testSessionId).Return(domain.Cart{
 					Id: 1, Items: []domain.CartItem{{Id: 50, VariantId: 10, Amount: 1}},
@@ -381,7 +381,7 @@ func TestCartHandler_UpdateCartItem(t *testing.T) {
 			name:       "cart locked by a pending payment",
 			cartItemId: "50",
 			body:       `{"amount": 3}`,
-			setupMock: func(r *mock.MockCartRepository, pr *mock.MockPaymentRepository) {
+			setupMock: func(r *mock.MockCartRepoPort, pr *mock.MockPaymentRepoPort) {
 				withCartTransactionMock(r)
 				r.EXPECT().GetActiveCartBySessionId(gomock.Any(), testSessionId).Return(domain.Cart{
 					Id: 1, Items: []domain.CartItem{{Id: 50, VariantId: 10, Amount: 1}},
@@ -399,10 +399,10 @@ func TestCartHandler_UpdateCartItem(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			cartRepo := mock.NewMockCartRepository(ctrl)
-			variantRepo := mock.NewMockVariantRepository(ctrl)
-			tableRepo := mock.NewMockTableRepository(ctrl)
-			paymentRepo := mock.NewMockPaymentRepository(ctrl)
+			cartRepo := mock.NewMockCartRepoPort(ctrl)
+			variantRepo := mock.NewMockVariantRepoPort(ctrl)
+			tableRepo := mock.NewMockTableRepoPort(ctrl)
+			paymentRepo := mock.NewMockPaymentRepoPort(ctrl)
 			tt.setupMock(cartRepo, paymentRepo)
 
 			handler := newCartTestHandler(cartRepo, variantRepo, tableRepo, paymentRepo)
@@ -422,13 +422,13 @@ func TestCartHandler_RemoveCartItem(t *testing.T) {
 	tests := []struct {
 		name           string
 		cartItemId     string
-		setupMock      func(r *mock.MockCartRepository, pr *mock.MockPaymentRepository)
+		setupMock      func(r *mock.MockCartRepoPort, pr *mock.MockPaymentRepoPort)
 		expectedStatus int
 	}{
 		{
 			name:       "success",
 			cartItemId: "50",
-			setupMock: func(r *mock.MockCartRepository, pr *mock.MockPaymentRepository) {
+			setupMock: func(r *mock.MockCartRepoPort, pr *mock.MockPaymentRepoPort) {
 				withCartTransactionMock(r)
 				r.EXPECT().GetActiveCartBySessionId(gomock.Any(), testSessionId).Return(domain.Cart{
 					Id: 1, Items: []domain.CartItem{{Id: 50, VariantId: 10, Amount: 1}},
@@ -442,13 +442,13 @@ func TestCartHandler_RemoveCartItem(t *testing.T) {
 		{
 			name:           "invalid cart item id",
 			cartItemId:     "abc",
-			setupMock:      func(r *mock.MockCartRepository, pr *mock.MockPaymentRepository) {},
+			setupMock:      func(r *mock.MockCartRepoPort, pr *mock.MockPaymentRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:       "item not owned by this session",
 			cartItemId: "999",
-			setupMock: func(r *mock.MockCartRepository, pr *mock.MockPaymentRepository) {
+			setupMock: func(r *mock.MockCartRepoPort, pr *mock.MockPaymentRepoPort) {
 				withCartTransactionMock(r)
 				r.EXPECT().GetActiveCartBySessionId(gomock.Any(), testSessionId).Return(domain.Cart{
 					Id: 1, Items: []domain.CartItem{{Id: 50, VariantId: 10, Amount: 1}},
@@ -459,7 +459,7 @@ func TestCartHandler_RemoveCartItem(t *testing.T) {
 		{
 			name:       "cart locked by a pending payment",
 			cartItemId: "50",
-			setupMock: func(r *mock.MockCartRepository, pr *mock.MockPaymentRepository) {
+			setupMock: func(r *mock.MockCartRepoPort, pr *mock.MockPaymentRepoPort) {
 				withCartTransactionMock(r)
 				r.EXPECT().GetActiveCartBySessionId(gomock.Any(), testSessionId).Return(domain.Cart{
 					Id: 1, Items: []domain.CartItem{{Id: 50, VariantId: 10, Amount: 1}},
@@ -477,10 +477,10 @@ func TestCartHandler_RemoveCartItem(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			cartRepo := mock.NewMockCartRepository(ctrl)
-			variantRepo := mock.NewMockVariantRepository(ctrl)
-			tableRepo := mock.NewMockTableRepository(ctrl)
-			paymentRepo := mock.NewMockPaymentRepository(ctrl)
+			cartRepo := mock.NewMockCartRepoPort(ctrl)
+			variantRepo := mock.NewMockVariantRepoPort(ctrl)
+			tableRepo := mock.NewMockTableRepoPort(ctrl)
+			paymentRepo := mock.NewMockPaymentRepoPort(ctrl)
 			tt.setupMock(cartRepo, paymentRepo)
 
 			handler := newCartTestHandler(cartRepo, variantRepo, tableRepo, paymentRepo)
@@ -498,12 +498,12 @@ func TestCartHandler_RemoveCartItem(t *testing.T) {
 func TestCartHandler_ClearCart(t *testing.T) {
 	tests := []struct {
 		name           string
-		setupMock      func(r *mock.MockCartRepository, pr *mock.MockPaymentRepository)
+		setupMock      func(r *mock.MockCartRepoPort, pr *mock.MockPaymentRepoPort)
 		expectedStatus int
 	}{
 		{
 			name: "success",
-			setupMock: func(r *mock.MockCartRepository, pr *mock.MockPaymentRepository) {
+			setupMock: func(r *mock.MockCartRepoPort, pr *mock.MockPaymentRepoPort) {
 				r.EXPECT().GetActiveCartBySessionId(gomock.Any(), testSessionId).Return(domain.Cart{Id: 1, Items: []domain.CartItem{{Id: 50}}}, nil)
 				unlockedCart(pr, 1)
 				r.EXPECT().DeleteCartItemsByCartId(gomock.Any(), int64(1)).Return(nil)
@@ -513,14 +513,14 @@ func TestCartHandler_ClearCart(t *testing.T) {
 		},
 		{
 			name: "no cart yet still returns 200",
-			setupMock: func(r *mock.MockCartRepository, pr *mock.MockPaymentRepository) {
+			setupMock: func(r *mock.MockCartRepoPort, pr *mock.MockPaymentRepoPort) {
 				r.EXPECT().GetActiveCartBySessionId(gomock.Any(), testSessionId).Return(domain.Cart{}, &domain.Error{Type: domain.NotFound})
 			},
 			expectedStatus: http.StatusOK,
 		},
 		{
 			name: "cart locked by a pending payment",
-			setupMock: func(r *mock.MockCartRepository, pr *mock.MockPaymentRepository) {
+			setupMock: func(r *mock.MockCartRepoPort, pr *mock.MockPaymentRepoPort) {
 				r.EXPECT().GetActiveCartBySessionId(gomock.Any(), testSessionId).Return(domain.Cart{Id: 1, Items: []domain.CartItem{{Id: 50}}}, nil)
 				pr.EXPECT().GetPendingPaymentByCartId(gomock.Any(), int64(1)).Return(domain.Payment{
 					Id: 900, CartId: 1, Status: domain.PaymentStatePending, ExpiredAt: time.Now().Add(5 * time.Minute),
@@ -535,10 +535,10 @@ func TestCartHandler_ClearCart(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			cartRepo := mock.NewMockCartRepository(ctrl)
-			variantRepo := mock.NewMockVariantRepository(ctrl)
-			tableRepo := mock.NewMockTableRepository(ctrl)
-			paymentRepo := mock.NewMockPaymentRepository(ctrl)
+			cartRepo := mock.NewMockCartRepoPort(ctrl)
+			variantRepo := mock.NewMockVariantRepoPort(ctrl)
+			tableRepo := mock.NewMockTableRepoPort(ctrl)
+			paymentRepo := mock.NewMockPaymentRepoPort(ctrl)
 			tt.setupMock(cartRepo, paymentRepo)
 
 			handler := newCartTestHandler(cartRepo, variantRepo, tableRepo, paymentRepo)

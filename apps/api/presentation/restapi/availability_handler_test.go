@@ -15,10 +15,10 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-func newAvailabilityHandler(ctrl *gomock.Controller) (restapi.AvailabilityHandler, *mock.MockAvailabilityRepository, *mock.MockProductRepository, *mock.MockVariantRepository) {
-	mockAvailabilityRepo := mock.NewMockAvailabilityRepository(ctrl)
-	mockProductRepo := mock.NewMockProductRepository(ctrl)
-	mockVariantRepo := mock.NewMockVariantRepository(ctrl)
+func newAvailabilityHandler(ctrl *gomock.Controller) (restapi.AvailabilityHandler, *mock.MockAvailabilityRepoPort, *mock.MockProductRepoPort, *mock.MockVariantRepoPort) {
+	mockAvailabilityRepo := mock.NewMockAvailabilityRepoPort(ctrl)
+	mockProductRepo := mock.NewMockProductRepoPort(ctrl)
+	mockVariantRepo := mock.NewMockVariantRepoPort(ctrl)
 	usecase := domain.NewAvailabilityUsecase(mockAvailabilityRepo, mockProductRepo, mockVariantRepo, domain.NewAvailabilityService(mockProductRepo, mockVariantRepo, mockAvailabilityRepo))
 	return restapi.NewAvailabilityHandler(usecase), mockAvailabilityRepo, mockProductRepo, mockVariantRepo
 }
@@ -26,12 +26,12 @@ func newAvailabilityHandler(ctrl *gomock.Controller) (restapi.AvailabilityHandle
 func TestAvailabilityHandler_GetAvailabilityList(t *testing.T) {
 	tests := []struct {
 		name           string
-		setupMock      func(productRepo *mock.MockProductRepository, variantRepo *mock.MockVariantRepository)
+		setupMock      func(productRepo *mock.MockProductRepoPort, variantRepo *mock.MockVariantRepoPort)
 		expectedStatus int
 	}{
 		{
 			name: "success",
-			setupMock: func(productRepo *mock.MockProductRepository, variantRepo *mock.MockVariantRepository) {
+			setupMock: func(productRepo *mock.MockProductRepoPort, variantRepo *mock.MockVariantRepoPort) {
 				purchase := domain.SaleTypePurchase
 				published := domain.ProductStatusPublished
 				productRepo.EXPECT().GetProductList(gomock.Any(), "", domain.CreatedAt, domain.Ascending, 0, 0, &purchase, &published).
@@ -41,7 +41,7 @@ func TestAvailabilityHandler_GetAvailabilityList(t *testing.T) {
 		},
 		{
 			name: "repo error",
-			setupMock: func(productRepo *mock.MockProductRepository, variantRepo *mock.MockVariantRepository) {
+			setupMock: func(productRepo *mock.MockProductRepoPort, variantRepo *mock.MockVariantRepoPort) {
 				productRepo.EXPECT().GetProductList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil, &domain.Error{Type: domain.InternalServerError, Message: "db error"})
 			},
@@ -70,13 +70,13 @@ func TestAvailabilityHandler_UpdateAvailability(t *testing.T) {
 	tests := []struct {
 		name           string
 		body           string
-		setupMock      func(availabilityRepo *mock.MockAvailabilityRepository, productRepo *mock.MockProductRepository, variantRepo *mock.MockVariantRepository)
+		setupMock      func(availabilityRepo *mock.MockAvailabilityRepoPort, productRepo *mock.MockProductRepoPort, variantRepo *mock.MockVariantRepoPort)
 		expectedStatus int
 	}{
 		{
 			name: "success",
 			body: `{"products": [{"productId": 1, "isAvailable": false}]}`,
-			setupMock: func(availabilityRepo *mock.MockAvailabilityRepository, productRepo *mock.MockProductRepository, variantRepo *mock.MockVariantRepository) {
+			setupMock: func(availabilityRepo *mock.MockAvailabilityRepoPort, productRepo *mock.MockProductRepoPort, variantRepo *mock.MockVariantRepoPort) {
 				productRepo.EXPECT().GetProductById(gomock.Any(), int64(1)).
 					Return(domain.Product{Id: 1, Name: "Es Kopi Susu", AvailabilityTracking: domain.AvailabilityTrackingNone}, nil)
 				availabilityRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
@@ -93,14 +93,14 @@ func TestAvailabilityHandler_UpdateAvailability(t *testing.T) {
 		{
 			name: "invalid JSON body",
 			body: `{invalid`,
-			setupMock: func(availabilityRepo *mock.MockAvailabilityRepository, productRepo *mock.MockProductRepository, variantRepo *mock.MockVariantRepository) {
+			setupMock: func(availabilityRepo *mock.MockAvailabilityRepoPort, productRepo *mock.MockProductRepoPort, variantRepo *mock.MockVariantRepoPort) {
 			},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name: "rejects a quantity against tracking = none",
 			body: `{"products": [{"productId": 1, "availableQuantity": 5}]}`,
-			setupMock: func(availabilityRepo *mock.MockAvailabilityRepository, productRepo *mock.MockProductRepository, variantRepo *mock.MockVariantRepository) {
+			setupMock: func(availabilityRepo *mock.MockAvailabilityRepoPort, productRepo *mock.MockProductRepoPort, variantRepo *mock.MockVariantRepoPort) {
 				productRepo.EXPECT().GetProductById(gomock.Any(), int64(1)).
 					Return(domain.Product{Id: 1, Name: "Es Kopi Susu", AvailabilityTracking: domain.AvailabilityTrackingNone}, nil)
 			},
@@ -109,7 +109,7 @@ func TestAvailabilityHandler_UpdateAvailability(t *testing.T) {
 		{
 			name: "rejects a negative quantity",
 			body: `{"variants": [{"variantId": 1, "availableQuantity": -1}]}`,
-			setupMock: func(availabilityRepo *mock.MockAvailabilityRepository, productRepo *mock.MockProductRepository, variantRepo *mock.MockVariantRepository) {
+			setupMock: func(availabilityRepo *mock.MockAvailabilityRepoPort, productRepo *mock.MockProductRepoPort, variantRepo *mock.MockVariantRepoPort) {
 			},
 			expectedStatus: http.StatusBadRequest,
 		},
@@ -136,13 +136,13 @@ func TestAvailabilityHandler_GetAvailabilityMovementList(t *testing.T) {
 	tests := []struct {
 		name           string
 		vars           map[string]string
-		setupMock      func(availabilityRepo *mock.MockAvailabilityRepository)
+		setupMock      func(availabilityRepo *mock.MockAvailabilityRepoPort)
 		expectedStatus int
 	}{
 		{
 			name: "success",
 			vars: map[string]string{"level": "variant", "id": "1"},
-			setupMock: func(availabilityRepo *mock.MockAvailabilityRepository) {
+			setupMock: func(availabilityRepo *mock.MockAvailabilityRepoPort) {
 				availabilityRepo.EXPECT().GetAvailabilityMovementList(gomock.Any(), domain.AvailabilityMovementLevelVariant, int64(1), 0, 0).
 					Return([]domain.AvailabilityMovement{{Id: 1, Reason: domain.AvailabilityMovementReasonSale}}, nil)
 				availabilityRepo.EXPECT().GetAvailabilityMovementListTotal(gomock.Any(), domain.AvailabilityMovementLevelVariant, int64(1)).
@@ -153,19 +153,19 @@ func TestAvailabilityHandler_GetAvailabilityMovementList(t *testing.T) {
 		{
 			name:           "invalid level",
 			vars:           map[string]string{"level": "bogus", "id": "1"},
-			setupMock:      func(availabilityRepo *mock.MockAvailabilityRepository) {},
+			setupMock:      func(availabilityRepo *mock.MockAvailabilityRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:           "invalid id",
 			vars:           map[string]string{"level": "product", "id": "not-a-number"},
-			setupMock:      func(availabilityRepo *mock.MockAvailabilityRepository) {},
+			setupMock:      func(availabilityRepo *mock.MockAvailabilityRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name: "repo error",
 			vars: map[string]string{"level": "product", "id": "1"},
-			setupMock: func(availabilityRepo *mock.MockAvailabilityRepository) {
+			setupMock: func(availabilityRepo *mock.MockAvailabilityRepoPort) {
 				availabilityRepo.EXPECT().GetAvailabilityMovementList(gomock.Any(), domain.AvailabilityMovementLevelProduct, int64(1), 0, 0).
 					Return(nil, &domain.Error{Type: domain.InternalServerError, Message: "db error"})
 			},

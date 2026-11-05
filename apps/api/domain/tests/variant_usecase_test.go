@@ -10,20 +10,20 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-func newVariantUsecase(ctrl *gomock.Controller, variantRepo *mock.MockVariantRepository, productRepo *mock.MockProductRepository) domain.VariantUsecase {
+func newVariantUsecase(ctrl *gomock.Controller, variantRepo *mock.MockVariantRepoPort, productRepo *mock.MockProductRepoPort) domain.VariantUsecase {
 	return domain.NewVariantUsecase(variantRepo, productRepo, newVariantService(ctrl))
 }
 
 func TestVariantUsecase_GetVariantList(t *testing.T) {
 	tests := []struct {
 		name          string
-		setupMock     func(r *mock.MockVariantRepository)
+		setupMock     func(r *mock.MockVariantRepoPort)
 		expectedLen   int
 		expectedError *domain.Error
 	}{
 		{
 			name: "success",
-			setupMock: func(r *mock.MockVariantRepository) {
+			setupMock: func(r *mock.MockVariantRepoPort) {
 				r.EXPECT().GetVariantList(gomock.Any(), "", domain.CreatedAt, domain.Ascending, 0, 10, nil, []int{}).
 					Return([]domain.Variant{{Id: 1, Name: "Small"}, {Id: 2, Name: "Large"}}, nil)
 				r.EXPECT().GetVariantListTotal(gomock.Any(), "").Return(int64(2), nil)
@@ -32,7 +32,7 @@ func TestVariantUsecase_GetVariantList(t *testing.T) {
 		},
 		{
 			name: "error on list",
-			setupMock: func(r *mock.MockVariantRepository) {
+			setupMock: func(r *mock.MockVariantRepoPort) {
 				r.EXPECT().GetVariantList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil, &domain.Error{Type: domain.InternalServerError})
 			},
@@ -45,8 +45,8 @@ func TestVariantUsecase_GetVariantList(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			variantRepo := mock.NewMockVariantRepository(ctrl)
-			productRepo := mock.NewMockProductRepository(ctrl)
+			variantRepo := mock.NewMockVariantRepoPort(ctrl)
+			productRepo := mock.NewMockProductRepoPort(ctrl)
 			tt.setupMock(variantRepo)
 
 			usecase := newVariantUsecase(ctrl, variantRepo, productRepo)
@@ -67,14 +67,14 @@ func TestVariantUsecase_GetVariantById(t *testing.T) {
 	tests := []struct {
 		name          string
 		id            int64
-		setupMock     func(r *mock.MockVariantRepository)
+		setupMock     func(r *mock.MockVariantRepoPort)
 		expectedName  string
 		expectedError *domain.Error
 	}{
 		{
 			name: "success",
 			id:   1,
-			setupMock: func(r *mock.MockVariantRepository) {
+			setupMock: func(r *mock.MockVariantRepoPort) {
 				r.EXPECT().GetVariantById(gomock.Any(), int64(1)).Return(domain.Variant{Id: 1, Name: "Small"}, nil)
 			},
 			expectedName: "Small",
@@ -82,7 +82,7 @@ func TestVariantUsecase_GetVariantById(t *testing.T) {
 		{
 			name: "not found",
 			id:   99,
-			setupMock: func(r *mock.MockVariantRepository) {
+			setupMock: func(r *mock.MockVariantRepoPort) {
 				r.EXPECT().GetVariantById(gomock.Any(), int64(99)).Return(domain.Variant{}, &domain.Error{Type: domain.NotFound})
 			},
 			expectedError: &domain.Error{Type: domain.NotFound},
@@ -94,8 +94,8 @@ func TestVariantUsecase_GetVariantById(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			variantRepo := mock.NewMockVariantRepository(ctrl)
-			productRepo := mock.NewMockProductRepository(ctrl)
+			variantRepo := mock.NewMockVariantRepoPort(ctrl)
+			productRepo := mock.NewMockProductRepoPort(ctrl)
 			tt.setupMock(variantRepo)
 
 			usecase := newVariantUsecase(ctrl, variantRepo, productRepo)
@@ -126,14 +126,14 @@ func TestVariantUsecase_CreateVariant(t *testing.T) {
 	tests := []struct {
 		name          string
 		input         domain.Variant
-		setupMock     func(vr *mock.MockVariantRepository, pr *mock.MockProductRepository)
+		setupMock     func(vr *mock.MockVariantRepoPort, pr *mock.MockProductRepoPort)
 		expectedError *domain.Error
 		checkResult   func(t *testing.T, v domain.Variant)
 	}{
 		{
 			name:  "success — purchase variant",
 			input: validPurchaseVariant,
-			setupMock: func(vr *mock.MockVariantRepository, pr *mock.MockProductRepository) {
+			setupMock: func(vr *mock.MockVariantRepoPort, pr *mock.MockProductRepoPort) {
 				pr.EXPECT().GetProductById(gomock.Any(), int64(1)).Return(domain.Product{Id: 1, SaleType: domain.SaleTypePurchase}, nil)
 				vr.EXPECT().CreateVariant(gomock.Any(), gomock.Any()).Return(domain.Variant{Id: 10, Name: "Regular", Price: 10000}, nil)
 			},
@@ -145,7 +145,7 @@ func TestVariantUsecase_CreateVariant(t *testing.T) {
 		{
 			name:  "success — rental variant with tiers",
 			input: validRentalVariant,
-			setupMock: func(vr *mock.MockVariantRepository, pr *mock.MockProductRepository) {
+			setupMock: func(vr *mock.MockVariantRepoPort, pr *mock.MockProductRepoPort) {
 				pr.EXPECT().GetProductById(gomock.Any(), int64(2)).Return(domain.Product{Id: 2, SaleType: domain.SaleTypeRental}, nil)
 				vr.EXPECT().CreateVariant(gomock.Any(), gomock.Any()).Return(
 					domain.Variant{
@@ -166,7 +166,7 @@ func TestVariantUsecase_CreateVariant(t *testing.T) {
 		{
 			name:  "reject — purchase variant with price = 0",
 			input: domain.Variant{ProductId: 1, Name: "Bad", Price: 0},
-			setupMock: func(vr *mock.MockVariantRepository, pr *mock.MockProductRepository) {
+			setupMock: func(vr *mock.MockVariantRepoPort, pr *mock.MockProductRepoPort) {
 				pr.EXPECT().GetProductById(gomock.Any(), int64(1)).Return(domain.Product{Id: 1, SaleType: domain.SaleTypePurchase}, nil)
 			},
 			expectedError: &domain.Error{Type: domain.BadRequest},
@@ -179,7 +179,7 @@ func TestVariantUsecase_CreateVariant(t *testing.T) {
 				Price:        5000,
 				PricingTiers: []domain.PricingTier{{UpToMinutes: 60, Price: 15000}},
 			},
-			setupMock: func(vr *mock.MockVariantRepository, pr *mock.MockProductRepository) {
+			setupMock: func(vr *mock.MockVariantRepoPort, pr *mock.MockProductRepoPort) {
 				pr.EXPECT().GetProductById(gomock.Any(), int64(1)).Return(domain.Product{Id: 1, SaleType: domain.SaleTypePurchase}, nil)
 			},
 			expectedError: &domain.Error{Type: domain.BadRequest},
@@ -187,7 +187,7 @@ func TestVariantUsecase_CreateVariant(t *testing.T) {
 		{
 			name:  "reject — rental variant with no tiers",
 			input: domain.Variant{ProductId: 2, Name: "Bad"},
-			setupMock: func(vr *mock.MockVariantRepository, pr *mock.MockProductRepository) {
+			setupMock: func(vr *mock.MockVariantRepoPort, pr *mock.MockProductRepoPort) {
 				pr.EXPECT().GetProductById(gomock.Any(), int64(2)).Return(domain.Product{Id: 2, SaleType: domain.SaleTypeRental}, nil)
 			},
 			expectedError: &domain.Error{Type: domain.BadRequest},
@@ -202,7 +202,7 @@ func TestVariantUsecase_CreateVariant(t *testing.T) {
 					{UpToMinutes: 60, Price: 15000},
 				},
 			},
-			setupMock: func(vr *mock.MockVariantRepository, pr *mock.MockProductRepository) {
+			setupMock: func(vr *mock.MockVariantRepoPort, pr *mock.MockProductRepoPort) {
 				pr.EXPECT().GetProductById(gomock.Any(), int64(2)).Return(domain.Product{Id: 2, SaleType: domain.SaleTypeRental}, nil)
 			},
 			expectedError: &domain.Error{Type: domain.BadRequest},
@@ -214,8 +214,8 @@ func TestVariantUsecase_CreateVariant(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			variantRepo := mock.NewMockVariantRepository(ctrl)
-			productRepo := mock.NewMockProductRepository(ctrl)
+			variantRepo := mock.NewMockVariantRepoPort(ctrl)
+			productRepo := mock.NewMockProductRepoPort(ctrl)
 			tt.setupMock(variantRepo, productRepo)
 
 			usecase := newVariantUsecase(ctrl, variantRepo, productRepo)
@@ -239,7 +239,7 @@ func TestVariantUsecase_UpdateVariantById(t *testing.T) {
 		name          string
 		id            int64
 		input         domain.Variant
-		setupMock     func(vr *mock.MockVariantRepository, pr *mock.MockProductRepository)
+		setupMock     func(vr *mock.MockVariantRepoPort, pr *mock.MockProductRepoPort)
 		expectedName  string
 		expectedError *domain.Error
 	}{
@@ -247,7 +247,7 @@ func TestVariantUsecase_UpdateVariantById(t *testing.T) {
 			name:  "success — purchase variant",
 			id:    1,
 			input: domain.Variant{Name: "Medium", Price: 8000},
-			setupMock: func(vr *mock.MockVariantRepository, pr *mock.MockProductRepository) {
+			setupMock: func(vr *mock.MockVariantRepoPort, pr *mock.MockProductRepoPort) {
 				vr.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error {
 						return cb(ctx)
@@ -268,7 +268,7 @@ func TestVariantUsecase_UpdateVariantById(t *testing.T) {
 					{UpToMinutes: 120, Price: 30000},
 				},
 			},
-			setupMock: func(vr *mock.MockVariantRepository, pr *mock.MockProductRepository) {
+			setupMock: func(vr *mock.MockVariantRepoPort, pr *mock.MockProductRepoPort) {
 				vr.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error {
 						return cb(ctx)
@@ -283,7 +283,7 @@ func TestVariantUsecase_UpdateVariantById(t *testing.T) {
 			name:  "not found inside transaction",
 			id:    99,
 			input: domain.Variant{Name: "Medium", Price: 5000},
-			setupMock: func(vr *mock.MockVariantRepository, pr *mock.MockProductRepository) {
+			setupMock: func(vr *mock.MockVariantRepoPort, pr *mock.MockProductRepoPort) {
 				vr.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error {
 						return cb(ctx)
@@ -296,7 +296,7 @@ func TestVariantUsecase_UpdateVariantById(t *testing.T) {
 			name:  "reject — purchase variant with price = 0",
 			id:    1,
 			input: domain.Variant{Name: "Bad", Price: 0},
-			setupMock: func(vr *mock.MockVariantRepository, pr *mock.MockProductRepository) {
+			setupMock: func(vr *mock.MockVariantRepoPort, pr *mock.MockProductRepoPort) {
 				vr.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error {
 						return cb(ctx)
@@ -310,7 +310,7 @@ func TestVariantUsecase_UpdateVariantById(t *testing.T) {
 			name:  "reject — rental variant with no tiers",
 			id:    2,
 			input: domain.Variant{Name: "Bad"},
-			setupMock: func(vr *mock.MockVariantRepository, pr *mock.MockProductRepository) {
+			setupMock: func(vr *mock.MockVariantRepoPort, pr *mock.MockProductRepoPort) {
 				vr.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error {
 						return cb(ctx)
@@ -327,8 +327,8 @@ func TestVariantUsecase_UpdateVariantById(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			variantRepo := mock.NewMockVariantRepository(ctrl)
-			productRepo := mock.NewMockProductRepository(ctrl)
+			variantRepo := mock.NewMockVariantRepoPort(ctrl)
+			productRepo := mock.NewMockProductRepoPort(ctrl)
 			tt.setupMock(variantRepo, productRepo)
 
 			usecase := newVariantUsecase(ctrl, variantRepo, productRepo)
@@ -349,20 +349,20 @@ func TestVariantUsecase_DeleteVariantById(t *testing.T) {
 	tests := []struct {
 		name          string
 		id            int64
-		setupMock     func(r *mock.MockVariantRepository)
+		setupMock     func(r *mock.MockVariantRepoPort)
 		expectedError *domain.Error
 	}{
 		{
 			name: "success",
 			id:   1,
-			setupMock: func(r *mock.MockVariantRepository) {
+			setupMock: func(r *mock.MockVariantRepoPort) {
 				r.EXPECT().DeleteVariantById(gomock.Any(), int64(1)).Return(nil)
 			},
 		},
 		{
 			name: "not found",
 			id:   99,
-			setupMock: func(r *mock.MockVariantRepository) {
+			setupMock: func(r *mock.MockVariantRepoPort) {
 				r.EXPECT().DeleteVariantById(gomock.Any(), int64(99)).Return(&domain.Error{Type: domain.NotFound})
 			},
 			expectedError: &domain.Error{Type: domain.NotFound},
@@ -374,8 +374,8 @@ func TestVariantUsecase_DeleteVariantById(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			variantRepo := mock.NewMockVariantRepository(ctrl)
-			productRepo := mock.NewMockProductRepository(ctrl)
+			variantRepo := mock.NewMockVariantRepoPort(ctrl)
+			productRepo := mock.NewMockProductRepoPort(ctrl)
 			tt.setupMock(variantRepo)
 
 			usecase := newVariantUsecase(ctrl, variantRepo, productRepo)
@@ -391,7 +391,7 @@ func TestVariantUsecase_DeleteVariantById(t *testing.T) {
 	}
 }
 
-func runVariantTransactionCallback(vr *mock.MockVariantRepository) {
+func runVariantTransactionCallback(vr *mock.MockVariantRepoPort) {
 	vr.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 		func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error {
 			return cb(ctx)
@@ -412,20 +412,20 @@ func TestVariantUsecase_UpdateVariantById_Tags(t *testing.T) {
 	tests := []struct {
 		name          string
 		tagIds        []int64
-		setupMock     func(vr *mock.MockVariantRepository, tr *mock.MockTagRepository)
+		setupMock     func(vr *mock.MockVariantRepoPort, tr *mock.MockTagRepoPort)
 		expectedError *domain.Error
 	}{
 		{
 			name:   "omitted tagIds leave assignments untouched",
 			tagIds: nil,
-			setupMock: func(vr *mock.MockVariantRepository, tr *mock.MockTagRepository) {
+			setupMock: func(vr *mock.MockVariantRepoPort, tr *mock.MockTagRepoPort) {
 				vr.EXPECT().UpdateVariantById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Variant{Id: 1, Name: "Hot"}, nil)
 			},
 		},
 		{
 			name:   "empty tagIds clear every assignment",
 			tagIds: []int64{},
-			setupMock: func(vr *mock.MockVariantRepository, tr *mock.MockTagRepository) {
+			setupMock: func(vr *mock.MockVariantRepoPort, tr *mock.MockTagRepoPort) {
 				tr.EXPECT().GetTagList(gomock.Any()).Return(knownTags, nil)
 				tr.EXPECT().GetVariantTagIds(gomock.Any(), int64(1)).Return([]int64{1, 2}, nil)
 				tr.EXPECT().DeleteVariantTags(gomock.Any(), tagPairs(1, 1, 2)).Return(nil)
@@ -435,7 +435,7 @@ func TestVariantUsecase_UpdateVariantById_Tags(t *testing.T) {
 		{
 			name:   "a list replaces the set by diffing",
 			tagIds: []int64{2, 3},
-			setupMock: func(vr *mock.MockVariantRepository, tr *mock.MockTagRepository) {
+			setupMock: func(vr *mock.MockVariantRepoPort, tr *mock.MockTagRepoPort) {
 				tr.EXPECT().GetTagList(gomock.Any()).Return(knownTags, nil)
 				tr.EXPECT().GetVariantTagIds(gomock.Any(), int64(1)).Return([]int64{1, 2}, nil)
 				tr.EXPECT().DeleteVariantTags(gomock.Any(), tagPairs(1, 1)).Return(nil)
@@ -446,7 +446,7 @@ func TestVariantUsecase_UpdateVariantById_Tags(t *testing.T) {
 		{
 			name:   "an unchanged list writes nothing",
 			tagIds: []int64{1, 2},
-			setupMock: func(vr *mock.MockVariantRepository, tr *mock.MockTagRepository) {
+			setupMock: func(vr *mock.MockVariantRepoPort, tr *mock.MockTagRepoPort) {
 				tr.EXPECT().GetTagList(gomock.Any()).Return(knownTags, nil)
 				tr.EXPECT().GetVariantTagIds(gomock.Any(), int64(1)).Return([]int64{1, 2}, nil)
 				vr.EXPECT().UpdateVariantById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Variant{Id: 1, Name: "Hot"}, nil)
@@ -455,7 +455,7 @@ func TestVariantUsecase_UpdateVariantById_Tags(t *testing.T) {
 		{
 			name:   "unknown tag id is rejected before anything is written",
 			tagIds: []int64{99},
-			setupMock: func(vr *mock.MockVariantRepository, tr *mock.MockTagRepository) {
+			setupMock: func(vr *mock.MockVariantRepoPort, tr *mock.MockTagRepoPort) {
 				tr.EXPECT().GetTagList(gomock.Any()).Return(knownTags, nil)
 			},
 			expectedError: &domain.Error{Type: domain.BadRequest},
@@ -467,9 +467,9 @@ func TestVariantUsecase_UpdateVariantById_Tags(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			variantRepo := mock.NewMockVariantRepository(ctrl)
-			productRepo := mock.NewMockProductRepository(ctrl)
-			tagRepo := mock.NewMockTagRepository(ctrl)
+			variantRepo := mock.NewMockVariantRepoPort(ctrl)
+			productRepo := mock.NewMockProductRepoPort(ctrl)
+			tagRepo := mock.NewMockTagRepoPort(ctrl)
 			runVariantTransactionCallback(variantRepo)
 			variantRepo.EXPECT().GetVariantById(gomock.Any(), int64(1)).Return(domain.Variant{Id: 1, ProductId: 10}, nil)
 			productRepo.EXPECT().GetProductById(gomock.Any(), int64(10)).Return(domain.Product{Id: 10, SaleType: domain.SaleTypePurchase}, nil)
@@ -495,9 +495,9 @@ func TestVariantUsecase_CreateVariant_Tags(t *testing.T) {
 	t.Run("tagIds are applied to the created variant and returned", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
-		variantRepo := mock.NewMockVariantRepository(ctrl)
-		productRepo := mock.NewMockProductRepository(ctrl)
-		tagRepo := mock.NewMockTagRepository(ctrl)
+		variantRepo := mock.NewMockVariantRepoPort(ctrl)
+		productRepo := mock.NewMockProductRepoPort(ctrl)
+		tagRepo := mock.NewMockTagRepoPort(ctrl)
 
 		withTags := input
 		withTags.TagIds = []int64{2}
@@ -518,9 +518,9 @@ func TestVariantUsecase_CreateVariant_Tags(t *testing.T) {
 	t.Run("omitted tagIds never touch the tag repository", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
-		variantRepo := mock.NewMockVariantRepository(ctrl)
-		productRepo := mock.NewMockProductRepository(ctrl)
-		tagRepo := mock.NewMockTagRepository(ctrl)
+		variantRepo := mock.NewMockVariantRepoPort(ctrl)
+		productRepo := mock.NewMockProductRepoPort(ctrl)
+		tagRepo := mock.NewMockTagRepoPort(ctrl)
 
 		productRepo.EXPECT().GetProductById(gomock.Any(), int64(10)).Return(product, nil)
 		variantRepo.EXPECT().CreateVariant(gomock.Any(), input).Return(domain.Variant{Id: 5, ProductId: 10, Name: "Hot"}, nil)
@@ -533,9 +533,9 @@ func TestVariantUsecase_CreateVariant_Tags(t *testing.T) {
 	t.Run("unknown tag id is rejected before the variant is created", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
-		variantRepo := mock.NewMockVariantRepository(ctrl)
-		productRepo := mock.NewMockProductRepository(ctrl)
-		tagRepo := mock.NewMockTagRepository(ctrl)
+		variantRepo := mock.NewMockVariantRepoPort(ctrl)
+		productRepo := mock.NewMockProductRepoPort(ctrl)
+		tagRepo := mock.NewMockTagRepoPort(ctrl)
 
 		withTags := input
 		withTags.TagIds = []int64{99}
@@ -551,6 +551,6 @@ func TestVariantUsecase_CreateVariant_Tags(t *testing.T) {
 }
 
 func newVariantService(ctrl *gomock.Controller) domain.VariantService {
-	tagRepo := mock.NewMockTagRepository(ctrl)
+	tagRepo := mock.NewMockTagRepoPort(ctrl)
 	return domain.NewVariantService(tagRepo, domain.NewTagService(tagRepo))
 }

@@ -5,15 +5,15 @@ import (
 )
 
 type CustomerUsecase struct {
-	customerRepository CustomerRepository
+	customerRepoPort CustomerRepoPort
 }
 
-func NewCustomerUsecase(customerRepository CustomerRepository) CustomerUsecase {
-	return CustomerUsecase{customerRepository: customerRepository}
+func NewCustomerUsecase(customerRepoPort CustomerRepoPort) CustomerUsecase {
+	return CustomerUsecase{customerRepoPort: customerRepoPort}
 }
 
 func (usecase CustomerUsecase) GetCurrentCustomer(ctx context.Context, sessionId string) (Customer, *Error) {
-	customer, err := usecase.customerRepository.GetCustomerBySessionId(ctx, sessionId)
+	customer, err := usecase.customerRepoPort.GetCustomerBySessionId(ctx, sessionId)
 	if err != nil {
 		if err.Type == NotFound {
 			return Customer{}, nil

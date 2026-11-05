@@ -12,13 +12,13 @@ const paymentExpiryBatchSize = 50
 const paymentVerificationOrphanBatchSize = 50
 
 type PaymentService struct {
-	transactionRepository         TransactionRepository
-	paymentRepository             PaymentRepository
-	paymentVerificationRepository PaymentVerificationRepository
-	paymentGatewayRepository      PaymentGatewayRepository
-	cartRepository                CartRepository
-	walletRepository              WalletRepository
-	kdsNotificationRepository     KdsNotificationRepository
+	transactionRepoPort         TransactionRepoPort
+	paymentRepoPort             PaymentRepoPort
+	paymentVerificationRepoPort PaymentVerificationRepoPort
+	paymentGatewayPort          PaymentGatewayPort
+	cartRepoPort                CartRepoPort
+	walletRepoPort              WalletRepoPort
+	kdsNotificationRepoPort     KdsNotificationRepoPort
 
 	availabilityService    AvailabilityService
 	kdsNotificationService KdsNotificationService
@@ -27,13 +27,13 @@ type PaymentService struct {
 }
 
 func NewPaymentService(
-	transactionRepository TransactionRepository,
-	paymentRepository PaymentRepository,
-	paymentVerificationRepository PaymentVerificationRepository,
-	paymentGatewayRepository PaymentGatewayRepository,
-	cartRepository CartRepository,
-	walletRepository WalletRepository,
-	kdsNotificationRepository KdsNotificationRepository,
+	transactionRepoPort TransactionRepoPort,
+	paymentRepoPort PaymentRepoPort,
+	paymentVerificationRepoPort PaymentVerificationRepoPort,
+	paymentGatewayPort PaymentGatewayPort,
+	cartRepoPort CartRepoPort,
+	walletRepoPort WalletRepoPort,
+	kdsNotificationRepoPort KdsNotificationRepoPort,
 
 	availabilityService AvailabilityService,
 	kdsNotificationService KdsNotificationService,
@@ -41,16 +41,16 @@ func NewPaymentService(
 	orderPaymentWalletId int64,
 ) PaymentService {
 	return PaymentService{
-		transactionRepository:         transactionRepository,
-		paymentRepository:             paymentRepository,
-		paymentVerificationRepository: paymentVerificationRepository,
-		paymentGatewayRepository:      paymentGatewayRepository,
-		cartRepository:                cartRepository,
-		walletRepository:              walletRepository,
-		kdsNotificationRepository:     kdsNotificationRepository,
-		availabilityService:           availabilityService,
-		kdsNotificationService:        kdsNotificationService,
-		orderPaymentWalletId:          orderPaymentWalletId,
+		transactionRepoPort:         transactionRepoPort,
+		paymentRepoPort:             paymentRepoPort,
+		paymentVerificationRepoPort: paymentVerificationRepoPort,
+		paymentGatewayPort:          paymentGatewayPort,
+		cartRepoPort:                cartRepoPort,
+		walletRepoPort:              walletRepoPort,
+		kdsNotificationRepoPort:     kdsNotificationRepoPort,
+		availabilityService:         availabilityService,
+		kdsNotificationService:      kdsNotificationService,
+		orderPaymentWalletId:        orderPaymentWalletId,
 	}
 }
 
@@ -74,13 +74,13 @@ func (service PaymentService) ApplyQrisStatus(ctxWithTx context.Context, payment
 			outcome = ConfirmPaymentOutcomePaidLate
 		}
 
-		transaction, txErr := service.transactionRepository.GetTransactionById(ctxWithTx, *payment.TransactionId)
+		transaction, txErr := service.transactionRepoPort.GetTransactionById(ctxWithTx, *payment.TransactionId)
 		if txErr != nil {
 			return payment, "", txErr
 		}
 
 		if transaction.DeletedAt != nil {
-			if undeleteErr := service.transactionRepository.UndeleteTransactionById(ctxWithTx, transaction.Id); undeleteErr != nil {
+			if undeleteErr := service.transactionRepoPort.UndeleteTransactionById(ctxWithTx, transaction.Id); undeleteErr != nil {
 				return payment, "", undeleteErr
 			}
 			transaction.DeletedAt = nil
@@ -100,17 +100,17 @@ func (service PaymentService) ApplyQrisStatus(ctxWithTx context.Context, payment
 		payment.PaidAt = &now
 		payment.StatusCheckedAt = &now
 
-		updatedPayment, updateErr := service.paymentRepository.UpdatePaymentById(ctxWithTx, payment, payment.Id)
+		updatedPayment, updateErr := service.paymentRepoPort.UpdatePaymentById(ctxWithTx, payment, payment.Id)
 		if updateErr != nil {
 			return payment, "", updateErr
 		}
 
-		cart, cartErr := service.cartRepository.GetCartById(ctxWithTx, payment.CartId)
+		cart, cartErr := service.cartRepoPort.GetCartById(ctxWithTx, payment.CartId)
 		if cartErr != nil {
 			return payment, "", cartErr
 		}
 		cart.Status = CartStatusConverted
-		if _, updateCartErr := service.cartRepository.UpdateCartById(ctxWithTx, cart, cart.Id); updateCartErr != nil {
+		if _, updateCartErr := service.cartRepoPort.UpdateCartById(ctxWithTx, cart, cart.Id); updateCartErr != nil {
 			return payment, "", updateCartErr
 		}
 
@@ -149,17 +149,17 @@ func (service PaymentService) FinalizeUncollectedPayment(ctxWithTx context.Conte
 		payment.CancelReason = reason
 	}
 
-	updatedPayment, updateErr := service.paymentRepository.UpdatePaymentById(ctxWithTx, payment, payment.Id)
+	updatedPayment, updateErr := service.paymentRepoPort.UpdatePaymentById(ctxWithTx, payment, payment.Id)
 	if updateErr != nil {
 		return payment, updateErr
 	}
 
-	if deleteErr := service.paymentVerificationRepository.DeleteByPaymentId(ctxWithTx, payment.Id); deleteErr != nil {
+	if deleteErr := service.paymentVerificationRepoPort.DeleteByPaymentId(ctxWithTx, payment.Id); deleteErr != nil {
 		return payment, deleteErr
 	}
 
 	if payment.TransactionId != nil {
-		transaction, txErr := service.transactionRepository.GetTransactionById(ctxWithTx, *payment.TransactionId)
+		transaction, txErr := service.transactionRepoPort.GetTransactionById(ctxWithTx, *payment.TransactionId)
 		if txErr != nil {
 			return payment, txErr
 		}
@@ -168,7 +168,7 @@ func (service PaymentService) FinalizeUncollectedPayment(ctxWithTx context.Conte
 			return payment, releaseErr
 		}
 
-		if deleteErr := service.transactionRepository.DeleteTransactionById(ctxWithTx, *payment.TransactionId); deleteErr != nil {
+		if deleteErr := service.transactionRepoPort.DeleteTransactionById(ctxWithTx, *payment.TransactionId); deleteErr != nil {
 			return payment, deleteErr
 		}
 
@@ -183,7 +183,7 @@ func (service PaymentService) FinalizeUncollectedPayment(ctxWithTx context.Conte
 }
 
 func (service PaymentService) EnqueueCashCancelledNotification(ctxWithTx context.Context, transaction Transaction) *Error {
-	hasCashPending, err := service.kdsNotificationRepository.HasNotificationForTransaction(ctxWithTx, transaction.Id, KdsNotificationKindCashPending)
+	hasCashPending, err := service.kdsNotificationRepoPort.HasNotificationForTransaction(ctxWithTx, transaction.Id, KdsNotificationKindCashPending)
 	if err != nil {
 		return err
 	}
@@ -191,7 +191,7 @@ func (service PaymentService) EnqueueCashCancelledNotification(ctxWithTx context
 		return nil
 	}
 
-	return service.kdsNotificationRepository.EnqueueForTransaction(ctxWithTx, transaction, KdsNotificationKindCashCancelled)
+	return service.kdsNotificationRepoPort.EnqueueForTransaction(ctxWithTx, transaction, KdsNotificationKindCashCancelled)
 }
 
 // supersedeLivePayments is D7's guard against a stale-but-still-pending payment surviving next to
@@ -199,7 +199,7 @@ func (service PaymentService) EnqueueCashCancelledNotification(ctxWithTx context
 // payment — if there is one, and it isn't the payment just paid — is finalised as
 // cancelled/superseded instead of staying collectable.
 func (service PaymentService) SupersedeLivePayments(ctxWithTx context.Context, cartId int64, exceptPaymentId int64) *Error {
-	pending, err := service.paymentRepository.GetPendingPaymentByCartId(ctxWithTx, cartId)
+	pending, err := service.paymentRepoPort.GetPendingPaymentByCartId(ctxWithTx, cartId)
 	if err != nil {
 		if err.Type == NotFound {
 			return nil
@@ -240,12 +240,12 @@ func (service PaymentService) ExpireOne(ctx context.Context, payment Payment, no
 
 	outcome := ConfirmPaymentOutcomeIgnored
 
-	err := service.paymentRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+	err := service.paymentRepoPort.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
 		// D6: the batch read above is a stale snapshot by the time this per-payment transaction
 		// opens — a guest may have cancelled it, another tick may already have expired it, or a
 		// barista may have approved it (FR-5: approved is never expirable, however late a tick
 		// gets to it). Re-read under lock and stand down if it has left pending or expirability.
-		locked, lockErr := service.paymentRepository.GetPaymentByPartnerReferenceNoForUpdate(ctxWithTx, payment.PartnerReferenceNo)
+		locked, lockErr := service.paymentRepoPort.GetPaymentByPartnerReferenceNoForUpdate(ctxWithTx, payment.PartnerReferenceNo)
 		if lockErr != nil {
 			return lockErr
 		}
@@ -262,7 +262,7 @@ func (service PaymentService) ExpireOne(ctx context.Context, payment Payment, no
 			return nil
 		}
 
-		gatewayStatus, gatewayErr := service.paymentGatewayRepository.QueryQris(ctxWithTx, QueryQrisInput{
+		gatewayStatus, gatewayErr := service.paymentGatewayPort.QueryQris(ctxWithTx, QueryQrisInput{
 			PartnerReferenceNo: payment.PartnerReferenceNo,
 			GatewayReferenceNo: payment.GatewayReferenceNo,
 		})
@@ -301,7 +301,7 @@ func (service PaymentService) LoadPaymentTransaction(ctxWithTx context.Context, 
 	if payment.TransactionId == nil {
 		return &Error{Type: InternalServerError, Message: "payment has no transaction"}
 	}
-	transaction, txErr := service.transactionRepository.GetTransactionById(ctxWithTx, *payment.TransactionId)
+	transaction, txErr := service.transactionRepoPort.GetTransactionById(ctxWithTx, *payment.TransactionId)
 	if txErr != nil {
 		return txErr
 	}
@@ -332,7 +332,7 @@ func (service PaymentService) RefreshPendingPaymentStatus(ctxWithTx context.Cont
 		return payment, ConfirmPaymentOutcomeIgnored, nil
 	}
 
-	gatewayStatus, gatewayErr := service.paymentGatewayRepository.QueryQris(ctxWithTx, QueryQrisInput{
+	gatewayStatus, gatewayErr := service.paymentGatewayPort.QueryQris(ctxWithTx, QueryQrisInput{
 		PartnerReferenceNo: payment.PartnerReferenceNo,
 		GatewayReferenceNo: payment.GatewayReferenceNo,
 	})
@@ -349,7 +349,7 @@ func (service PaymentService) RefreshPendingPaymentStatus(ctxWithTx context.Cont
 	}
 
 	payment.StatusCheckedAt = &now
-	updated, err := service.paymentRepository.UpdatePaymentById(ctxWithTx, payment, payment.Id)
+	updated, err := service.paymentRepoPort.UpdatePaymentById(ctxWithTx, payment, payment.Id)
 	return updated, ConfirmPaymentOutcomeIgnored, err
 }
 
@@ -360,7 +360,7 @@ func (service PaymentService) RefreshPendingCashPaymentStatus(ctxWithTx context.
 
 	if now.Before(payment.ExpiredAt) {
 		payment.StatusCheckedAt = &now
-		updated, err := service.paymentRepository.UpdatePaymentById(ctxWithTx, payment, payment.Id)
+		updated, err := service.paymentRepoPort.UpdatePaymentById(ctxWithTx, payment, payment.Id)
 		return updated, ConfirmPaymentOutcomeIgnored, err
 	}
 
@@ -379,7 +379,7 @@ func (service PaymentService) PayTransaction(ctx context.Context, transaction Tr
 
 	id := transaction.Id
 
-	paymentWallet, err := service.walletRepository.GetWalletById(ctx, walletId)
+	paymentWallet, err := service.walletRepoPort.GetWalletById(ctx, walletId)
 	if err != nil {
 		return err
 	}
@@ -391,7 +391,7 @@ func (service PaymentService) PayTransaction(ctx context.Context, transaction Tr
 	paymentCost := transaction.Total * paymentWallet.PaymentCostPercentage / 100
 	newBalance := paymentWallet.Balance + transaction.Total - paymentCost
 
-	if _, err := service.walletRepository.UpdateWalletById(ctx, Wallet{
+	if _, err := service.walletRepoPort.UpdateWalletById(ctx, Wallet{
 		Name:                  paymentWallet.Name,
 		PaymentCostPercentage: paymentWallet.PaymentCostPercentage,
 		Balance:               newBalance,
@@ -415,14 +415,14 @@ func (service PaymentService) PayTransaction(ctx context.Context, transaction Tr
 
 	totalIncome := transaction.Total - paymentCost - foodCost
 
-	if _, err := service.transactionRepository.UpdateTransactionById(ctx, Transaction{TotalIncome: totalIncome}, id); err != nil {
+	if _, err := service.transactionRepoPort.UpdateTransactionById(ctx, Transaction{TotalIncome: totalIncome}, id); err != nil {
 		return err
 	}
 
 	// FR-1: enqueued after the wallet and income writes succeed, atomic with the payment (D5).
-	if err := service.kdsNotificationRepository.EnqueueForTransaction(ctx, transaction, KdsNotificationKindOrderPaid); err != nil {
+	if err := service.kdsNotificationRepoPort.EnqueueForTransaction(ctx, transaction, KdsNotificationKindOrderPaid); err != nil {
 		return err
 	}
 
-	return service.transactionRepository.PayTransaction(ctx, walletId, time.Now(), paidAmount, id)
+	return service.transactionRepoPort.PayTransaction(ctx, walletId, time.Now(), paidAmount, id)
 }

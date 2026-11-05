@@ -7,20 +7,20 @@ import (
 )
 
 type AvailabilityService struct {
-	productRepository      ProductRepository
-	variantRepository      VariantRepository
-	availabilityRepository AvailabilityRepository
+	productRepoPort      ProductRepoPort
+	variantRepoPort      VariantRepoPort
+	availabilityRepoPort AvailabilityRepoPort
 }
 
 func NewAvailabilityService(
-	productRepository ProductRepository,
-	variantRepository VariantRepository,
-	availabilityRepository AvailabilityRepository,
+	productRepoPort ProductRepoPort,
+	variantRepoPort VariantRepoPort,
+	availabilityRepoPort AvailabilityRepoPort,
 ) AvailabilityService {
 	return AvailabilityService{
-		productRepository:      productRepository,
-		variantRepository:      variantRepository,
-		availabilityRepository: availabilityRepository,
+		productRepoPort:      productRepoPort,
+		variantRepoPort:      variantRepoPort,
+		availabilityRepoPort: availabilityRepoPort,
 	}
 }
 
@@ -28,7 +28,7 @@ func (service AvailabilityService) BuildAvailabilityList(ctx context.Context) ([
 	purchase := SaleTypePurchase
 	published := ProductStatusPublished
 
-	products, err := service.productRepository.GetProductList(ctx, "", CreatedAt, Ascending, 0, 0, &purchase, &published)
+	products, err := service.productRepoPort.GetProductList(ctx, "", CreatedAt, Ascending, 0, 0, &purchase, &published)
 	if err != nil {
 		return []AvailabilityProduct{}, err
 	}
@@ -50,7 +50,7 @@ func (service AvailabilityService) RecordProductAvailabilityMovements(ctx contex
 		delta := *update.AvailableQuantity - previous
 		resultingQuantity := *update.AvailableQuantity
 
-		if err := service.availabilityRepository.CreateAvailabilityMovement(ctx, AvailabilityMovement{
+		if err := service.availabilityRepoPort.CreateAvailabilityMovement(ctx, AvailabilityMovement{
 			ProductId: &product.Id, Delta: &delta, ResultingQuantity: &resultingQuantity,
 			Reason: AvailabilityMovementReasonManualSet,
 		}); err != nil {
@@ -64,7 +64,7 @@ func (service AvailabilityService) RecordProductAvailabilityMovements(ctx contex
 			reason = AvailabilityMovementReasonSwitchedOff
 		}
 
-		if err := service.availabilityRepository.CreateAvailabilityMovement(ctx, AvailabilityMovement{
+		if err := service.availabilityRepoPort.CreateAvailabilityMovement(ctx, AvailabilityMovement{
 			ProductId: &product.Id, Reason: reason,
 		}); err != nil {
 			return err
@@ -83,7 +83,7 @@ func (service AvailabilityService) RecordVariantAvailabilityMovements(ctx contex
 		delta := *update.AvailableQuantity - previous
 		resultingQuantity := *update.AvailableQuantity
 
-		if err := service.availabilityRepository.CreateAvailabilityMovement(ctx, AvailabilityMovement{
+		if err := service.availabilityRepoPort.CreateAvailabilityMovement(ctx, AvailabilityMovement{
 			VariantId: &variant.Id, Delta: &delta, ResultingQuantity: &resultingQuantity,
 			Reason: AvailabilityMovementReasonManualSet,
 		}); err != nil {
@@ -97,7 +97,7 @@ func (service AvailabilityService) RecordVariantAvailabilityMovements(ctx contex
 			reason = AvailabilityMovementReasonSwitchedOff
 		}
 
-		if err := service.availabilityRepository.CreateAvailabilityMovement(ctx, AvailabilityMovement{
+		if err := service.availabilityRepoPort.CreateAvailabilityMovement(ctx, AvailabilityMovement{
 			VariantId: &variant.Id, Reason: reason,
 		}); err != nil {
 			return err
@@ -143,7 +143,7 @@ func (service AvailabilityService) ApplyDelta(ctx context.Context, oldItems []Tr
 
 			variant, ok := variantsById[item.VariantId]
 			if !ok {
-				lockedVariant, err := service.availabilityRepository.LockVariantById(ctx, item.VariantId)
+				lockedVariant, err := service.availabilityRepoPort.LockVariantById(ctx, item.VariantId)
 				if err != nil {
 					return nil, err
 				}
@@ -163,7 +163,7 @@ func (service AvailabilityService) ApplyDelta(ctx context.Context, oldItems []Tr
 			switch product.AvailabilityTracking {
 			case AvailabilityTrackingProduct:
 				if _, ok := productsById[product.Id]; !ok {
-					lockedProduct, err := service.availabilityRepository.LockProductById(ctx, product.Id)
+					lockedProduct, err := service.availabilityRepoPort.LockProductById(ctx, product.Id)
 					if err != nil {
 						return nil, err
 					}
@@ -230,11 +230,11 @@ func (service AvailabilityService) ApplyDelta(ctx context.Context, oldItems []Tr
 			if validate && newQuantity < 0 {
 				return &Error{Type: BadRequest, Message: fmt.Sprintf("only %d %s left", current, namesByUnit[unit])}
 			}
-			if err := service.availabilityRepository.UpdateProductAvailableQuantity(ctx, unit.id, newQuantity); err != nil {
+			if err := service.availabilityRepoPort.UpdateProductAvailableQuantity(ctx, unit.id, newQuantity); err != nil {
 				return err
 			}
 			productId := unit.id
-			if err := service.availabilityRepository.CreateAvailabilityMovement(ctx, AvailabilityMovement{
+			if err := service.availabilityRepoPort.CreateAvailabilityMovement(ctx, AvailabilityMovement{
 				ProductId: &productId, Delta: &quantityDelta, ResultingQuantity: &newQuantity,
 				Reason: reason, TransactionId: transactionId,
 			}); err != nil {
@@ -250,11 +250,11 @@ func (service AvailabilityService) ApplyDelta(ctx context.Context, oldItems []Tr
 			if validate && newQuantity < 0 {
 				return &Error{Type: BadRequest, Message: fmt.Sprintf("only %d %s left", current, namesByUnit[unit])}
 			}
-			if err := service.availabilityRepository.UpdateVariantAvailableQuantity(ctx, unit.id, newQuantity); err != nil {
+			if err := service.availabilityRepoPort.UpdateVariantAvailableQuantity(ctx, unit.id, newQuantity); err != nil {
 				return err
 			}
 			variantId := unit.id
-			if err := service.availabilityRepository.CreateAvailabilityMovement(ctx, AvailabilityMovement{
+			if err := service.availabilityRepoPort.CreateAvailabilityMovement(ctx, AvailabilityMovement{
 				VariantId: &variantId, Delta: &quantityDelta, ResultingQuantity: &newQuantity,
 				Reason: reason, TransactionId: transactionId,
 			}); err != nil {
@@ -279,7 +279,7 @@ func (service AvailabilityService) adjust(ctx context.Context, items []Transacti
 
 		variant, ok := variantsById[item.VariantId]
 		if !ok {
-			lockedVariant, err := service.availabilityRepository.LockVariantById(ctx, item.VariantId)
+			lockedVariant, err := service.availabilityRepoPort.LockVariantById(ctx, item.VariantId)
 			if err != nil {
 				return err
 			}
@@ -299,7 +299,7 @@ func (service AvailabilityService) adjust(ctx context.Context, items []Transacti
 		switch product.AvailabilityTracking {
 		case AvailabilityTrackingProduct:
 			if _, ok := productsById[product.Id]; !ok {
-				lockedProduct, err := service.availabilityRepository.LockProductById(ctx, product.Id)
+				lockedProduct, err := service.availabilityRepoPort.LockProductById(ctx, product.Id)
 				if err != nil {
 					return err
 				}
@@ -331,11 +331,11 @@ func (service AvailabilityService) adjust(ctx context.Context, items []Transacti
 			if validate && newQuantity < 0 {
 				return &Error{Type: BadRequest, Message: fmt.Sprintf("only %d %s left", current, namesByUnit[unit])}
 			}
-			if err := service.availabilityRepository.UpdateProductAvailableQuantity(ctx, unit.id, newQuantity); err != nil {
+			if err := service.availabilityRepoPort.UpdateProductAvailableQuantity(ctx, unit.id, newQuantity); err != nil {
 				return err
 			}
 			productId := unit.id
-			if err := service.availabilityRepository.CreateAvailabilityMovement(ctx, AvailabilityMovement{
+			if err := service.availabilityRepoPort.CreateAvailabilityMovement(ctx, AvailabilityMovement{
 				ProductId: &productId, Delta: &delta, ResultingQuantity: &newQuantity,
 				Reason: reason, TransactionId: transactionId,
 			}); err != nil {
@@ -351,11 +351,11 @@ func (service AvailabilityService) adjust(ctx context.Context, items []Transacti
 			if validate && newQuantity < 0 {
 				return &Error{Type: BadRequest, Message: fmt.Sprintf("only %d %s left", current, namesByUnit[unit])}
 			}
-			if err := service.availabilityRepository.UpdateVariantAvailableQuantity(ctx, unit.id, newQuantity); err != nil {
+			if err := service.availabilityRepoPort.UpdateVariantAvailableQuantity(ctx, unit.id, newQuantity); err != nil {
 				return err
 			}
 			variantId := unit.id
-			if err := service.availabilityRepository.CreateAvailabilityMovement(ctx, AvailabilityMovement{
+			if err := service.availabilityRepoPort.CreateAvailabilityMovement(ctx, AvailabilityMovement{
 				VariantId: &variantId, Delta: &delta, ResultingQuantity: &newQuantity,
 				Reason: reason, TransactionId: transactionId,
 			}); err != nil {

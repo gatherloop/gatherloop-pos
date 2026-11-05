@@ -13,7 +13,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func newMockAvailabilityRepository(t *testing.T) (domain.AvailabilityRepository, sqlmock.Sqlmock) {
+func newMockAvailabilityRepoPort(t *testing.T) (domain.AvailabilityRepoPort, sqlmock.Sqlmock) {
 	t.Helper()
 
 	sqlDB, mock, err := sqlmock.New()
@@ -26,7 +26,7 @@ func newMockAvailabilityRepository(t *testing.T) (domain.AvailabilityRepository,
 	}), &gorm.Config{})
 	require.NoError(t, err)
 
-	return mysql.NewAvailabilityRepository(gormDB), mock
+	return mysql.NewAvailabilityRepoPort(gormDB), mock
 }
 
 // FR-8: every availability change is written to the ledger in the same DB transaction.
@@ -55,7 +55,7 @@ func TestCreateAvailabilityMovement_InsertsExpectedColumns(t *testing.T) {
 }
 
 func TestAvailabilityRepository_GetAvailabilityMovementList_FiltersByVariant(t *testing.T) {
-	repo, mock := newMockAvailabilityRepository(t)
+	repo, mock := newMockAvailabilityRepoPort(t)
 
 	mock.ExpectQuery("SELECT \\* FROM `availability_movements` WHERE variant_id = \\? ORDER BY created_at DESC, id DESC LIMIT \\?").
 		WithArgs(int64(1), 10).
@@ -69,7 +69,7 @@ func TestAvailabilityRepository_GetAvailabilityMovementList_FiltersByVariant(t *
 }
 
 func TestAvailabilityRepository_GetAvailabilityMovementList_FiltersByProduct(t *testing.T) {
-	repo, mock := newMockAvailabilityRepository(t)
+	repo, mock := newMockAvailabilityRepoPort(t)
 
 	mock.ExpectQuery("SELECT \\* FROM `availability_movements` WHERE product_id = \\? ORDER BY created_at DESC, id DESC").
 		WithArgs(int64(10)).
@@ -83,7 +83,7 @@ func TestAvailabilityRepository_GetAvailabilityMovementList_FiltersByProduct(t *
 }
 
 func TestAvailabilityRepository_GetAvailabilityMovementListTotal(t *testing.T) {
-	repo, mock := newMockAvailabilityRepository(t)
+	repo, mock := newMockAvailabilityRepoPort(t)
 
 	mock.ExpectQuery("SELECT count\\(\\*\\) FROM `availability_movements` WHERE variant_id = \\?").
 		WithArgs(int64(1)).

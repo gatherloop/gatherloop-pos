@@ -16,7 +16,7 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-func newCustomerTestHandler(repo *mock.MockCustomerRepository) restapi.CustomerHandler {
+func newCustomerTestHandler(repo *mock.MockCustomerRepoPort) restapi.CustomerHandler {
 	return restapi.NewCustomerHandler(domain.NewCustomerUsecase(repo))
 }
 
@@ -25,14 +25,14 @@ func TestCustomerHandler_GetCurrentCustomer(t *testing.T) {
 
 	tests := []struct {
 		name                   string
-		setupMock              func(r *mock.MockCustomerRepository)
+		setupMock              func(r *mock.MockCustomerRepoPort)
 		expectedStatus         int
 		expectedName           string
 		expectedWhatsappNumber string
 	}{
 		{
 			name: "a session that has ordered before reads back its name and whatsapp number",
-			setupMock: func(r *mock.MockCustomerRepository) {
+			setupMock: func(r *mock.MockCustomerRepoPort) {
 				r.EXPECT().GetCustomerBySessionId(gomock.Any(), testSessionId).
 					Return(domain.Customer{Id: 1, SessionId: testSessionId, Name: "Budi", WhatsappNumber: &whatsappNumber}, nil)
 			},
@@ -42,7 +42,7 @@ func TestCustomerHandler_GetCurrentCustomer(t *testing.T) {
 		},
 		{
 			name: "a fresh session reads an empty name and whatsapp number, not a 404",
-			setupMock: func(r *mock.MockCustomerRepository) {
+			setupMock: func(r *mock.MockCustomerRepoPort) {
 				r.EXPECT().GetCustomerBySessionId(gomock.Any(), testSessionId).
 					Return(domain.Customer{}, &domain.Error{Type: domain.NotFound})
 			},
@@ -52,7 +52,7 @@ func TestCustomerHandler_GetCurrentCustomer(t *testing.T) {
 		},
 		{
 			name: "repo error",
-			setupMock: func(r *mock.MockCustomerRepository) {
+			setupMock: func(r *mock.MockCustomerRepoPort) {
 				r.EXPECT().GetCustomerBySessionId(gomock.Any(), testSessionId).
 					Return(domain.Customer{}, &domain.Error{Type: domain.InternalServerError})
 			},
@@ -65,7 +65,7 @@ func TestCustomerHandler_GetCurrentCustomer(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			repo := mock.NewMockCustomerRepository(ctrl)
+			repo := mock.NewMockCustomerRepoPort(ctrl)
 			tt.setupMock(repo)
 
 			handler := newCustomerTestHandler(repo)
@@ -100,7 +100,7 @@ func TestCustomerRoute_RequiresSessionId(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			repo := mock.NewMockCustomerRepository(ctrl)
+			repo := mock.NewMockCustomerRepoPort(ctrl)
 
 			router := mux.NewRouter()
 			restapi.NewCustomerRouter(newCustomerTestHandler(repo)).AddRouter(router)

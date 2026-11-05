@@ -9,20 +9,20 @@ import (
 const tagNameMaxLength = 100
 
 type TagUsecase struct {
-	tagRepository TagRepository
-	tagService    TagService
+	tagRepoPort TagRepoPort
+	tagService  TagService
 }
 
-func NewTagUsecase(tagRepository TagRepository, tagService TagService) TagUsecase {
-	return TagUsecase{tagRepository: tagRepository, tagService: tagService}
+func NewTagUsecase(tagRepoPort TagRepoPort, tagService TagService) TagUsecase {
+	return TagUsecase{tagRepoPort: tagRepoPort, tagService: tagService}
 }
 
 func (usecase TagUsecase) GetTagList(ctx context.Context) ([]Tag, *Error) {
-	return usecase.tagRepository.GetTagList(ctx)
+	return usecase.tagRepoPort.GetTagList(ctx)
 }
 
 func (usecase TagUsecase) GetTagById(ctx context.Context, id int64) (Tag, *Error) {
-	return usecase.tagRepository.GetTagById(ctx, id)
+	return usecase.tagRepoPort.GetTagById(ctx, id)
 }
 
 func (usecase TagUsecase) CreateTag(ctx context.Context, tag Tag) (Tag, *Error) {
@@ -30,7 +30,7 @@ func (usecase TagUsecase) CreateTag(ctx context.Context, tag Tag) (Tag, *Error) 
 	if err := usecase.tagService.ValidateTag(ctx, tag, nil); err != nil {
 		return Tag{}, err
 	}
-	return usecase.tagRepository.CreateTag(ctx, tag)
+	return usecase.tagRepoPort.CreateTag(ctx, tag)
 }
 
 func (usecase TagUsecase) UpdateTagById(ctx context.Context, tag Tag, id int64) (Tag, *Error) {
@@ -38,25 +38,25 @@ func (usecase TagUsecase) UpdateTagById(ctx context.Context, tag Tag, id int64) 
 	if err := usecase.tagService.ValidateTag(ctx, tag, &id); err != nil {
 		return Tag{}, err
 	}
-	return usecase.tagRepository.UpdateTagById(ctx, tag, id)
+	return usecase.tagRepoPort.UpdateTagById(ctx, tag, id)
 }
 
 func (usecase TagUsecase) DeleteTagById(ctx context.Context, id int64) *Error {
-	if _, err := usecase.tagRepository.GetTagById(ctx, id); err != nil {
+	if _, err := usecase.tagRepoPort.GetTagById(ctx, id); err != nil {
 		return err
 	}
-	return usecase.tagRepository.DeleteTagById(ctx, id)
+	return usecase.tagRepoPort.DeleteTagById(ctx, id)
 }
 
 func (usecase TagUsecase) SetTagVariants(ctx context.Context, tagId int64, variantIds []int64) (Tag, *Error) {
 	variantIds = utils.UniqueInt64s(variantIds)
 
-	err := usecase.tagRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
-		if _, err := usecase.tagRepository.GetTagById(ctxWithTx, tagId); err != nil {
+	err := usecase.tagRepoPort.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+		if _, err := usecase.tagRepoPort.GetTagById(ctxWithTx, tagId); err != nil {
 			return err
 		}
 
-		liveVariantIds, err := usecase.tagRepository.GetLiveVariantIds(ctxWithTx, variantIds)
+		liveVariantIds, err := usecase.tagRepoPort.GetLiveVariantIds(ctxWithTx, variantIds)
 		if err != nil {
 			return err
 		}
@@ -64,7 +64,7 @@ func (usecase TagUsecase) SetTagVariants(ctx context.Context, tagId int64, varia
 			return &Error{Type: BadRequest, Message: "variant ids contain unknown or deleted variants"}
 		}
 
-		existingVariantIds, err := usecase.tagRepository.GetTagVariantIds(ctxWithTx, tagId)
+		existingVariantIds, err := usecase.tagRepoPort.GetTagVariantIds(ctxWithTx, tagId)
 		if err != nil {
 			return err
 		}
@@ -78,7 +78,7 @@ func (usecase TagUsecase) SetTagVariants(ctx context.Context, tagId int64, varia
 		return Tag{}, err
 	}
 
-	return usecase.tagRepository.GetTagById(ctx, tagId)
+	return usecase.tagRepoPort.GetTagById(ctx, tagId)
 }
 
 func tagVariantPairs(tagId int64, variantIds []int64) []VariantTagPair {

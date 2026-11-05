@@ -5,35 +5,35 @@ import (
 )
 
 type CalculationUsecase struct {
-	calculationRepository CalculationRepository
-	walletRepository      WalletRepository
+	calculationRepoPort CalculationRepoPort
+	walletRepoPort      WalletRepoPort
 }
 
-func NewCalculationUsecase(calculationRepository CalculationRepository, walletRepository WalletRepository) CalculationUsecase {
+func NewCalculationUsecase(calculationRepoPort CalculationRepoPort, walletRepoPort WalletRepoPort) CalculationUsecase {
 	return CalculationUsecase{
-		calculationRepository: calculationRepository,
-		walletRepository:      walletRepository,
+		calculationRepoPort: calculationRepoPort,
+		walletRepoPort:      walletRepoPort,
 	}
 }
 
 func (usecase CalculationUsecase) GetCalculationList(ctx context.Context, sortBy SortBy, order Order, skip int, limit int) ([]Calculation, *Error) {
-	return usecase.calculationRepository.GetCalculationList(ctx, sortBy, order, skip, limit)
+	return usecase.calculationRepoPort.GetCalculationList(ctx, sortBy, order, skip, limit)
 }
 
 func (usecase CalculationUsecase) GetCalculationById(ctx context.Context, id int64) (Calculation, *Error) {
-	return usecase.calculationRepository.GetCalculationById(ctx, id)
+	return usecase.calculationRepoPort.GetCalculationById(ctx, id)
 }
 
 func (usecase CalculationUsecase) CreateCalculation(ctx context.Context, calculation Calculation) (Calculation, *Error) {
 	var created Calculation
-	err := usecase.calculationRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+	err := usecase.calculationRepoPort.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
 		var totalCalculation float32
 		for _, item := range calculation.CalculationItems {
 			totalCalculation += item.Price * float32(item.Amount)
 		}
 		calculation.TotalCalculation = totalCalculation
 
-		wallet, err := usecase.walletRepository.GetWalletById(ctxWithTx, calculation.WalletId)
+		wallet, err := usecase.walletRepoPort.GetWalletById(ctxWithTx, calculation.WalletId)
 		if err != nil {
 			return err
 		}
@@ -44,7 +44,7 @@ func (usecase CalculationUsecase) CreateCalculation(ctx context.Context, calcula
 			calculation.CalculationItems[i].Subtotal = subtotal
 		}
 
-		createdCalc, err := usecase.calculationRepository.CreateCalculation(ctxWithTx, calculation)
+		createdCalc, err := usecase.calculationRepoPort.CreateCalculation(ctxWithTx, calculation)
 		if err != nil {
 			return err
 		}
@@ -57,8 +57,8 @@ func (usecase CalculationUsecase) CreateCalculation(ctx context.Context, calcula
 
 func (usecase CalculationUsecase) UpdateCalculationById(ctx context.Context, calculationRequest Calculation, id int64) (Calculation, *Error) {
 	var updatedCalc Calculation
-	err := usecase.calculationRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
-		existingCalculation, err := usecase.calculationRepository.GetCalculationById(ctxWithTx, id)
+	err := usecase.calculationRepoPort.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+		existingCalculation, err := usecase.calculationRepoPort.GetCalculationById(ctxWithTx, id)
 		if err != nil {
 			return err
 		}
@@ -72,7 +72,7 @@ func (usecase CalculationUsecase) UpdateCalculationById(ctx context.Context, cal
 		}
 		calculationRequest.TotalCalculation = totalCalculation
 
-		wallet, err := usecase.walletRepository.GetWalletById(ctxWithTx, calculationRequest.WalletId)
+		wallet, err := usecase.walletRepoPort.GetWalletById(ctxWithTx, calculationRequest.WalletId)
 		if err != nil {
 			return err
 		}
@@ -83,7 +83,7 @@ func (usecase CalculationUsecase) UpdateCalculationById(ctx context.Context, cal
 			calculationRequest.CalculationItems[index].Subtotal = subtotal
 		}
 
-		updated, err := usecase.calculationRepository.UpdateCalculationById(ctxWithTx, calculationRequest, id)
+		updated, err := usecase.calculationRepoPort.UpdateCalculationById(ctxWithTx, calculationRequest, id)
 		if err != nil {
 			return err
 		}
@@ -99,7 +99,7 @@ func (usecase CalculationUsecase) UpdateCalculationById(ctx context.Context, cal
 }
 
 func (usecase CalculationUsecase) DeleteCalculationById(ctx context.Context, id int64) *Error {
-	existingCalculation, err := usecase.calculationRepository.GetCalculationById(ctx, id)
+	existingCalculation, err := usecase.calculationRepoPort.GetCalculationById(ctx, id)
 	if err != nil {
 		return err
 	}
@@ -108,9 +108,9 @@ func (usecase CalculationUsecase) DeleteCalculationById(ctx context.Context, id 
 		return &Error{Type: BadRequest, Message: "cannot delete completed calculation"}
 	}
 
-	return usecase.calculationRepository.DeleteCalculationById(ctx, id)
+	return usecase.calculationRepoPort.DeleteCalculationById(ctx, id)
 }
 
 func (usecase CalculationUsecase) CompleteCalculationById(ctx context.Context, id int64) *Error {
-	return usecase.calculationRepository.CompleteCalculationById(ctx, id)
+	return usecase.calculationRepoPort.CompleteCalculationById(ctx, id)
 }

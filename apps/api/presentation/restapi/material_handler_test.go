@@ -18,13 +18,13 @@ func TestMaterialHandler_GetMaterialList(t *testing.T) {
 	tests := []struct {
 		name           string
 		url            string
-		setupMock      func(r *mock.MockMaterialRepository)
+		setupMock      func(r *mock.MockMaterialRepoPort)
 		expectedStatus int
 	}{
 		{
 			name: "success",
 			url:  "/materials",
-			setupMock: func(r *mock.MockMaterialRepository) {
+			setupMock: func(r *mock.MockMaterialRepoPort) {
 				r.EXPECT().GetMaterialList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]domain.Material{{Id: 1}}, nil)
 				r.EXPECT().GetMaterialListTotal(gomock.Any(), gomock.Any(), gomock.Any()).Return(int64(1), nil)
 				r.EXPECT().GetMaterialsWeeklyUsage(gomock.Any(), gomock.Any()).Return(map[int64]float32{1: 0}, nil)
@@ -34,13 +34,13 @@ func TestMaterialHandler_GetMaterialList(t *testing.T) {
 		{
 			name:           "invalid skip param",
 			url:            "/materials?skip=abc",
-			setupMock:      func(r *mock.MockMaterialRepository) {},
+			setupMock:      func(r *mock.MockMaterialRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name: "repo error",
 			url:  "/materials",
-			setupMock: func(r *mock.MockMaterialRepository) {
+			setupMock: func(r *mock.MockMaterialRepoPort) {
 				r.EXPECT().GetMaterialList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &domain.Error{Type: domain.InternalServerError, Message: "db error"})
 			},
 			expectedStatus: http.StatusInternalServerError,
@@ -48,7 +48,7 @@ func TestMaterialHandler_GetMaterialList(t *testing.T) {
 		{
 			name: "stockCheckStatus=required is passed to the repository",
 			url:  "/materials?stockCheckStatus=required",
-			setupMock: func(r *mock.MockMaterialRepository) {
+			setupMock: func(r *mock.MockMaterialRepoPort) {
 				requiredStatus := domain.MaterialStockCheckStatusRequired
 				r.EXPECT().GetMaterialList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), &requiredStatus).Return([]domain.Material{{Id: 1}}, nil)
 				r.EXPECT().GetMaterialListTotal(gomock.Any(), gomock.Any(), &requiredStatus).Return(int64(1), nil)
@@ -59,7 +59,7 @@ func TestMaterialHandler_GetMaterialList(t *testing.T) {
 		{
 			name: "stockCheckStatus=excluded is passed to the repository",
 			url:  "/materials?stockCheckStatus=excluded",
-			setupMock: func(r *mock.MockMaterialRepository) {
+			setupMock: func(r *mock.MockMaterialRepoPort) {
 				excludedStatus := domain.MaterialStockCheckStatusExcluded
 				r.EXPECT().GetMaterialList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), &excludedStatus).Return([]domain.Material{}, nil)
 				r.EXPECT().GetMaterialListTotal(gomock.Any(), gomock.Any(), &excludedStatus).Return(int64(0), nil)
@@ -70,7 +70,7 @@ func TestMaterialHandler_GetMaterialList(t *testing.T) {
 		{
 			name: "stockCheckStatus=all and omission behave identically (nil filter)",
 			url:  "/materials?stockCheckStatus=all",
-			setupMock: func(r *mock.MockMaterialRepository) {
+			setupMock: func(r *mock.MockMaterialRepoPort) {
 				r.EXPECT().GetMaterialList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), (*domain.MaterialStockCheckStatus)(nil)).Return([]domain.Material{{Id: 1}}, nil)
 				r.EXPECT().GetMaterialListTotal(gomock.Any(), gomock.Any(), (*domain.MaterialStockCheckStatus)(nil)).Return(int64(1), nil)
 				r.EXPECT().GetMaterialsWeeklyUsage(gomock.Any(), gomock.Any()).Return(map[int64]float32{1: 0}, nil)
@@ -80,7 +80,7 @@ func TestMaterialHandler_GetMaterialList(t *testing.T) {
 		{
 			name: "invalid stockCheckStatus value falls back to nil filter",
 			url:  "/materials?stockCheckStatus=bogus",
-			setupMock: func(r *mock.MockMaterialRepository) {
+			setupMock: func(r *mock.MockMaterialRepoPort) {
 				r.EXPECT().GetMaterialList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), (*domain.MaterialStockCheckStatus)(nil)).Return([]domain.Material{{Id: 1}}, nil)
 				r.EXPECT().GetMaterialListTotal(gomock.Any(), gomock.Any(), (*domain.MaterialStockCheckStatus)(nil)).Return(int64(1), nil)
 				r.EXPECT().GetMaterialsWeeklyUsage(gomock.Any(), gomock.Any()).Return(map[int64]float32{1: 0}, nil)
@@ -93,9 +93,9 @@ func TestMaterialHandler_GetMaterialList(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRepo := mock.NewMockMaterialRepository(ctrl)
+			mockRepo := mock.NewMockMaterialRepoPort(ctrl)
 			tt.setupMock(mockRepo)
-			handler := restapi.NewMaterialHandler(domain.NewMaterialUsecase(mockRepo, domain.NewMaterialService(mock.NewMockSupplierRepository(ctrl))))
+			handler := restapi.NewMaterialHandler(domain.NewMaterialUsecase(mockRepo, domain.NewMaterialService(mock.NewMockSupplierRepoPort(ctrl))))
 			req := httptest.NewRequest(http.MethodGet, tt.url, nil)
 			w := httptest.NewRecorder()
 			handler.GetMaterialList(w, req)
@@ -108,13 +108,13 @@ func TestMaterialHandler_GetMaterialById(t *testing.T) {
 	tests := []struct {
 		name           string
 		materialId     string
-		setupMock      func(r *mock.MockMaterialRepository)
+		setupMock      func(r *mock.MockMaterialRepoPort)
 		expectedStatus int
 	}{
 		{
 			name:       "success",
 			materialId: "1",
-			setupMock: func(r *mock.MockMaterialRepository) {
+			setupMock: func(r *mock.MockMaterialRepoPort) {
 				r.EXPECT().GetMaterialsWeeklyUsage(gomock.Any(), []int64{1}).Return(map[int64]float32{1: 0}, nil)
 				r.EXPECT().GetMaterialById(gomock.Any(), int64(1)).Return(domain.Material{Id: 1, Name: "Sugar"}, nil)
 			},
@@ -123,7 +123,7 @@ func TestMaterialHandler_GetMaterialById(t *testing.T) {
 		{
 			name:       "not found",
 			materialId: "99",
-			setupMock: func(r *mock.MockMaterialRepository) {
+			setupMock: func(r *mock.MockMaterialRepoPort) {
 				r.EXPECT().GetMaterialsWeeklyUsage(gomock.Any(), []int64{99}).Return(map[int64]float32{}, nil)
 				r.EXPECT().GetMaterialById(gomock.Any(), int64(99)).Return(domain.Material{}, &domain.Error{Type: domain.NotFound, Message: "not found"})
 			},
@@ -132,7 +132,7 @@ func TestMaterialHandler_GetMaterialById(t *testing.T) {
 		{
 			name:           "invalid id",
 			materialId:     "abc",
-			setupMock:      func(r *mock.MockMaterialRepository) {},
+			setupMock:      func(r *mock.MockMaterialRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 	}
@@ -141,9 +141,9 @@ func TestMaterialHandler_GetMaterialById(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRepo := mock.NewMockMaterialRepository(ctrl)
+			mockRepo := mock.NewMockMaterialRepoPort(ctrl)
 			tt.setupMock(mockRepo)
-			handler := restapi.NewMaterialHandler(domain.NewMaterialUsecase(mockRepo, domain.NewMaterialService(mock.NewMockSupplierRepository(ctrl))))
+			handler := restapi.NewMaterialHandler(domain.NewMaterialUsecase(mockRepo, domain.NewMaterialService(mock.NewMockSupplierRepoPort(ctrl))))
 			req := httptest.NewRequest(http.MethodGet, "/materials/"+tt.materialId, nil)
 			req = mux.SetURLVars(req, map[string]string{"materialId": tt.materialId})
 			w := httptest.NewRecorder()
@@ -157,13 +157,13 @@ func TestMaterialHandler_CreateMaterial(t *testing.T) {
 	tests := []struct {
 		name           string
 		body           string
-		setupMock      func(r *mock.MockMaterialRepository)
+		setupMock      func(r *mock.MockMaterialRepoPort)
 		expectedStatus int
 	}{
 		{
 			name: "success",
 			body: `{"name": "Sugar", "price": 15000, "unit": "gram", "purchaseUnit": "Kg", "purchaseUnitSize": 1000, "minimumStock": 2, "normalStock": 5, "isStockCheckRequired": true}`,
-			setupMock: func(r *mock.MockMaterialRepository) {
+			setupMock: func(r *mock.MockMaterialRepoPort) {
 				r.EXPECT().CreateMaterial(gomock.Any(), gomock.Any()).Return(domain.Material{Id: 1, Name: "Sugar"}, nil)
 				r.EXPECT().GetMaterialsWeeklyUsage(gomock.Any(), []int64{1}).Return(map[int64]float32{1: 0}, nil)
 			},
@@ -172,19 +172,19 @@ func TestMaterialHandler_CreateMaterial(t *testing.T) {
 		{
 			name:           "invalid JSON body",
 			body:           `{invalid`,
-			setupMock:      func(r *mock.MockMaterialRepository) {},
+			setupMock:      func(r *mock.MockMaterialRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:           "invalid purchase_unit_size",
 			body:           `{"name": "Sugar", "price": 15000, "unit": "gram", "purchaseUnit": "Kg", "purchaseUnitSize": 0, "minimumStock": 0, "normalStock": 0, "isStockCheckRequired": true}`,
-			setupMock:      func(r *mock.MockMaterialRepository) {},
+			setupMock:      func(r *mock.MockMaterialRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name: "repo error",
 			body: `{"name": "Sugar", "price": 15000, "unit": "gram", "purchaseUnit": "Kg", "purchaseUnitSize": 1000, "minimumStock": 2, "normalStock": 5, "isStockCheckRequired": true}`,
-			setupMock: func(r *mock.MockMaterialRepository) {
+			setupMock: func(r *mock.MockMaterialRepoPort) {
 				r.EXPECT().CreateMaterial(gomock.Any(), gomock.Any()).Return(domain.Material{}, &domain.Error{Type: domain.InternalServerError, Message: "db error"})
 			},
 			expectedStatus: http.StatusInternalServerError,
@@ -195,9 +195,9 @@ func TestMaterialHandler_CreateMaterial(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRepo := mock.NewMockMaterialRepository(ctrl)
+			mockRepo := mock.NewMockMaterialRepoPort(ctrl)
 			tt.setupMock(mockRepo)
-			handler := restapi.NewMaterialHandler(domain.NewMaterialUsecase(mockRepo, domain.NewMaterialService(mock.NewMockSupplierRepository(ctrl))))
+			handler := restapi.NewMaterialHandler(domain.NewMaterialUsecase(mockRepo, domain.NewMaterialService(mock.NewMockSupplierRepoPort(ctrl))))
 			req := httptest.NewRequest(http.MethodPost, "/materials", bytes.NewBufferString(tt.body))
 			req.Header.Set("Content-Type", "application/json")
 			w := httptest.NewRecorder()
@@ -212,14 +212,14 @@ func TestMaterialHandler_UpdateMaterialById(t *testing.T) {
 		name           string
 		materialId     string
 		body           string
-		setupMock      func(r *mock.MockMaterialRepository)
+		setupMock      func(r *mock.MockMaterialRepoPort)
 		expectedStatus int
 	}{
 		{
 			name:       "success",
 			materialId: "1",
 			body:       `{"name": "Salt", "price": 5000, "unit": "gram", "purchaseUnit": "Kg", "purchaseUnitSize": 1000, "minimumStock": 1, "normalStock": 3, "isStockCheckRequired": true}`,
-			setupMock: func(r *mock.MockMaterialRepository) {
+			setupMock: func(r *mock.MockMaterialRepoPort) {
 				r.EXPECT().UpdateMaterialById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Material{Id: 1, Name: "Salt"}, nil)
 				r.EXPECT().GetMaterialsWeeklyUsage(gomock.Any(), []int64{1}).Return(map[int64]float32{1: 0}, nil)
 			},
@@ -229,21 +229,21 @@ func TestMaterialHandler_UpdateMaterialById(t *testing.T) {
 			name:           "invalid id",
 			materialId:     "abc",
 			body:           `{}`,
-			setupMock:      func(r *mock.MockMaterialRepository) {},
+			setupMock:      func(r *mock.MockMaterialRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:           "invalid purchase_unit_size",
 			materialId:     "1",
 			body:           `{"name": "Salt", "price": 5000, "unit": "gram", "purchaseUnit": "Kg", "purchaseUnitSize": -1, "minimumStock": 0, "normalStock": 0, "isStockCheckRequired": true}`,
-			setupMock:      func(r *mock.MockMaterialRepository) {},
+			setupMock:      func(r *mock.MockMaterialRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:       "not found",
 			materialId: "99",
 			body:       `{"name": "Salt", "price": 5000, "unit": "gram", "purchaseUnit": "Kg", "purchaseUnitSize": 1000, "minimumStock": 1, "normalStock": 3, "isStockCheckRequired": true}`,
-			setupMock: func(r *mock.MockMaterialRepository) {
+			setupMock: func(r *mock.MockMaterialRepoPort) {
 				r.EXPECT().UpdateMaterialById(gomock.Any(), gomock.Any(), int64(99)).Return(domain.Material{}, &domain.Error{Type: domain.NotFound, Message: "not found"})
 			},
 			expectedStatus: http.StatusNotFound,
@@ -254,9 +254,9 @@ func TestMaterialHandler_UpdateMaterialById(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRepo := mock.NewMockMaterialRepository(ctrl)
+			mockRepo := mock.NewMockMaterialRepoPort(ctrl)
 			tt.setupMock(mockRepo)
-			handler := restapi.NewMaterialHandler(domain.NewMaterialUsecase(mockRepo, domain.NewMaterialService(mock.NewMockSupplierRepository(ctrl))))
+			handler := restapi.NewMaterialHandler(domain.NewMaterialUsecase(mockRepo, domain.NewMaterialService(mock.NewMockSupplierRepoPort(ctrl))))
 			req := httptest.NewRequest(http.MethodPut, "/materials/"+tt.materialId, bytes.NewBufferString(tt.body))
 			req.Header.Set("Content-Type", "application/json")
 			req = mux.SetURLVars(req, map[string]string{"materialId": tt.materialId})
@@ -271,13 +271,13 @@ func TestMaterialHandler_DeleteMaterialById(t *testing.T) {
 	tests := []struct {
 		name           string
 		materialId     string
-		setupMock      func(r *mock.MockMaterialRepository)
+		setupMock      func(r *mock.MockMaterialRepoPort)
 		expectedStatus int
 	}{
 		{
 			name:       "success",
 			materialId: "1",
-			setupMock: func(r *mock.MockMaterialRepository) {
+			setupMock: func(r *mock.MockMaterialRepoPort) {
 				r.EXPECT().DeleteMaterialById(gomock.Any(), int64(1)).Return(nil)
 			},
 			expectedStatus: http.StatusOK,
@@ -285,13 +285,13 @@ func TestMaterialHandler_DeleteMaterialById(t *testing.T) {
 		{
 			name:           "invalid id",
 			materialId:     "abc",
-			setupMock:      func(r *mock.MockMaterialRepository) {},
+			setupMock:      func(r *mock.MockMaterialRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:       "not found",
 			materialId: "99",
-			setupMock: func(r *mock.MockMaterialRepository) {
+			setupMock: func(r *mock.MockMaterialRepoPort) {
 				r.EXPECT().DeleteMaterialById(gomock.Any(), int64(99)).Return(&domain.Error{Type: domain.NotFound, Message: "not found"})
 			},
 			expectedStatus: http.StatusNotFound,
@@ -302,9 +302,9 @@ func TestMaterialHandler_DeleteMaterialById(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRepo := mock.NewMockMaterialRepository(ctrl)
+			mockRepo := mock.NewMockMaterialRepoPort(ctrl)
 			tt.setupMock(mockRepo)
-			handler := restapi.NewMaterialHandler(domain.NewMaterialUsecase(mockRepo, domain.NewMaterialService(mock.NewMockSupplierRepository(ctrl))))
+			handler := restapi.NewMaterialHandler(domain.NewMaterialUsecase(mockRepo, domain.NewMaterialService(mock.NewMockSupplierRepoPort(ctrl))))
 			req := httptest.NewRequest(http.MethodDelete, "/materials/"+tt.materialId, nil)
 			req = mux.SetURLVars(req, map[string]string{"materialId": tt.materialId})
 			w := httptest.NewRecorder()

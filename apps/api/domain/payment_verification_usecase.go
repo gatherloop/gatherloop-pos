@@ -6,40 +6,40 @@ import (
 )
 
 type PaymentVerificationUsecase struct {
-	paymentRepository             PaymentRepository
-	paymentVerificationRepository PaymentVerificationRepository
-	transactionRepository         TransactionRepository
-	cartRepository                CartRepository
-	kdsNotificationRepository     KdsNotificationRepository
-	paymentVerificationService    PaymentVerificationService
-	paymentService                PaymentService
-	kdsNotificationService        KdsNotificationService
+	paymentRepoPort             PaymentRepoPort
+	paymentVerificationRepoPort PaymentVerificationRepoPort
+	transactionRepoPort         TransactionRepoPort
+	cartRepoPort                CartRepoPort
+	kdsNotificationRepoPort     KdsNotificationRepoPort
+	paymentVerificationService  PaymentVerificationService
+	paymentService              PaymentService
+	kdsNotificationService      KdsNotificationService
 }
 
 func NewPaymentVerificationUsecase(
-	paymentRepository PaymentRepository,
-	paymentVerificationRepository PaymentVerificationRepository,
-	transactionRepository TransactionRepository,
-	cartRepository CartRepository,
-	kdsNotificationRepository KdsNotificationRepository,
+	paymentRepoPort PaymentRepoPort,
+	paymentVerificationRepoPort PaymentVerificationRepoPort,
+	transactionRepoPort TransactionRepoPort,
+	cartRepoPort CartRepoPort,
+	kdsNotificationRepoPort KdsNotificationRepoPort,
 	paymentVerificationService PaymentVerificationService,
 	paymentService PaymentService,
 	kdsNotificationService KdsNotificationService,
 ) PaymentVerificationUsecase {
 	return PaymentVerificationUsecase{
-		paymentRepository:             paymentRepository,
-		paymentVerificationRepository: paymentVerificationRepository,
-		transactionRepository:         transactionRepository,
-		cartRepository:                cartRepository,
-		kdsNotificationRepository:     kdsNotificationRepository,
-		paymentVerificationService:    paymentVerificationService,
-		paymentService:                paymentService,
-		kdsNotificationService:        kdsNotificationService,
+		paymentRepoPort:             paymentRepoPort,
+		paymentVerificationRepoPort: paymentVerificationRepoPort,
+		transactionRepoPort:         transactionRepoPort,
+		cartRepoPort:                cartRepoPort,
+		kdsNotificationRepoPort:     kdsNotificationRepoPort,
+		paymentVerificationService:  paymentVerificationService,
+		paymentService:              paymentService,
+		kdsNotificationService:      kdsNotificationService,
 	}
 }
 
 func (usecase PaymentVerificationUsecase) GetVerification(ctx context.Context, transactionId int64) (PaymentVerificationPhoto, *Error) {
-	payment, err := usecase.paymentRepository.GetPaymentByTransactionId(ctx, transactionId)
+	payment, err := usecase.paymentRepoPort.GetPaymentByTransactionId(ctx, transactionId)
 	if err != nil {
 		if err.Type == NotFound {
 			return PaymentVerificationPhoto{}, &Error{Type: NotFound, Message: "verification photo not found"}
@@ -50,7 +50,7 @@ func (usecase PaymentVerificationUsecase) GetVerification(ctx context.Context, t
 		return PaymentVerificationPhoto{}, &Error{Type: NotFound, Message: "verification photo not found"}
 	}
 
-	photo, photoErr := usecase.paymentVerificationRepository.GetByPaymentId(ctx, payment.Id)
+	photo, photoErr := usecase.paymentVerificationRepoPort.GetByPaymentId(ctx, payment.Id)
 	if photoErr != nil {
 		if photoErr.Type == NotFound {
 			return PaymentVerificationPhoto{}, &Error{Type: NotFound, Message: "verification photo not found"}
@@ -62,7 +62,7 @@ func (usecase PaymentVerificationUsecase) GetVerification(ctx context.Context, t
 }
 
 func (usecase PaymentVerificationUsecase) Approve(ctx context.Context, transactionId int64) *Error {
-	err := usecase.paymentRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+	err := usecase.paymentRepoPort.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
 		payment, resolveErr := usecase.paymentVerificationService.ResolveAwaitingCodPayment(ctxWithTx, transactionId)
 		if resolveErr != nil {
 			return resolveErr
@@ -77,29 +77,29 @@ func (usecase PaymentVerificationUsecase) Approve(ctx context.Context, transacti
 		payment.VerificationStatus = &approved
 		payment.VerifiedAt = &now
 
-		if _, updateErr := usecase.paymentRepository.UpdatePaymentById(ctxWithTx, payment, payment.Id); updateErr != nil {
+		if _, updateErr := usecase.paymentRepoPort.UpdatePaymentById(ctxWithTx, payment, payment.Id); updateErr != nil {
 			return updateErr
 		}
 
-		if deleteErr := usecase.paymentVerificationRepository.DeleteByPaymentId(ctxWithTx, payment.Id); deleteErr != nil {
+		if deleteErr := usecase.paymentVerificationRepoPort.DeleteByPaymentId(ctxWithTx, payment.Id); deleteErr != nil {
 			return deleteErr
 		}
 
-		transaction, txErr := usecase.transactionRepository.GetTransactionById(ctxWithTx, *payment.TransactionId)
+		transaction, txErr := usecase.transactionRepoPort.GetTransactionById(ctxWithTx, *payment.TransactionId)
 		if txErr != nil {
 			return txErr
 		}
 
-		cart, cartErr := usecase.cartRepository.GetCartById(ctxWithTx, payment.CartId)
+		cart, cartErr := usecase.cartRepoPort.GetCartById(ctxWithTx, payment.CartId)
 		if cartErr != nil {
 			return cartErr
 		}
 		cart.Status = CartStatusConverted
-		if _, updateCartErr := usecase.cartRepository.UpdateCartById(ctxWithTx, cart, cart.Id); updateCartErr != nil {
+		if _, updateCartErr := usecase.cartRepoPort.UpdateCartById(ctxWithTx, cart, cart.Id); updateCartErr != nil {
 			return updateCartErr
 		}
 
-		return usecase.kdsNotificationRepository.EnqueueForTransaction(ctxWithTx, transaction, KdsNotificationKindOrderPaid)
+		return usecase.kdsNotificationRepoPort.EnqueueForTransaction(ctxWithTx, transaction, KdsNotificationKindOrderPaid)
 	})
 
 	if err == nil {
@@ -110,7 +110,7 @@ func (usecase PaymentVerificationUsecase) Approve(ctx context.Context, transacti
 }
 
 func (usecase PaymentVerificationUsecase) Reject(ctx context.Context, transactionId int64) *Error {
-	return usecase.paymentRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+	return usecase.paymentRepoPort.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
 		payment, resolveErr := usecase.paymentVerificationService.ResolveAwaitingCodPayment(ctxWithTx, transactionId)
 		if resolveErr != nil {
 			return resolveErr

@@ -18,9 +18,9 @@ func TestExpenseRoute_StatisticsNotSwallowedByExpenseId(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	expRepo := mock.NewMockExpenseRepository(ctrl)
-	budgetRepo := mock.NewMockBudgetRepository(ctrl)
-	walletRepo := mock.NewMockWalletRepository(ctrl)
+	expRepo := mock.NewMockExpenseRepoPort(ctrl)
+	budgetRepo := mock.NewMockBudgetRepoPort(ctrl)
+	walletRepo := mock.NewMockWalletRepoPort(ctrl)
 	usecase := domain.NewExpenseUsecase(expRepo, budgetRepo, walletRepo)
 	handler := restapi.NewExpenseHandler(usecase)
 	expenseRouter := restapi.NewExpenseRouter(handler)

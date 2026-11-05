@@ -15,7 +15,7 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-func withTableTransactionMock(r *mock.MockTableRepository) {
+func withTableTransactionMock(r *mock.MockTableRepoPort) {
 	r.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 		func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 }
@@ -23,19 +23,19 @@ func withTableTransactionMock(r *mock.MockTableRepository) {
 func TestTableHandler_GetTableList(t *testing.T) {
 	tests := []struct {
 		name           string
-		setupMock      func(r *mock.MockTableRepository)
+		setupMock      func(r *mock.MockTableRepoPort)
 		expectedStatus int
 	}{
 		{
 			name: "success",
-			setupMock: func(r *mock.MockTableRepository) {
+			setupMock: func(r *mock.MockTableRepoPort) {
 				r.EXPECT().GetTableList(gomock.Any()).Return([]domain.Table{{Id: 1, Code: "0123456789", Label: "Meja 1"}}, nil)
 			},
 			expectedStatus: http.StatusOK,
 		},
 		{
 			name: "repo error",
-			setupMock: func(r *mock.MockTableRepository) {
+			setupMock: func(r *mock.MockTableRepoPort) {
 				r.EXPECT().GetTableList(gomock.Any()).Return(nil, &domain.Error{Type: domain.InternalServerError, Message: "db error"})
 			},
 			expectedStatus: http.StatusInternalServerError,
@@ -46,7 +46,7 @@ func TestTableHandler_GetTableList(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRepo := mock.NewMockTableRepository(ctrl)
+			mockRepo := mock.NewMockTableRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 			handler := restapi.NewTableHandler(domain.NewTableUsecase(mockRepo, domain.NewTableService(mockRepo)))
 			req := httptest.NewRequest(http.MethodGet, "/tables", nil)
@@ -61,13 +61,13 @@ func TestTableHandler_GetTableById(t *testing.T) {
 	tests := []struct {
 		name           string
 		tableId        string
-		setupMock      func(r *mock.MockTableRepository)
+		setupMock      func(r *mock.MockTableRepoPort)
 		expectedStatus int
 	}{
 		{
 			name:    "success",
 			tableId: "1",
-			setupMock: func(r *mock.MockTableRepository) {
+			setupMock: func(r *mock.MockTableRepoPort) {
 				r.EXPECT().GetTableById(gomock.Any(), int64(1)).Return(domain.Table{Id: 1, Code: "0123456789", Label: "Meja 1"}, nil)
 			},
 			expectedStatus: http.StatusOK,
@@ -75,7 +75,7 @@ func TestTableHandler_GetTableById(t *testing.T) {
 		{
 			name:    "not found",
 			tableId: "99",
-			setupMock: func(r *mock.MockTableRepository) {
+			setupMock: func(r *mock.MockTableRepoPort) {
 				r.EXPECT().GetTableById(gomock.Any(), int64(99)).Return(domain.Table{}, &domain.Error{Type: domain.NotFound, Message: "not found"})
 			},
 			expectedStatus: http.StatusNotFound,
@@ -83,7 +83,7 @@ func TestTableHandler_GetTableById(t *testing.T) {
 		{
 			name:           "invalid id",
 			tableId:        "abc",
-			setupMock:      func(r *mock.MockTableRepository) {},
+			setupMock:      func(r *mock.MockTableRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 	}
@@ -92,7 +92,7 @@ func TestTableHandler_GetTableById(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRepo := mock.NewMockTableRepository(ctrl)
+			mockRepo := mock.NewMockTableRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 			handler := restapi.NewTableHandler(domain.NewTableUsecase(mockRepo, domain.NewTableService(mockRepo)))
 			req := httptest.NewRequest(http.MethodGet, "/tables/"+tt.tableId, nil)
@@ -108,13 +108,13 @@ func TestTableHandler_CreateTable(t *testing.T) {
 	tests := []struct {
 		name           string
 		body           string
-		setupMock      func(r *mock.MockTableRepository)
+		setupMock      func(r *mock.MockTableRepoPort)
 		expectedStatus int
 	}{
 		{
 			name: "success",
 			body: `{"label": "Meja 1", "floorNumber": 1}`,
-			setupMock: func(r *mock.MockTableRepository) {
+			setupMock: func(r *mock.MockTableRepoPort) {
 				withTableTransactionMock(r)
 				r.EXPECT().GetTableByLabel(gomock.Any(), "Meja 1").Return(domain.Table{}, &domain.Error{Type: domain.NotFound})
 				r.EXPECT().GetTableByCode(gomock.Any(), gomock.Any()).Return(domain.Table{}, &domain.Error{Type: domain.NotFound})
@@ -125,13 +125,13 @@ func TestTableHandler_CreateTable(t *testing.T) {
 		{
 			name:           "invalid JSON body",
 			body:           `{invalid`,
-			setupMock:      func(r *mock.MockTableRepository) {},
+			setupMock:      func(r *mock.MockTableRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name: "duplicate label",
 			body: `{"label": "Meja 1", "floorNumber": 1}`,
-			setupMock: func(r *mock.MockTableRepository) {
+			setupMock: func(r *mock.MockTableRepoPort) {
 				withTableTransactionMock(r)
 				r.EXPECT().GetTableByLabel(gomock.Any(), "Meja 1").Return(domain.Table{Id: 1, Code: "0123456789", Label: "Meja 1"}, nil)
 			},
@@ -140,7 +140,7 @@ func TestTableHandler_CreateTable(t *testing.T) {
 		{
 			name:           "floor number less than 1",
 			body:           `{"label": "Meja 1", "floorNumber": 0}`,
-			setupMock:      func(r *mock.MockTableRepository) {},
+			setupMock:      func(r *mock.MockTableRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 	}
@@ -149,7 +149,7 @@ func TestTableHandler_CreateTable(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRepo := mock.NewMockTableRepository(ctrl)
+			mockRepo := mock.NewMockTableRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 			handler := restapi.NewTableHandler(domain.NewTableUsecase(mockRepo, domain.NewTableService(mockRepo)))
 			req := httptest.NewRequest(http.MethodPost, "/tables", bytes.NewBufferString(tt.body))
@@ -166,14 +166,14 @@ func TestTableHandler_UpdateTableById(t *testing.T) {
 		name           string
 		tableId        string
 		body           string
-		setupMock      func(r *mock.MockTableRepository)
+		setupMock      func(r *mock.MockTableRepoPort)
 		expectedStatus int
 	}{
 		{
 			name:    "success",
 			tableId: "1",
 			body:    `{"label": "Meja 1 Renamed", "floorNumber": 1}`,
-			setupMock: func(r *mock.MockTableRepository) {
+			setupMock: func(r *mock.MockTableRepoPort) {
 				withTableTransactionMock(r)
 				r.EXPECT().GetTableByLabel(gomock.Any(), "Meja 1 Renamed").Return(domain.Table{}, &domain.Error{Type: domain.NotFound})
 				r.EXPECT().GetTableById(gomock.Any(), int64(1)).Return(domain.Table{Id: 1, Code: "0123456789", Label: "Meja 1"}, nil)
@@ -185,21 +185,21 @@ func TestTableHandler_UpdateTableById(t *testing.T) {
 			name:           "invalid id",
 			tableId:        "abc",
 			body:           `{}`,
-			setupMock:      func(r *mock.MockTableRepository) {},
+			setupMock:      func(r *mock.MockTableRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:           "invalid JSON body",
 			tableId:        "1",
 			body:           `{invalid`,
-			setupMock:      func(r *mock.MockTableRepository) {},
+			setupMock:      func(r *mock.MockTableRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:    "not found",
 			tableId: "99",
 			body:    `{"label": "Meja 99", "floorNumber": 1}`,
-			setupMock: func(r *mock.MockTableRepository) {
+			setupMock: func(r *mock.MockTableRepoPort) {
 				withTableTransactionMock(r)
 				r.EXPECT().GetTableByLabel(gomock.Any(), "Meja 99").Return(domain.Table{}, &domain.Error{Type: domain.NotFound})
 				r.EXPECT().GetTableById(gomock.Any(), int64(99)).Return(domain.Table{}, &domain.Error{Type: domain.NotFound})
@@ -210,7 +210,7 @@ func TestTableHandler_UpdateTableById(t *testing.T) {
 			name:           "floor number less than 1",
 			tableId:        "1",
 			body:           `{"label": "Meja 1", "floorNumber": 0}`,
-			setupMock:      func(r *mock.MockTableRepository) {},
+			setupMock:      func(r *mock.MockTableRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 	}
@@ -219,7 +219,7 @@ func TestTableHandler_UpdateTableById(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRepo := mock.NewMockTableRepository(ctrl)
+			mockRepo := mock.NewMockTableRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 			handler := restapi.NewTableHandler(domain.NewTableUsecase(mockRepo, domain.NewTableService(mockRepo)))
 			req := httptest.NewRequest(http.MethodPut, "/tables/"+tt.tableId, bytes.NewBufferString(tt.body))
@@ -236,13 +236,13 @@ func TestTableHandler_DeleteTableById(t *testing.T) {
 	tests := []struct {
 		name           string
 		tableId        string
-		setupMock      func(r *mock.MockTableRepository)
+		setupMock      func(r *mock.MockTableRepoPort)
 		expectedStatus int
 	}{
 		{
 			name:    "success",
 			tableId: "1",
-			setupMock: func(r *mock.MockTableRepository) {
+			setupMock: func(r *mock.MockTableRepoPort) {
 				r.EXPECT().DeleteTableById(gomock.Any(), int64(1)).Return(nil)
 			},
 			expectedStatus: http.StatusOK,
@@ -250,13 +250,13 @@ func TestTableHandler_DeleteTableById(t *testing.T) {
 		{
 			name:           "invalid id",
 			tableId:        "abc",
-			setupMock:      func(r *mock.MockTableRepository) {},
+			setupMock:      func(r *mock.MockTableRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:    "not found",
 			tableId: "99",
-			setupMock: func(r *mock.MockTableRepository) {
+			setupMock: func(r *mock.MockTableRepoPort) {
 				r.EXPECT().DeleteTableById(gomock.Any(), int64(99)).Return(&domain.Error{Type: domain.NotFound, Message: "not found"})
 			},
 			expectedStatus: http.StatusNotFound,
@@ -267,7 +267,7 @@ func TestTableHandler_DeleteTableById(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRepo := mock.NewMockTableRepository(ctrl)
+			mockRepo := mock.NewMockTableRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 			handler := restapi.NewTableHandler(domain.NewTableUsecase(mockRepo, domain.NewTableService(mockRepo)))
 			req := httptest.NewRequest(http.MethodDelete, "/tables/"+tt.tableId, nil)
@@ -283,13 +283,13 @@ func TestTableHandler_RegenerateTableCode(t *testing.T) {
 	tests := []struct {
 		name           string
 		tableId        string
-		setupMock      func(r *mock.MockTableRepository)
+		setupMock      func(r *mock.MockTableRepoPort)
 		expectedStatus int
 	}{
 		{
 			name:    "success",
 			tableId: "1",
-			setupMock: func(r *mock.MockTableRepository) {
+			setupMock: func(r *mock.MockTableRepoPort) {
 				withTableTransactionMock(r)
 				r.EXPECT().GetTableById(gomock.Any(), int64(1)).Return(domain.Table{Id: 1, Code: "0123456789", Label: "Meja 1"}, nil)
 				r.EXPECT().GetTableByCode(gomock.Any(), gomock.Any()).Return(domain.Table{}, &domain.Error{Type: domain.NotFound})
@@ -300,13 +300,13 @@ func TestTableHandler_RegenerateTableCode(t *testing.T) {
 		{
 			name:           "invalid id",
 			tableId:        "abc",
-			setupMock:      func(r *mock.MockTableRepository) {},
+			setupMock:      func(r *mock.MockTableRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:    "not found",
 			tableId: "99",
-			setupMock: func(r *mock.MockTableRepository) {
+			setupMock: func(r *mock.MockTableRepoPort) {
 				withTableTransactionMock(r)
 				r.EXPECT().GetTableById(gomock.Any(), int64(99)).Return(domain.Table{}, &domain.Error{Type: domain.NotFound})
 			},
@@ -318,7 +318,7 @@ func TestTableHandler_RegenerateTableCode(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockRepo := mock.NewMockTableRepository(ctrl)
+			mockRepo := mock.NewMockTableRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 			handler := restapi.NewTableHandler(domain.NewTableUsecase(mockRepo, domain.NewTableService(mockRepo)))
 			req := httptest.NewRequest(http.MethodPut, "/tables/"+tt.tableId+"/regenerate-code", nil)

@@ -7,25 +7,25 @@ import (
 )
 
 type CartService struct {
-	cartRepository    CartRepository
-	paymentRepository PaymentRepository
-	variantRepository VariantRepository
+	cartRepoPort    CartRepoPort
+	paymentRepoPort PaymentRepoPort
+	variantRepoPort VariantRepoPort
 }
 
 func NewCartService(
-	cartRepository CartRepository,
-	paymentRepository PaymentRepository,
-	variantRepository VariantRepository,
+	cartRepoPort CartRepoPort,
+	paymentRepoPort PaymentRepoPort,
+	variantRepoPort VariantRepoPort,
 ) CartService {
 	return CartService{
-		cartRepository:    cartRepository,
-		paymentRepository: paymentRepository,
-		variantRepository: variantRepository,
+		cartRepoPort:    cartRepoPort,
+		paymentRepoPort: paymentRepoPort,
+		variantRepoPort: variantRepoPort,
 	}
 }
 
 func (service CartService) FindAwaitingPayment(ctx context.Context, cartId int64) (Payment, bool, *Error) {
-	payment, err := service.paymentRepository.GetPendingPaymentByCartId(ctx, cartId)
+	payment, err := service.paymentRepoPort.GetPendingPaymentByCartId(ctx, cartId)
 	if err != nil {
 		if err.Type == NotFound {
 			return Payment{}, false, nil
@@ -58,18 +58,18 @@ func (service CartService) AttachPendingPayment(ctx context.Context, cart Cart) 
 }
 
 func (service CartService) GetOrCreateActiveCart(ctx context.Context, sessionId string) (Cart, *Error) {
-	cart, err := service.cartRepository.GetActiveCartBySessionId(ctx, sessionId)
+	cart, err := service.cartRepoPort.GetActiveCartBySessionId(ctx, sessionId)
 	if err == nil {
 		return cart, nil
 	}
 	if err.Type != NotFound {
 		return Cart{}, err
 	}
-	return service.cartRepository.CreateCart(ctx, Cart{SessionId: sessionId, Status: CartStatusActive})
+	return service.cartRepoPort.CreateCart(ctx, Cart{SessionId: sessionId, Status: CartStatusActive})
 }
 
 func (service CartService) GetOwnedCart(ctx context.Context, sessionId string, cartItemId int64) (Cart, CartItem, *Error) {
-	cart, err := service.cartRepository.GetActiveCartBySessionId(ctx, sessionId)
+	cart, err := service.cartRepoPort.GetActiveCartBySessionId(ctx, sessionId)
 	if err != nil {
 		if err.Type == NotFound {
 			return Cart{}, CartItem{}, &Error{Type: NotFound, Message: "cart item not found"}
@@ -87,7 +87,7 @@ func (service CartService) GetOwnedCart(ctx context.Context, sessionId string, c
 }
 
 func (service CartService) ValidatePurchasableVariant(ctx context.Context, variantId int64) (Variant, *Error) {
-	variant, err := service.variantRepository.GetVariantById(ctx, variantId)
+	variant, err := service.variantRepoPort.GetVariantById(ctx, variantId)
 	if err != nil {
 		return Variant{}, err
 	}

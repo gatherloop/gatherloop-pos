@@ -17,7 +17,7 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-func newTestVariantHandler(ctrl *gomock.Controller, variantRepo *mock.MockVariantRepository, productRepo *mock.MockProductRepository) restapi.VariantHandler {
+func newTestVariantHandler(ctrl *gomock.Controller, variantRepo *mock.MockVariantRepoPort, productRepo *mock.MockProductRepoPort) restapi.VariantHandler {
 	return restapi.NewVariantHandler(domain.NewVariantUsecase(variantRepo, productRepo, newTestVariantService(ctrl)))
 }
 
@@ -25,13 +25,13 @@ func TestVariantHandler_GetVariantList(t *testing.T) {
 	tests := []struct {
 		name           string
 		url            string
-		setupMock      func(r *mock.MockVariantRepository)
+		setupMock      func(r *mock.MockVariantRepoPort)
 		expectedStatus int
 	}{
 		{
 			name: "success",
 			url:  "/variants",
-			setupMock: func(r *mock.MockVariantRepository) {
+			setupMock: func(r *mock.MockVariantRepoPort) {
 				r.EXPECT().GetVariantList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]domain.Variant{{Id: 1}}, nil)
 				r.EXPECT().GetVariantListTotal(gomock.Any(), gomock.Any()).Return(int64(1), nil)
 			},
@@ -40,13 +40,13 @@ func TestVariantHandler_GetVariantList(t *testing.T) {
 		{
 			name:           "invalid skip param",
 			url:            "/variants?skip=abc",
-			setupMock:      func(r *mock.MockVariantRepository) {},
+			setupMock:      func(r *mock.MockVariantRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name: "repo error",
 			url:  "/variants",
-			setupMock: func(r *mock.MockVariantRepository) {
+			setupMock: func(r *mock.MockVariantRepoPort) {
 				r.EXPECT().GetVariantList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &domain.Error{Type: domain.InternalServerError, Message: "db error"})
 			},
 			expectedStatus: http.StatusInternalServerError,
@@ -57,8 +57,8 @@ func TestVariantHandler_GetVariantList(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			variantRepo := mock.NewMockVariantRepository(ctrl)
-			productRepo := mock.NewMockProductRepository(ctrl)
+			variantRepo := mock.NewMockVariantRepoPort(ctrl)
+			productRepo := mock.NewMockProductRepoPort(ctrl)
 			tt.setupMock(variantRepo)
 			handler := newTestVariantHandler(ctrl, variantRepo, productRepo)
 			req := httptest.NewRequest(http.MethodGet, tt.url, nil)
@@ -73,13 +73,13 @@ func TestVariantHandler_GetVariantById(t *testing.T) {
 	tests := []struct {
 		name           string
 		variantId      string
-		setupMock      func(r *mock.MockVariantRepository)
+		setupMock      func(r *mock.MockVariantRepoPort)
 		expectedStatus int
 	}{
 		{
 			name:      "success",
 			variantId: "1",
-			setupMock: func(r *mock.MockVariantRepository) {
+			setupMock: func(r *mock.MockVariantRepoPort) {
 				r.EXPECT().GetVariantById(gomock.Any(), int64(1)).Return(domain.Variant{Id: 1, Name: "Regular"}, nil)
 			},
 			expectedStatus: http.StatusOK,
@@ -87,7 +87,7 @@ func TestVariantHandler_GetVariantById(t *testing.T) {
 		{
 			name:      "not found",
 			variantId: "99",
-			setupMock: func(r *mock.MockVariantRepository) {
+			setupMock: func(r *mock.MockVariantRepoPort) {
 				r.EXPECT().GetVariantById(gomock.Any(), int64(99)).Return(domain.Variant{}, &domain.Error{Type: domain.NotFound, Message: "not found"})
 			},
 			expectedStatus: http.StatusNotFound,
@@ -95,7 +95,7 @@ func TestVariantHandler_GetVariantById(t *testing.T) {
 		{
 			name:           "invalid id",
 			variantId:      "abc",
-			setupMock:      func(r *mock.MockVariantRepository) {},
+			setupMock:      func(r *mock.MockVariantRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 	}
@@ -104,8 +104,8 @@ func TestVariantHandler_GetVariantById(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			variantRepo := mock.NewMockVariantRepository(ctrl)
-			productRepo := mock.NewMockProductRepository(ctrl)
+			variantRepo := mock.NewMockVariantRepoPort(ctrl)
+			productRepo := mock.NewMockProductRepoPort(ctrl)
 			tt.setupMock(variantRepo)
 			handler := newTestVariantHandler(ctrl, variantRepo, productRepo)
 			req := httptest.NewRequest(http.MethodGet, "/variants/"+tt.variantId, nil)
@@ -121,13 +121,13 @@ func TestVariantHandler_CreateVariant(t *testing.T) {
 	tests := []struct {
 		name           string
 		body           string
-		setupMock      func(vr *mock.MockVariantRepository, pr *mock.MockProductRepository)
+		setupMock      func(vr *mock.MockVariantRepoPort, pr *mock.MockProductRepoPort)
 		expectedStatus int
 	}{
 		{
 			name: "success",
 			body: `{"productId": 1, "name": "Regular", "price": 15000, "materials": [], "values": []}`,
-			setupMock: func(vr *mock.MockVariantRepository, pr *mock.MockProductRepository) {
+			setupMock: func(vr *mock.MockVariantRepoPort, pr *mock.MockProductRepoPort) {
 				pr.EXPECT().GetProductById(gomock.Any(), int64(1)).Return(domain.Product{Id: 1, SaleType: domain.SaleTypePurchase}, nil)
 				vr.EXPECT().CreateVariant(gomock.Any(), gomock.Any()).Return(domain.Variant{Id: 1, Name: "Regular"}, nil)
 			},
@@ -136,13 +136,13 @@ func TestVariantHandler_CreateVariant(t *testing.T) {
 		{
 			name:           "invalid JSON body",
 			body:           `{invalid`,
-			setupMock:      func(vr *mock.MockVariantRepository, pr *mock.MockProductRepository) {},
+			setupMock:      func(vr *mock.MockVariantRepoPort, pr *mock.MockProductRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name: "repo error",
 			body: `{"productId": 1, "name": "Regular", "price": 15000, "materials": [], "values": []}`,
-			setupMock: func(vr *mock.MockVariantRepository, pr *mock.MockProductRepository) {
+			setupMock: func(vr *mock.MockVariantRepoPort, pr *mock.MockProductRepoPort) {
 				pr.EXPECT().GetProductById(gomock.Any(), int64(1)).Return(domain.Product{}, &domain.Error{Type: domain.InternalServerError, Message: "db error"})
 			},
 			expectedStatus: http.StatusInternalServerError,
@@ -153,8 +153,8 @@ func TestVariantHandler_CreateVariant(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			variantRepo := mock.NewMockVariantRepository(ctrl)
-			productRepo := mock.NewMockProductRepository(ctrl)
+			variantRepo := mock.NewMockVariantRepoPort(ctrl)
+			productRepo := mock.NewMockProductRepoPort(ctrl)
 			tt.setupMock(variantRepo, productRepo)
 			handler := newTestVariantHandler(ctrl, variantRepo, productRepo)
 			req := httptest.NewRequest(http.MethodPost, "/variants", bytes.NewBufferString(tt.body))
@@ -171,14 +171,14 @@ func TestVariantHandler_UpdateVariantById(t *testing.T) {
 		name           string
 		variantId      string
 		body           string
-		setupMock      func(vr *mock.MockVariantRepository, pr *mock.MockProductRepository)
+		setupMock      func(vr *mock.MockVariantRepoPort, pr *mock.MockProductRepoPort)
 		expectedStatus int
 	}{
 		{
 			name:      "success",
 			variantId: "1",
 			body:      `{"productId": 1, "name": "Large", "price": 20000, "materials": [], "values": []}`,
-			setupMock: func(vr *mock.MockVariantRepository, pr *mock.MockProductRepository) {
+			setupMock: func(vr *mock.MockVariantRepoPort, pr *mock.MockProductRepoPort) {
 				vr.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				vr.EXPECT().GetVariantById(gomock.Any(), int64(1)).Return(domain.Variant{Id: 1, ProductId: 1}, nil)
@@ -191,14 +191,14 @@ func TestVariantHandler_UpdateVariantById(t *testing.T) {
 			name:           "invalid id",
 			variantId:      "abc",
 			body:           `{}`,
-			setupMock:      func(vr *mock.MockVariantRepository, pr *mock.MockProductRepository) {},
+			setupMock:      func(vr *mock.MockVariantRepoPort, pr *mock.MockProductRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:      "not found",
 			variantId: "99",
 			body:      `{"productId": 1, "name": "Large", "price": 20000, "materials": [], "values": []}`,
-			setupMock: func(vr *mock.MockVariantRepository, pr *mock.MockProductRepository) {
+			setupMock: func(vr *mock.MockVariantRepoPort, pr *mock.MockProductRepoPort) {
 				vr.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				vr.EXPECT().GetVariantById(gomock.Any(), int64(99)).Return(domain.Variant{}, &domain.Error{Type: domain.NotFound, Message: "not found"})
@@ -211,8 +211,8 @@ func TestVariantHandler_UpdateVariantById(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			variantRepo := mock.NewMockVariantRepository(ctrl)
-			productRepo := mock.NewMockProductRepository(ctrl)
+			variantRepo := mock.NewMockVariantRepoPort(ctrl)
+			productRepo := mock.NewMockProductRepoPort(ctrl)
 			tt.setupMock(variantRepo, productRepo)
 			handler := newTestVariantHandler(ctrl, variantRepo, productRepo)
 			req := httptest.NewRequest(http.MethodPut, "/variants/"+tt.variantId, bytes.NewBufferString(tt.body))
@@ -249,8 +249,8 @@ func TestVariantHandler_UpdateVariantById_ImageUrl(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			variantRepo := mock.NewMockVariantRepository(ctrl)
-			productRepo := mock.NewMockProductRepository(ctrl)
+			variantRepo := mock.NewMockVariantRepoPort(ctrl)
+			productRepo := mock.NewMockProductRepoPort(ctrl)
 			variantRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 				func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 			variantRepo.EXPECT().GetVariantById(gomock.Any(), int64(1)).Return(domain.Variant{Id: 1, ProductId: 1}, nil)
@@ -284,13 +284,13 @@ func TestVariantHandler_DeleteVariantById(t *testing.T) {
 	tests := []struct {
 		name           string
 		variantId      string
-		setupMock      func(r *mock.MockVariantRepository)
+		setupMock      func(r *mock.MockVariantRepoPort)
 		expectedStatus int
 	}{
 		{
 			name:      "success",
 			variantId: "1",
-			setupMock: func(r *mock.MockVariantRepository) {
+			setupMock: func(r *mock.MockVariantRepoPort) {
 				r.EXPECT().DeleteVariantById(gomock.Any(), int64(1)).Return(nil)
 			},
 			expectedStatus: http.StatusOK,
@@ -298,13 +298,13 @@ func TestVariantHandler_DeleteVariantById(t *testing.T) {
 		{
 			name:           "invalid id",
 			variantId:      "abc",
-			setupMock:      func(r *mock.MockVariantRepository) {},
+			setupMock:      func(r *mock.MockVariantRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:      "not found",
 			variantId: "99",
-			setupMock: func(r *mock.MockVariantRepository) {
+			setupMock: func(r *mock.MockVariantRepoPort) {
 				r.EXPECT().DeleteVariantById(gomock.Any(), int64(99)).Return(&domain.Error{Type: domain.NotFound, Message: "not found"})
 			},
 			expectedStatus: http.StatusNotFound,
@@ -315,8 +315,8 @@ func TestVariantHandler_DeleteVariantById(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			variantRepo := mock.NewMockVariantRepository(ctrl)
-			productRepo := mock.NewMockProductRepository(ctrl)
+			variantRepo := mock.NewMockVariantRepoPort(ctrl)
+			productRepo := mock.NewMockProductRepoPort(ctrl)
 			tt.setupMock(variantRepo)
 			handler := newTestVariantHandler(ctrl, variantRepo, productRepo)
 			req := httptest.NewRequest(http.MethodDelete, "/variants/"+tt.variantId, nil)
@@ -355,9 +355,9 @@ func TestVariantHandler_UpdateVariantById_TagIds(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			variantRepo := mock.NewMockVariantRepository(ctrl)
-			productRepo := mock.NewMockProductRepository(ctrl)
-			tagRepo := mock.NewMockTagRepository(ctrl)
+			variantRepo := mock.NewMockVariantRepoPort(ctrl)
+			productRepo := mock.NewMockProductRepoPort(ctrl)
+			tagRepo := mock.NewMockTagRepoPort(ctrl)
 			variantRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 				func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 			variantRepo.EXPECT().GetVariantById(gomock.Any(), int64(1)).Return(domain.Variant{Id: 1, ProductId: 1}, nil)
@@ -404,6 +404,6 @@ func TestVariantHandler_UpdateVariantById_TagIds(t *testing.T) {
 }
 
 func newTestVariantService(ctrl *gomock.Controller) domain.VariantService {
-	tagRepo := mock.NewMockTagRepository(ctrl)
+	tagRepo := mock.NewMockTagRepoPort(ctrl)
 	return domain.NewVariantService(tagRepo, domain.NewTagService(tagRepo))
 }

@@ -10,7 +10,7 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-func newMaterialUsecase(ctrl *gomock.Controller, matRepo *mock.MockMaterialRepository, suppRepo *mock.MockSupplierRepository) domain.MaterialUsecase {
+func newMaterialUsecase(ctrl *gomock.Controller, matRepo *mock.MockMaterialRepoPort, suppRepo *mock.MockSupplierRepoPort) domain.MaterialUsecase {
 	return domain.NewMaterialUsecase(matRepo, domain.NewMaterialService(suppRepo))
 }
 
@@ -20,13 +20,13 @@ func TestMaterialUsecase_GetMaterialList(t *testing.T) {
 	tests := []struct {
 		name             string
 		stockCheckStatus *domain.MaterialStockCheckStatus
-		setupMock        func(r *mock.MockMaterialRepository)
+		setupMock        func(r *mock.MockMaterialRepoPort)
 		expectedLen      int
 		expectedError    *domain.Error
 	}{
 		{
 			name: "success — enriches with weekly usage",
-			setupMock: func(r *mock.MockMaterialRepository) {
+			setupMock: func(r *mock.MockMaterialRepoPort) {
 				r.EXPECT().GetMaterialList(gomock.Any(), "", domain.CreatedAt, domain.Ascending, 0, 10, (*domain.MaterialStockCheckStatus)(nil)).Return([]domain.Material{
 					{Id: 1, Name: "Sugar"},
 					{Id: 2, Name: "Flour"},
@@ -39,7 +39,7 @@ func TestMaterialUsecase_GetMaterialList(t *testing.T) {
 		{
 			name:             "success — passes stockCheckStatus through to repository",
 			stockCheckStatus: &requiredStatus,
-			setupMock: func(r *mock.MockMaterialRepository) {
+			setupMock: func(r *mock.MockMaterialRepoPort) {
 				r.EXPECT().GetMaterialList(gomock.Any(), "", domain.CreatedAt, domain.Ascending, 0, 10, &requiredStatus).Return([]domain.Material{
 					{Id: 1, Name: "Sugar"},
 				}, nil)
@@ -50,7 +50,7 @@ func TestMaterialUsecase_GetMaterialList(t *testing.T) {
 		},
 		{
 			name: "error on GetMaterialList",
-			setupMock: func(r *mock.MockMaterialRepository) {
+			setupMock: func(r *mock.MockMaterialRepoPort) {
 				r.EXPECT().GetMaterialList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil, &domain.Error{Type: domain.InternalServerError})
 			},
@@ -58,7 +58,7 @@ func TestMaterialUsecase_GetMaterialList(t *testing.T) {
 		},
 		{
 			name: "error on GetMaterialListTotal",
-			setupMock: func(r *mock.MockMaterialRepository) {
+			setupMock: func(r *mock.MockMaterialRepoPort) {
 				r.EXPECT().GetMaterialList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return([]domain.Material{{Id: 1, Name: "Sugar"}}, nil)
 				r.EXPECT().GetMaterialListTotal(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -68,7 +68,7 @@ func TestMaterialUsecase_GetMaterialList(t *testing.T) {
 		},
 		{
 			name: "error on GetMaterialsWeeklyUsage",
-			setupMock: func(r *mock.MockMaterialRepository) {
+			setupMock: func(r *mock.MockMaterialRepoPort) {
 				r.EXPECT().GetMaterialList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return([]domain.Material{{Id: 1, Name: "Sugar"}}, nil)
 				r.EXPECT().GetMaterialListTotal(gomock.Any(), gomock.Any(), gomock.Any()).Return(int64(1), nil)
@@ -84,8 +84,8 @@ func TestMaterialUsecase_GetMaterialList(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockRepo := mock.NewMockMaterialRepository(ctrl)
-			mockSupplierRepo := mock.NewMockSupplierRepository(ctrl)
+			mockRepo := mock.NewMockMaterialRepoPort(ctrl)
+			mockSupplierRepo := mock.NewMockSupplierRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 
 			usecase := newMaterialUsecase(ctrl, mockRepo, mockSupplierRepo)
@@ -106,7 +106,7 @@ func TestMaterialUsecase_GetMaterialById(t *testing.T) {
 	tests := []struct {
 		name                string
 		id                  int64
-		setupMock           func(r *mock.MockMaterialRepository)
+		setupMock           func(r *mock.MockMaterialRepoPort)
 		expectedName        string
 		expectedWeeklyUsage float32
 		expectedError       *domain.Error
@@ -114,7 +114,7 @@ func TestMaterialUsecase_GetMaterialById(t *testing.T) {
 		{
 			name: "success — enriched with weekly usage",
 			id:   1,
-			setupMock: func(r *mock.MockMaterialRepository) {
+			setupMock: func(r *mock.MockMaterialRepoPort) {
 				r.EXPECT().GetMaterialsWeeklyUsage(gomock.Any(), []int64{1}).Return(map[int64]float32{1: 7.5}, nil)
 				r.EXPECT().GetMaterialById(gomock.Any(), int64(1)).Return(domain.Material{Id: 1, Name: "Sugar"}, nil)
 			},
@@ -124,7 +124,7 @@ func TestMaterialUsecase_GetMaterialById(t *testing.T) {
 		{
 			name: "error fetching weekly usage",
 			id:   1,
-			setupMock: func(r *mock.MockMaterialRepository) {
+			setupMock: func(r *mock.MockMaterialRepoPort) {
 				r.EXPECT().GetMaterialsWeeklyUsage(gomock.Any(), []int64{1}).Return(nil, &domain.Error{Type: domain.InternalServerError})
 			},
 			expectedError: &domain.Error{Type: domain.InternalServerError},
@@ -132,7 +132,7 @@ func TestMaterialUsecase_GetMaterialById(t *testing.T) {
 		{
 			name: "not found",
 			id:   99,
-			setupMock: func(r *mock.MockMaterialRepository) {
+			setupMock: func(r *mock.MockMaterialRepoPort) {
 				r.EXPECT().GetMaterialsWeeklyUsage(gomock.Any(), []int64{99}).Return(map[int64]float32{}, nil)
 				r.EXPECT().GetMaterialById(gomock.Any(), int64(99)).Return(domain.Material{}, &domain.Error{Type: domain.NotFound})
 			},
@@ -145,8 +145,8 @@ func TestMaterialUsecase_GetMaterialById(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockRepo := mock.NewMockMaterialRepository(ctrl)
-			mockSupplierRepo := mock.NewMockSupplierRepository(ctrl)
+			mockRepo := mock.NewMockMaterialRepoPort(ctrl)
+			mockSupplierRepo := mock.NewMockSupplierRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 
 			usecase := newMaterialUsecase(ctrl, mockRepo, mockSupplierRepo)
@@ -168,14 +168,14 @@ func TestMaterialUsecase_CreateMaterial(t *testing.T) {
 	tests := []struct {
 		name          string
 		input         domain.Material
-		setupMock     func(matRepo *mock.MockMaterialRepository, suppRepo *mock.MockSupplierRepository)
+		setupMock     func(matRepo *mock.MockMaterialRepoPort, suppRepo *mock.MockSupplierRepoPort)
 		expectedId    int64
 		expectedError *domain.Error
 	}{
 		{
 			name:  "success — no suppliers",
 			input: domain.Material{Name: "Salt", Price: 5000},
-			setupMock: func(matRepo *mock.MockMaterialRepository, suppRepo *mock.MockSupplierRepository) {
+			setupMock: func(matRepo *mock.MockMaterialRepoPort, suppRepo *mock.MockSupplierRepoPort) {
 				matRepo.EXPECT().CreateMaterial(gomock.Any(), gomock.Any()).Return(domain.Material{Id: 3, Name: "Salt"}, nil)
 				matRepo.EXPECT().GetMaterialsWeeklyUsage(gomock.Any(), []int64{3}).Return(map[int64]float32{3: 0}, nil)
 			},
@@ -190,7 +190,7 @@ func TestMaterialUsecase_CreateMaterial(t *testing.T) {
 					{SupplierId: 10, PurchaseType: domain.PurchaseTypeOnline, PurchaseUrl: "https://shop.example.com/coffee"},
 				},
 			},
-			setupMock: func(matRepo *mock.MockMaterialRepository, suppRepo *mock.MockSupplierRepository) {
+			setupMock: func(matRepo *mock.MockMaterialRepoPort, suppRepo *mock.MockSupplierRepoPort) {
 				suppRepo.EXPECT().GetSupplierById(gomock.Any(), int64(10)).Return(domain.Supplier{Id: 10, Name: "Acme"}, nil)
 				matRepo.EXPECT().CreateMaterial(gomock.Any(), gomock.Any()).Return(domain.Material{Id: 4, Name: "Coffee"}, nil)
 				matRepo.EXPECT().GetMaterialsWeeklyUsage(gomock.Any(), []int64{4}).Return(map[int64]float32{4: 0}, nil)
@@ -205,7 +205,7 @@ func TestMaterialUsecase_CreateMaterial(t *testing.T) {
 					{SupplierId: 10, PurchaseType: domain.PurchaseTypeOnline, PurchaseUrl: ""},
 				},
 			},
-			setupMock:     func(matRepo *mock.MockMaterialRepository, suppRepo *mock.MockSupplierRepository) {},
+			setupMock:     func(matRepo *mock.MockMaterialRepoPort, suppRepo *mock.MockSupplierRepoPort) {},
 			expectedError: &domain.Error{Type: domain.BadRequest},
 		},
 		{
@@ -216,7 +216,7 @@ func TestMaterialUsecase_CreateMaterial(t *testing.T) {
 					{SupplierId: 10, PurchaseType: domain.PurchaseTypeOffline, PurchaseUrl: "https://shop.example.com"},
 				},
 			},
-			setupMock:     func(matRepo *mock.MockMaterialRepository, suppRepo *mock.MockSupplierRepository) {},
+			setupMock:     func(matRepo *mock.MockMaterialRepoPort, suppRepo *mock.MockSupplierRepoPort) {},
 			expectedError: &domain.Error{Type: domain.BadRequest},
 		},
 		{
@@ -227,7 +227,7 @@ func TestMaterialUsecase_CreateMaterial(t *testing.T) {
 					{SupplierId: 99, PurchaseType: domain.PurchaseTypeOffline, PurchaseUrl: ""},
 				},
 			},
-			setupMock: func(matRepo *mock.MockMaterialRepository, suppRepo *mock.MockSupplierRepository) {
+			setupMock: func(matRepo *mock.MockMaterialRepoPort, suppRepo *mock.MockSupplierRepoPort) {
 				suppRepo.EXPECT().GetSupplierById(gomock.Any(), int64(99)).Return(domain.Supplier{}, &domain.Error{Type: domain.NotFound})
 			},
 			expectedError: &domain.Error{Type: domain.BadRequest},
@@ -235,7 +235,7 @@ func TestMaterialUsecase_CreateMaterial(t *testing.T) {
 		{
 			name:  "repository error on create",
 			input: domain.Material{Name: "Salt"},
-			setupMock: func(matRepo *mock.MockMaterialRepository, suppRepo *mock.MockSupplierRepository) {
+			setupMock: func(matRepo *mock.MockMaterialRepoPort, suppRepo *mock.MockSupplierRepoPort) {
 				matRepo.EXPECT().CreateMaterial(gomock.Any(), gomock.Any()).Return(domain.Material{}, &domain.Error{Type: domain.InternalServerError})
 			},
 			expectedError: &domain.Error{Type: domain.InternalServerError},
@@ -247,8 +247,8 @@ func TestMaterialUsecase_CreateMaterial(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockRepo := mock.NewMockMaterialRepository(ctrl)
-			mockSupplierRepo := mock.NewMockSupplierRepository(ctrl)
+			mockRepo := mock.NewMockMaterialRepoPort(ctrl)
+			mockSupplierRepo := mock.NewMockSupplierRepoPort(ctrl)
 			tt.setupMock(mockRepo, mockSupplierRepo)
 
 			usecase := newMaterialUsecase(ctrl, mockRepo, mockSupplierRepo)
@@ -270,7 +270,7 @@ func TestMaterialUsecase_UpdateMaterialById(t *testing.T) {
 		name          string
 		id            int64
 		input         domain.Material
-		setupMock     func(matRepo *mock.MockMaterialRepository, suppRepo *mock.MockSupplierRepository)
+		setupMock     func(matRepo *mock.MockMaterialRepoPort, suppRepo *mock.MockSupplierRepoPort)
 		expectedName  string
 		expectedError *domain.Error
 	}{
@@ -278,7 +278,7 @@ func TestMaterialUsecase_UpdateMaterialById(t *testing.T) {
 			name:  "success — no suppliers",
 			id:    1,
 			input: domain.Material{Name: "Salt", Price: 5000},
-			setupMock: func(matRepo *mock.MockMaterialRepository, suppRepo *mock.MockSupplierRepository) {
+			setupMock: func(matRepo *mock.MockMaterialRepoPort, suppRepo *mock.MockSupplierRepoPort) {
 				matRepo.EXPECT().UpdateMaterialById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Material{Id: 1, Name: "Salt"}, nil)
 				matRepo.EXPECT().GetMaterialsWeeklyUsage(gomock.Any(), []int64{1}).Return(map[int64]float32{1: 0}, nil)
 			},
@@ -294,7 +294,7 @@ func TestMaterialUsecase_UpdateMaterialById(t *testing.T) {
 					{SupplierId: 10, PurchaseType: domain.PurchaseTypeOffline, PurchaseUrl: ""},
 				},
 			},
-			setupMock: func(matRepo *mock.MockMaterialRepository, suppRepo *mock.MockSupplierRepository) {
+			setupMock: func(matRepo *mock.MockMaterialRepoPort, suppRepo *mock.MockSupplierRepoPort) {
 				suppRepo.EXPECT().GetSupplierById(gomock.Any(), int64(10)).Return(domain.Supplier{Id: 10, Name: "Market"}, nil)
 				matRepo.EXPECT().UpdateMaterialById(gomock.Any(), gomock.Any(), int64(2)).Return(domain.Material{Id: 2, Name: "Flour"}, nil)
 				matRepo.EXPECT().GetMaterialsWeeklyUsage(gomock.Any(), []int64{2}).Return(map[int64]float32{2: 0}, nil)
@@ -310,14 +310,14 @@ func TestMaterialUsecase_UpdateMaterialById(t *testing.T) {
 					{SupplierId: 10, PurchaseType: domain.PurchaseTypeOnline, PurchaseUrl: "not-a-url"},
 				},
 			},
-			setupMock:     func(matRepo *mock.MockMaterialRepository, suppRepo *mock.MockSupplierRepository) {},
+			setupMock:     func(matRepo *mock.MockMaterialRepoPort, suppRepo *mock.MockSupplierRepoPort) {},
 			expectedError: &domain.Error{Type: domain.BadRequest},
 		},
 		{
 			name:  "not found",
 			id:    99,
 			input: domain.Material{Name: "Salt", Price: 5000},
-			setupMock: func(matRepo *mock.MockMaterialRepository, suppRepo *mock.MockSupplierRepository) {
+			setupMock: func(matRepo *mock.MockMaterialRepoPort, suppRepo *mock.MockSupplierRepoPort) {
 				matRepo.EXPECT().UpdateMaterialById(gomock.Any(), gomock.Any(), int64(99)).Return(domain.Material{}, &domain.Error{Type: domain.NotFound})
 			},
 			expectedError: &domain.Error{Type: domain.NotFound},
@@ -326,7 +326,7 @@ func TestMaterialUsecase_UpdateMaterialById(t *testing.T) {
 			name:  "repository error on UpdateMaterialById",
 			id:    1,
 			input: domain.Material{Name: "Salt"},
-			setupMock: func(matRepo *mock.MockMaterialRepository, suppRepo *mock.MockSupplierRepository) {
+			setupMock: func(matRepo *mock.MockMaterialRepoPort, suppRepo *mock.MockSupplierRepoPort) {
 				matRepo.EXPECT().UpdateMaterialById(gomock.Any(), gomock.Any(), int64(1)).Return(domain.Material{}, &domain.Error{Type: domain.InternalServerError})
 			},
 			expectedError: &domain.Error{Type: domain.InternalServerError},
@@ -338,8 +338,8 @@ func TestMaterialUsecase_UpdateMaterialById(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockRepo := mock.NewMockMaterialRepository(ctrl)
-			mockSupplierRepo := mock.NewMockSupplierRepository(ctrl)
+			mockRepo := mock.NewMockMaterialRepoPort(ctrl)
+			mockSupplierRepo := mock.NewMockSupplierRepoPort(ctrl)
 			tt.setupMock(mockRepo, mockSupplierRepo)
 
 			usecase := newMaterialUsecase(ctrl, mockRepo, mockSupplierRepo)
@@ -360,20 +360,20 @@ func TestMaterialUsecase_DeleteMaterialById(t *testing.T) {
 	tests := []struct {
 		name          string
 		id            int64
-		setupMock     func(r *mock.MockMaterialRepository)
+		setupMock     func(r *mock.MockMaterialRepoPort)
 		expectedError *domain.Error
 	}{
 		{
 			name: "success",
 			id:   1,
-			setupMock: func(r *mock.MockMaterialRepository) {
+			setupMock: func(r *mock.MockMaterialRepoPort) {
 				r.EXPECT().DeleteMaterialById(gomock.Any(), int64(1)).Return(nil)
 			},
 		},
 		{
 			name: "not found",
 			id:   99,
-			setupMock: func(r *mock.MockMaterialRepository) {
+			setupMock: func(r *mock.MockMaterialRepoPort) {
 				r.EXPECT().DeleteMaterialById(gomock.Any(), int64(99)).Return(&domain.Error{Type: domain.NotFound})
 			},
 			expectedError: &domain.Error{Type: domain.NotFound},
@@ -385,8 +385,8 @@ func TestMaterialUsecase_DeleteMaterialById(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockRepo := mock.NewMockMaterialRepository(ctrl)
-			mockSupplierRepo := mock.NewMockSupplierRepository(ctrl)
+			mockRepo := mock.NewMockMaterialRepoPort(ctrl)
+			mockSupplierRepo := mock.NewMockSupplierRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 
 			usecase := newMaterialUsecase(ctrl, mockRepo, mockSupplierRepo)

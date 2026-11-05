@@ -6,19 +6,19 @@ import (
 )
 
 type VariantService struct {
-	tagRepository TagRepository
-	tagService    TagService
+	tagRepoPort TagRepoPort
+	tagService  TagService
 }
 
-func NewVariantService(tagRepository TagRepository, tagService TagService) VariantService {
+func NewVariantService(tagRepoPort TagRepoPort, tagService TagService) VariantService {
 	return VariantService{
-		tagRepository: tagRepository,
-		tagService:    tagService,
+		tagRepoPort: tagRepoPort,
+		tagService:  tagService,
 	}
 }
 
 func (service VariantService) ValidateTagIds(ctx context.Context, tagIds []int64) *Error {
-	tags, err := service.tagRepository.GetTagList(ctx)
+	tags, err := service.tagRepoPort.GetTagList(ctx)
 	if err != nil {
 		return err
 	}
@@ -35,7 +35,7 @@ func (service VariantService) ValidateTagIds(ctx context.Context, tagIds []int64
 }
 
 func (service VariantService) ReplaceVariantTags(ctx context.Context, variantId int64, tagIds []int64) *Error {
-	existingTagIds, err := service.tagRepository.GetVariantTagIds(ctx, variantId)
+	existingTagIds, err := service.tagRepoPort.GetVariantTagIds(ctx, variantId)
 	if err != nil {
 		return err
 	}

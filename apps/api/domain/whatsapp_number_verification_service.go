@@ -9,22 +9,22 @@ import (
 const WhatsappNumberValidationTimeout = 5 * time.Second
 
 type WhatsappNumberVerificationService struct {
-	whatsappNumberVerificationRepository WhatsappNumberVerificationRepository
-	whatsAppGatewayRepository            WhatsAppGatewayRepository
+	whatsAppNumberVerificationRepoPort WhatsAppNumberVerificationRepoPort
+	whatsAppGatewayPort                WhatsAppGatewayPort
 }
 
 func NewWhatsappNumberVerificationUsecase(
-	whatsappNumberVerificationRepository WhatsappNumberVerificationRepository,
-	whatsAppGatewayRepository WhatsAppGatewayRepository,
+	whatsAppNumberVerificationRepoPort WhatsAppNumberVerificationRepoPort,
+	whatsAppGatewayPort WhatsAppGatewayPort,
 ) WhatsappNumberVerificationService {
 	return WhatsappNumberVerificationService{
-		whatsappNumberVerificationRepository: whatsappNumberVerificationRepository,
-		whatsAppGatewayRepository:            whatsAppGatewayRepository,
+		whatsAppNumberVerificationRepoPort: whatsAppNumberVerificationRepoPort,
+		whatsAppGatewayPort:                whatsAppGatewayPort,
 	}
 }
 
 func (usecase WhatsappNumberVerificationService) EnsureRegistered(ctx context.Context, normalizedNumber string) *Error {
-	if verified, err := usecase.whatsappNumberVerificationRepository.IsWhatsappNumberVerified(ctx, normalizedNumber); err != nil {
+	if verified, err := usecase.whatsAppNumberVerificationRepoPort.IsWhatsAppNumberVerified(ctx, normalizedNumber); err != nil {
 		slog.WarnContext(ctx, "whatsapp number verification cache lookup failed, falling back to the gateway",
 			slog.String("error", err.Message))
 	} else if verified {
@@ -34,7 +34,7 @@ func (usecase WhatsappNumberVerificationService) EnsureRegistered(ctx context.Co
 	timeoutCtx, cancel := context.WithTimeout(ctx, WhatsappNumberValidationTimeout)
 	defer cancel()
 
-	result, validateErr := usecase.whatsAppGatewayRepository.ValidateNumber(timeoutCtx, normalizedNumber)
+	result, validateErr := usecase.whatsAppGatewayPort.ValidateNumber(timeoutCtx, normalizedNumber)
 	if validateErr != nil {
 		slog.WarnContext(ctx, "whatsapp number validation unavailable", slog.String("detail", validateErr.Message))
 		return nil
@@ -42,7 +42,7 @@ func (usecase WhatsappNumberVerificationService) EnsureRegistered(ctx context.Co
 
 	switch result.Status {
 	case WhatsAppNumberStatusRegistered:
-		if markErr := usecase.whatsappNumberVerificationRepository.MarkWhatsappNumberVerified(ctx, normalizedNumber, time.Now()); markErr != nil {
+		if markErr := usecase.whatsAppNumberVerificationRepoPort.MarkWhatsAppNumberVerified(ctx, normalizedNumber, time.Now()); markErr != nil {
 			slog.WarnContext(ctx, "failed to persist a confirmed whatsapp number", slog.String("error", markErr.Message))
 		}
 		return nil

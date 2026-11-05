@@ -6,30 +6,30 @@ import (
 )
 
 type TableUsecase struct {
-	tableRepository TableRepository
-	tableService    TableService
+	tableRepoPort TableRepoPort
+	tableService  TableService
 }
 
 func NewTableUsecase(
-	tableRepository TableRepository,
+	tableRepoPort TableRepoPort,
 	tableService TableService,
 ) TableUsecase {
 	return TableUsecase{
-		tableRepository: tableRepository,
-		tableService:    tableService,
+		tableRepoPort: tableRepoPort,
+		tableService:  tableService,
 	}
 }
 
 func (usecase TableUsecase) GetTableList(ctx context.Context) ([]Table, *Error) {
-	return usecase.tableRepository.GetTableList(ctx)
+	return usecase.tableRepoPort.GetTableList(ctx)
 }
 
 func (usecase TableUsecase) GetTableById(ctx context.Context, id int64) (Table, *Error) {
-	return usecase.tableRepository.GetTableById(ctx, id)
+	return usecase.tableRepoPort.GetTableById(ctx, id)
 }
 
 func (usecase TableUsecase) GetTableByCode(ctx context.Context, code string) (Table, *Error) {
-	return usecase.tableRepository.GetTableByCode(ctx, code)
+	return usecase.tableRepoPort.GetTableByCode(ctx, code)
 }
 
 func (usecase TableUsecase) CreateTable(ctx context.Context, table Table) (Table, *Error) {
@@ -42,8 +42,8 @@ func (usecase TableUsecase) CreateTable(ctx context.Context, table Table) (Table
 	}
 
 	var created Table
-	err := usecase.tableRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
-		if existing, existingErr := usecase.tableRepository.GetTableByLabel(ctxWithTx, table.Label); existingErr == nil && existing.Id > 0 {
+	err := usecase.tableRepoPort.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+		if existing, existingErr := usecase.tableRepoPort.GetTableByLabel(ctxWithTx, table.Label); existingErr == nil && existing.Id > 0 {
 			return &Error{Type: BadRequest, Message: "table label already exists"}
 		}
 
@@ -53,7 +53,7 @@ func (usecase TableUsecase) CreateTable(ctx context.Context, table Table) (Table
 		}
 		table.Code = code
 
-		result, createErr := usecase.tableRepository.CreateTable(ctxWithTx, table)
+		result, createErr := usecase.tableRepoPort.CreateTable(ctxWithTx, table)
 		if createErr != nil {
 			return createErr
 		}
@@ -74,18 +74,18 @@ func (usecase TableUsecase) UpdateTableById(ctx context.Context, table Table, id
 	}
 
 	var updated Table
-	err := usecase.tableRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
-		if existing, existingErr := usecase.tableRepository.GetTableByLabel(ctxWithTx, table.Label); existingErr == nil && existing.Id > 0 && existing.Id != id {
+	err := usecase.tableRepoPort.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+		if existing, existingErr := usecase.tableRepoPort.GetTableByLabel(ctxWithTx, table.Label); existingErr == nil && existing.Id > 0 && existing.Id != id {
 			return &Error{Type: BadRequest, Message: "table label already exists"}
 		}
 
-		current, currentErr := usecase.tableRepository.GetTableById(ctxWithTx, id)
+		current, currentErr := usecase.tableRepoPort.GetTableById(ctxWithTx, id)
 		if currentErr != nil {
 			return currentErr
 		}
 		table.Code = current.Code
 
-		result, updateErr := usecase.tableRepository.UpdateTableById(ctxWithTx, table, id)
+		result, updateErr := usecase.tableRepoPort.UpdateTableById(ctxWithTx, table, id)
 		if updateErr != nil {
 			return updateErr
 		}
@@ -97,13 +97,13 @@ func (usecase TableUsecase) UpdateTableById(ctx context.Context, table Table, id
 }
 
 func (usecase TableUsecase) DeleteTableById(ctx context.Context, id int64) *Error {
-	return usecase.tableRepository.DeleteTableById(ctx, id)
+	return usecase.tableRepoPort.DeleteTableById(ctx, id)
 }
 
 func (usecase TableUsecase) RegenerateTableCode(ctx context.Context, id int64) (Table, *Error) {
 	var regenerated Table
-	err := usecase.tableRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
-		existing, existingErr := usecase.tableRepository.GetTableById(ctxWithTx, id)
+	err := usecase.tableRepoPort.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+		existing, existingErr := usecase.tableRepoPort.GetTableById(ctxWithTx, id)
 		if existingErr != nil {
 			return existingErr
 		}
@@ -114,7 +114,7 @@ func (usecase TableUsecase) RegenerateTableCode(ctx context.Context, id int64) (
 		}
 		existing.Code = code
 
-		result, updateErr := usecase.tableRepository.UpdateTableById(ctxWithTx, existing, id)
+		result, updateErr := usecase.tableRepoPort.UpdateTableById(ctxWithTx, existing, id)
 		if updateErr != nil {
 			return updateErr
 		}

@@ -13,7 +13,7 @@ import (
 func TestCategoryUsecase_GetCategoryList(t *testing.T) {
 	tests := []struct {
 		name               string
-		setupMock          func(r *mock.MockCategoryRepository)
+		setupMock          func(r *mock.MockCategoryRepoPort)
 		expectedLen        int
 		expectedFirstName  string
 		expectedSecondName string
@@ -21,7 +21,7 @@ func TestCategoryUsecase_GetCategoryList(t *testing.T) {
 	}{
 		{
 			name: "success",
-			setupMock: func(r *mock.MockCategoryRepository) {
+			setupMock: func(r *mock.MockCategoryRepoPort) {
 				r.EXPECT().GetCategoryList(gomock.Any()).Return([]domain.Category{
 					{Id: 1, Name: "Food"},
 					{Id: 2, Name: "Drink"},
@@ -33,7 +33,7 @@ func TestCategoryUsecase_GetCategoryList(t *testing.T) {
 		},
 		{
 			name: "repository error",
-			setupMock: func(r *mock.MockCategoryRepository) {
+			setupMock: func(r *mock.MockCategoryRepoPort) {
 				r.EXPECT().GetCategoryList(gomock.Any()).Return(nil, &domain.Error{Type: domain.InternalServerError, Message: "db error"})
 			},
 			expectedError: &domain.Error{Type: domain.InternalServerError},
@@ -45,7 +45,7 @@ func TestCategoryUsecase_GetCategoryList(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockRepo := mock.NewMockCategoryRepository(ctrl)
+			mockRepo := mock.NewMockCategoryRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 
 			usecase := domain.NewCategoryUsecase(mockRepo)
@@ -67,14 +67,14 @@ func TestCategoryUsecase_GetCategoryById(t *testing.T) {
 	tests := []struct {
 		name          string
 		id            int64
-		setupMock     func(r *mock.MockCategoryRepository)
+		setupMock     func(r *mock.MockCategoryRepoPort)
 		expectedName  string
 		expectedError *domain.Error
 	}{
 		{
 			name: "success",
 			id:   1,
-			setupMock: func(r *mock.MockCategoryRepository) {
+			setupMock: func(r *mock.MockCategoryRepoPort) {
 				r.EXPECT().GetCategoryById(gomock.Any(), int64(1)).Return(domain.Category{Id: 1, Name: "Food"}, nil)
 			},
 			expectedName: "Food",
@@ -82,7 +82,7 @@ func TestCategoryUsecase_GetCategoryById(t *testing.T) {
 		{
 			name: "not found",
 			id:   99,
-			setupMock: func(r *mock.MockCategoryRepository) {
+			setupMock: func(r *mock.MockCategoryRepoPort) {
 				r.EXPECT().GetCategoryById(gomock.Any(), int64(99)).Return(domain.Category{}, &domain.Error{Type: domain.NotFound, Message: "Category not found"})
 			},
 			expectedError: &domain.Error{Type: domain.NotFound},
@@ -94,7 +94,7 @@ func TestCategoryUsecase_GetCategoryById(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockRepo := mock.NewMockCategoryRepository(ctrl)
+			mockRepo := mock.NewMockCategoryRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 
 			usecase := domain.NewCategoryUsecase(mockRepo)
@@ -116,7 +116,7 @@ func TestCategoryUsecase_CreateCategory(t *testing.T) {
 	tests := []struct {
 		name            string
 		input           domain.Category
-		setupMock       func(r *mock.MockCategoryRepository)
+		setupMock       func(r *mock.MockCategoryRepoPort)
 		expectedId      int64
 		expectedName    string
 		expectedStation string
@@ -125,7 +125,7 @@ func TestCategoryUsecase_CreateCategory(t *testing.T) {
 		{
 			name:  "success",
 			input: domain.Category{Name: "Snacks", Station: "KITCHEN"},
-			setupMock: func(r *mock.MockCategoryRepository) {
+			setupMock: func(r *mock.MockCategoryRepoPort) {
 				r.EXPECT().CreateCategory(gomock.Any(), domain.Category{Name: "Snacks", Station: "KITCHEN"}).Return(domain.Category{Id: 3, Name: "Snacks", Station: "KITCHEN"}, nil)
 			},
 			expectedId:      3,
@@ -135,7 +135,7 @@ func TestCategoryUsecase_CreateCategory(t *testing.T) {
 		{
 			name:  "repository error",
 			input: domain.Category{Name: "Snacks", Station: "KITCHEN"},
-			setupMock: func(r *mock.MockCategoryRepository) {
+			setupMock: func(r *mock.MockCategoryRepoPort) {
 				r.EXPECT().CreateCategory(gomock.Any(), gomock.Any()).Return(domain.Category{}, &domain.Error{Type: domain.InternalServerError, Message: "db error"})
 			},
 			expectedError: &domain.Error{Type: domain.InternalServerError},
@@ -147,7 +147,7 @@ func TestCategoryUsecase_CreateCategory(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockRepo := mock.NewMockCategoryRepository(ctrl)
+			mockRepo := mock.NewMockCategoryRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 
 			usecase := domain.NewCategoryUsecase(mockRepo)
@@ -171,7 +171,7 @@ func TestCategoryUsecase_UpdateCategoryById(t *testing.T) {
 		name            string
 		id              int64
 		input           domain.Category
-		setupMock       func(r *mock.MockCategoryRepository)
+		setupMock       func(r *mock.MockCategoryRepoPort)
 		expectedId      int64
 		expectedName    string
 		expectedStation string
@@ -181,7 +181,7 @@ func TestCategoryUsecase_UpdateCategoryById(t *testing.T) {
 			name:  "success",
 			id:    2,
 			input: domain.Category{Name: "Beverages", Station: "BAR"},
-			setupMock: func(r *mock.MockCategoryRepository) {
+			setupMock: func(r *mock.MockCategoryRepoPort) {
 				r.EXPECT().UpdateCategoryById(gomock.Any(), domain.Category{Name: "Beverages", Station: "BAR"}, int64(2)).Return(domain.Category{Id: 2, Name: "Beverages", Station: "BAR"}, nil)
 			},
 			expectedId:      2,
@@ -192,7 +192,7 @@ func TestCategoryUsecase_UpdateCategoryById(t *testing.T) {
 			name:  "not found",
 			id:    99,
 			input: domain.Category{Name: "Beverages", Station: "BAR"},
-			setupMock: func(r *mock.MockCategoryRepository) {
+			setupMock: func(r *mock.MockCategoryRepoPort) {
 				r.EXPECT().UpdateCategoryById(gomock.Any(), gomock.Any(), int64(99)).Return(domain.Category{}, &domain.Error{Type: domain.NotFound, Message: "Category not found"})
 			},
 			expectedError: &domain.Error{Type: domain.NotFound},
@@ -204,7 +204,7 @@ func TestCategoryUsecase_UpdateCategoryById(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockRepo := mock.NewMockCategoryRepository(ctrl)
+			mockRepo := mock.NewMockCategoryRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 
 			usecase := domain.NewCategoryUsecase(mockRepo)
@@ -227,20 +227,20 @@ func TestCategoryUsecase_DeleteCategoryById(t *testing.T) {
 	tests := []struct {
 		name          string
 		id            int64
-		setupMock     func(r *mock.MockCategoryRepository)
+		setupMock     func(r *mock.MockCategoryRepoPort)
 		expectedError *domain.Error
 	}{
 		{
 			name: "success",
 			id:   1,
-			setupMock: func(r *mock.MockCategoryRepository) {
+			setupMock: func(r *mock.MockCategoryRepoPort) {
 				r.EXPECT().DeleteCategoryById(gomock.Any(), int64(1)).Return(nil)
 			},
 		},
 		{
 			name: "not found",
 			id:   99,
-			setupMock: func(r *mock.MockCategoryRepository) {
+			setupMock: func(r *mock.MockCategoryRepoPort) {
 				r.EXPECT().DeleteCategoryById(gomock.Any(), int64(99)).Return(&domain.Error{Type: domain.NotFound, Message: "Category not found"})
 			},
 			expectedError: &domain.Error{Type: domain.NotFound},
@@ -252,7 +252,7 @@ func TestCategoryUsecase_DeleteCategoryById(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockRepo := mock.NewMockCategoryRepository(ctrl)
+			mockRepo := mock.NewMockCategoryRepoPort(ctrl)
 			tt.setupMock(mockRepo)
 
 			usecase := domain.NewCategoryUsecase(mockRepo)

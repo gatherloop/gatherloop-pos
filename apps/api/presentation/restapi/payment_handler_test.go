@@ -27,35 +27,35 @@ const paymentHandlerOrderPaymentWalletId = 9
 var fakeJpegBytes = []byte{0xFF, 0xD8, 0xFF, 0, 0, 0}
 
 type paymentHandlerMocks struct {
-	paymentRepo               *mock.MockPaymentRepository
-	gatewayRepo               *mock.MockPaymentGatewayRepository
-	customerRepo              *mock.MockCustomerRepository
-	cartRepo                  *mock.MockCartRepository
-	transactionRepo           *mock.MockTransactionRepository
-	variantRepo               *mock.MockVariantRepository
-	walletRepo                *mock.MockWalletRepository
-	availabilityRepo          *mock.MockAvailabilityRepository
-	kdsNotificationRepo       *mock.MockKdsNotificationRepository
+	paymentRepo               *mock.MockPaymentRepoPort
+	gatewayRepo               *mock.MockPaymentGatewayPort
+	customerRepo              *mock.MockCustomerRepoPort
+	cartRepo                  *mock.MockCartRepoPort
+	transactionRepo           *mock.MockTransactionRepoPort
+	variantRepo               *mock.MockVariantRepoPort
+	walletRepo                *mock.MockWalletRepoPort
+	availabilityRepo          *mock.MockAvailabilityRepoPort
+	kdsNotificationRepo       *mock.MockKdsNotificationRepoPort
 	kdsNotificationDispatcher domain.KdsNotificationService
-	paymentVerificationRepo   *mock.MockPaymentVerificationRepository
+	paymentVerificationRepo   *mock.MockPaymentVerificationRepoPort
 }
 
 func newPaymentHandlerMocks(ctrl *gomock.Controller) paymentHandlerMocks {
-	kdsNotificationRepo := mock.NewMockKdsNotificationRepository(ctrl)
+	kdsNotificationRepo := mock.NewMockKdsNotificationRepoPort(ctrl)
 	kdsNotificationRepo.EXPECT().EnqueueForTransaction(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 	kdsNotificationRepo.EXPECT().HasNotificationForTransaction(gomock.Any(), gomock.Any(), gomock.Any()).Return(true, nil).AnyTimes()
 	kdsNotificationDispatcher := permissiveKdsNotificationService(ctrl)
-	paymentVerificationRepo := mock.NewMockPaymentVerificationRepository(ctrl)
+	paymentVerificationRepo := mock.NewMockPaymentVerificationRepoPort(ctrl)
 	paymentVerificationRepo.EXPECT().DeleteByPaymentId(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 	return paymentHandlerMocks{
-		paymentRepo:               mock.NewMockPaymentRepository(ctrl),
-		gatewayRepo:               mock.NewMockPaymentGatewayRepository(ctrl),
-		customerRepo:              mock.NewMockCustomerRepository(ctrl),
-		cartRepo:                  mock.NewMockCartRepository(ctrl),
-		transactionRepo:           mock.NewMockTransactionRepository(ctrl),
-		variantRepo:               mock.NewMockVariantRepository(ctrl),
-		walletRepo:                mock.NewMockWalletRepository(ctrl),
-		availabilityRepo:          mock.NewMockAvailabilityRepository(ctrl),
+		paymentRepo:               mock.NewMockPaymentRepoPort(ctrl),
+		gatewayRepo:               mock.NewMockPaymentGatewayPort(ctrl),
+		customerRepo:              mock.NewMockCustomerRepoPort(ctrl),
+		cartRepo:                  mock.NewMockCartRepoPort(ctrl),
+		transactionRepo:           mock.NewMockTransactionRepoPort(ctrl),
+		variantRepo:               mock.NewMockVariantRepoPort(ctrl),
+		walletRepo:                mock.NewMockWalletRepoPort(ctrl),
+		availabilityRepo:          mock.NewMockAvailabilityRepoPort(ctrl),
 		kdsNotificationRepo:       kdsNotificationRepo,
 		kdsNotificationDispatcher: kdsNotificationDispatcher,
 		paymentVerificationRepo:   paymentVerificationRepo,
@@ -81,7 +81,7 @@ func expectValidPaymentWallet(m paymentHandlerMocks) {
 		Return(domain.Wallet{Id: paymentHandlerOrderPaymentWalletId, Name: "QRIS", IsPaymentTarget: true}, nil)
 }
 
-func withPaymentHandlerTransactionMock(r *mock.MockPaymentRepository) {
+func withPaymentHandlerTransactionMock(r *mock.MockPaymentRepoPort) {
 	r.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 		func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 }

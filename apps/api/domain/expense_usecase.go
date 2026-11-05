@@ -6,26 +6,26 @@ import (
 )
 
 type ExpenseUsecase struct {
-	expenseRepository ExpenseRepository
-	budgetRepository  BudgetRepository
-	walletRepository  WalletRepository
+	expenseRepoPort ExpenseRepoPort
+	budgetRepoPort  BudgetRepoPort
+	walletRepoPort  WalletRepoPort
 }
 
-func NewExpenseUsecase(expenseRepository ExpenseRepository, budgetRepository BudgetRepository, walletRepository WalletRepository) ExpenseUsecase {
+func NewExpenseUsecase(expenseRepoPort ExpenseRepoPort, budgetRepoPort BudgetRepoPort, walletRepoPort WalletRepoPort) ExpenseUsecase {
 	return ExpenseUsecase{
-		expenseRepository: expenseRepository,
-		budgetRepository:  budgetRepository,
-		walletRepository:  walletRepository,
+		expenseRepoPort: expenseRepoPort,
+		budgetRepoPort:  budgetRepoPort,
+		walletRepoPort:  walletRepoPort,
 	}
 }
 
 func (usecase ExpenseUsecase) GetExpenseList(ctx context.Context, query string, sortBy SortBy, order Order, skip int, limit int, walletId *int, budgetId *int) ([]Expense, int64, *Error) {
-	expenses, err := usecase.expenseRepository.GetExpenseList(ctx, query, sortBy, order, skip, limit, walletId, budgetId)
+	expenses, err := usecase.expenseRepoPort.GetExpenseList(ctx, query, sortBy, order, skip, limit, walletId, budgetId)
 	if err != nil {
 		return []Expense{}, 0, err
 	}
 
-	total, err := usecase.expenseRepository.GetExpenseListTotal(ctx, query, walletId, budgetId)
+	total, err := usecase.expenseRepoPort.GetExpenseListTotal(ctx, query, walletId, budgetId)
 	if err != nil {
 		return []Expense{}, 0, err
 	}
@@ -34,13 +34,13 @@ func (usecase ExpenseUsecase) GetExpenseList(ctx context.Context, query string, 
 }
 
 func (usecase ExpenseUsecase) GetExpenseById(ctx context.Context, id int64) (Expense, *Error) {
-	return usecase.expenseRepository.GetExpenseById(ctx, id)
+	return usecase.expenseRepoPort.GetExpenseById(ctx, id)
 }
 
 func (usecase ExpenseUsecase) CreateExpense(ctx context.Context, expense Expense) (Expense, *Error) {
 	var created Expense
-	err := usecase.expenseRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
-		expenseBudget, err := usecase.budgetRepository.GetBudgetById(ctxWithTx, expense.BudgetId)
+	err := usecase.expenseRepoPort.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+		expenseBudget, err := usecase.budgetRepoPort.GetBudgetById(ctxWithTx, expense.BudgetId)
 		if err != nil {
 			return err
 		}
@@ -48,14 +48,14 @@ func (usecase ExpenseUsecase) CreateExpense(ctx context.Context, expense Expense
 			return &Error{Type: NotFound, Message: "budget not found"}
 		}
 
-		expenseWallet, walletErr := usecase.walletRepository.GetWalletById(ctxWithTx, expense.WalletId)
+		expenseWallet, walletErr := usecase.walletRepoPort.GetWalletById(ctxWithTx, expense.WalletId)
 		if walletErr != nil {
 			return walletErr
 		}
 		if expenseWallet.Balance < expense.Total {
 			return &Error{Type: BadRequest, Message: "wallet's balance insufficient"}
 		}
-		if _, err := usecase.walletRepository.UpdateWalletById(ctxWithTx, Wallet{
+		if _, err := usecase.walletRepoPort.UpdateWalletById(ctxWithTx, Wallet{
 			Name:                  expenseWallet.Name,
 			Balance:               expenseWallet.Balance - expense.Total,
 			PaymentCostPercentage: expenseWallet.PaymentCostPercentage,
@@ -65,7 +65,7 @@ func (usecase ExpenseUsecase) CreateExpense(ctx context.Context, expense Expense
 			return err
 		}
 
-		createdExpense, err := usecase.expenseRepository.CreateExpense(ctxWithTx, expense)
+		createdExpense, err := usecase.expenseRepoPort.CreateExpense(ctxWithTx, expense)
 		if err != nil {
 			return err
 		}
@@ -78,13 +78,13 @@ func (usecase ExpenseUsecase) CreateExpense(ctx context.Context, expense Expense
 
 func (usecase ExpenseUsecase) UpdateExpenseById(ctx context.Context, expense Expense, id int64) (Expense, *Error) {
 	var updatedResult Expense
-	err := usecase.expenseRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
-		existingExpense, err := usecase.expenseRepository.GetExpenseById(ctxWithTx, id)
+	err := usecase.expenseRepoPort.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+		existingExpense, err := usecase.expenseRepoPort.GetExpenseById(ctxWithTx, id)
 		if err != nil {
 			return err
 		}
 
-		expenseBudget, err := usecase.budgetRepository.GetBudgetById(ctxWithTx, expense.BudgetId)
+		expenseBudget, err := usecase.budgetRepoPort.GetBudgetById(ctxWithTx, expense.BudgetId)
 		if err != nil {
 			return err
 		}
@@ -92,11 +92,11 @@ func (usecase ExpenseUsecase) UpdateExpenseById(ctx context.Context, expense Exp
 			return &Error{Type: NotFound, Message: "budget not found"}
 		}
 
-		expenseWallet, err := usecase.walletRepository.GetWalletById(ctxWithTx, existingExpense.WalletId)
+		expenseWallet, err := usecase.walletRepoPort.GetWalletById(ctxWithTx, existingExpense.WalletId)
 		if err != nil {
 			return err
 		}
-		if _, err := usecase.walletRepository.UpdateWalletById(ctxWithTx, Wallet{
+		if _, err := usecase.walletRepoPort.UpdateWalletById(ctxWithTx, Wallet{
 			Name:                  expenseWallet.Name,
 			Balance:               expenseWallet.Balance + existingExpense.Total,
 			PaymentCostPercentage: expenseWallet.PaymentCostPercentage,
@@ -106,14 +106,14 @@ func (usecase ExpenseUsecase) UpdateExpenseById(ctx context.Context, expense Exp
 			return err
 		}
 
-		expenseWallet, err = usecase.walletRepository.GetWalletById(ctxWithTx, expense.WalletId)
+		expenseWallet, err = usecase.walletRepoPort.GetWalletById(ctxWithTx, expense.WalletId)
 		if err != nil {
 			return err
 		}
 		if expenseWallet.Balance < expense.Total {
 			return &Error{Type: BadRequest, Message: "wallet's balance insufficient"}
 		}
-		if _, err := usecase.walletRepository.UpdateWalletById(ctxWithTx, Wallet{
+		if _, err := usecase.walletRepoPort.UpdateWalletById(ctxWithTx, Wallet{
 			Name:                  expenseWallet.Name,
 			Balance:               expenseWallet.Balance - expense.Total,
 			PaymentCostPercentage: expenseWallet.PaymentCostPercentage,
@@ -123,7 +123,7 @@ func (usecase ExpenseUsecase) UpdateExpenseById(ctx context.Context, expense Exp
 			return err
 		}
 
-		updated, err := usecase.expenseRepository.UpdateExpenseById(ctxWithTx, expense, id)
+		updated, err := usecase.expenseRepoPort.UpdateExpenseById(ctxWithTx, expense, id)
 		if err != nil {
 			return err
 		}
@@ -136,18 +136,18 @@ func (usecase ExpenseUsecase) UpdateExpenseById(ctx context.Context, expense Exp
 }
 
 func (usecase ExpenseUsecase) DeleteExpenseById(ctx context.Context, id int64) *Error {
-	return usecase.expenseRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
-		existingExpense, err := usecase.expenseRepository.GetExpenseById(ctxWithTx, id)
+	return usecase.expenseRepoPort.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+		existingExpense, err := usecase.expenseRepoPort.GetExpenseById(ctxWithTx, id)
 		if err != nil {
 			return err
 		}
 
-		expenseWallet, err := usecase.walletRepository.GetWalletById(ctxWithTx, existingExpense.WalletId)
+		expenseWallet, err := usecase.walletRepoPort.GetWalletById(ctxWithTx, existingExpense.WalletId)
 		if err != nil {
 			return err
 		}
 
-		if _, err := usecase.walletRepository.UpdateWalletById(ctxWithTx, Wallet{
+		if _, err := usecase.walletRepoPort.UpdateWalletById(ctxWithTx, Wallet{
 			Name:                  expenseWallet.Name,
 			Balance:               expenseWallet.Balance + existingExpense.Total,
 			PaymentCostPercentage: expenseWallet.PaymentCostPercentage,
@@ -157,7 +157,7 @@ func (usecase ExpenseUsecase) DeleteExpenseById(ctx context.Context, id int64) *
 			return err
 		}
 
-		return usecase.expenseRepository.DeleteExpenseById(ctxWithTx, id)
+		return usecase.expenseRepoPort.DeleteExpenseById(ctxWithTx, id)
 	})
 }
 
@@ -166,5 +166,5 @@ func (usecase ExpenseUsecase) GetExpenseStatistics(ctx context.Context, groupBy 
 		return []ExpenseStatistic{}, &Error{Type: BadRequest, Message: "startDate must be on or before endDate"}
 	}
 
-	return usecase.expenseRepository.GetExpenseStatistics(ctx, groupBy, startDate, endDate)
+	return usecase.expenseRepoPort.GetExpenseStatistics(ctx, groupBy, startDate, endDate)
 }

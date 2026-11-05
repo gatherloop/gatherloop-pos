@@ -7,11 +7,11 @@ import (
 )
 
 type TransactionUsecase struct {
-	transactionRepository       TransactionRepository
-	variantRepository           VariantRepository
-	walletRepository            WalletRepository
-	paymentRepository           PaymentRepository
-	guestNotificationRepository GuestNotificationRepository
+	transactionRepoPort       TransactionRepoPort
+	variantRepoPort           VariantRepoPort
+	walletRepoPort            WalletRepoPort
+	paymentRepoPort           PaymentRepoPort
+	guestNotificationRepoPort GuestNotificationRepoPort
 
 	transactionService  TransactionService
 	paymentService      PaymentService
@@ -22,11 +22,11 @@ type TransactionUsecase struct {
 }
 
 func NewTransactionUsecase(
-	transactionRepository TransactionRepository,
-	variantRepository VariantRepository,
-	walletRepository WalletRepository,
-	paymentRepository PaymentRepository,
-	guestNotificationRepository GuestNotificationRepository,
+	transactionRepoPort TransactionRepoPort,
+	variantRepoPort VariantRepoPort,
+	walletRepoPort WalletRepoPort,
+	paymentRepoPort PaymentRepoPort,
+	guestNotificationRepoPort GuestNotificationRepoPort,
 
 	transactionService TransactionService,
 	paymentService PaymentService,
@@ -36,11 +36,11 @@ func NewTransactionUsecase(
 	guestNotificationService GuestNotificationService,
 ) TransactionUsecase {
 	return TransactionUsecase{
-		transactionRepository:       transactionRepository,
-		variantRepository:           variantRepository,
-		walletRepository:            walletRepository,
-		paymentRepository:           paymentRepository,
-		guestNotificationRepository: guestNotificationRepository,
+		transactionRepoPort:       transactionRepoPort,
+		variantRepoPort:           variantRepoPort,
+		walletRepoPort:            walletRepoPort,
+		paymentRepoPort:           paymentRepoPort,
+		guestNotificationRepoPort: guestNotificationRepoPort,
 
 		transactionService:  transactionService,
 		paymentService:      paymentService,
@@ -52,12 +52,12 @@ func NewTransactionUsecase(
 }
 
 func (usecase TransactionUsecase) GetTransactionList(ctx context.Context, query string, sortBy SortBy, order Order, skip int, limit int, paymentStatus PaymentStatus, walletId *int, source *TransactionSource, fulfillment *TransactionFulfillment) ([]Transaction, int64, *Error) {
-	transactions, err := usecase.transactionRepository.GetTransactionList(ctx, query, sortBy, order, skip, limit, paymentStatus, walletId, source, fulfillment)
+	transactions, err := usecase.transactionRepoPort.GetTransactionList(ctx, query, sortBy, order, skip, limit, paymentStatus, walletId, source, fulfillment)
 	if err != nil {
 		return []Transaction{}, 0, err
 	}
 
-	total, err := usecase.transactionRepository.GetTransactionListTotal(ctx, query, paymentStatus, walletId, source, fulfillment)
+	total, err := usecase.transactionRepoPort.GetTransactionListTotal(ctx, query, paymentStatus, walletId, source, fulfillment)
 	if err != nil {
 		return []Transaction{}, 0, err
 	}
@@ -66,7 +66,7 @@ func (usecase TransactionUsecase) GetTransactionList(ctx context.Context, query 
 }
 
 func (usecase TransactionUsecase) GetTransactionById(ctx context.Context, id int64) (Transaction, *Error) {
-	return usecase.transactionRepository.GetTransactionById(ctx, id)
+	return usecase.transactionRepoPort.GetTransactionById(ctx, id)
 }
 
 func (usecase TransactionUsecase) CreateTransaction(ctx context.Context, transaction Transaction) (Transaction, *Error) {
@@ -80,10 +80,10 @@ func (usecase TransactionUsecase) CreateTransaction(ctx context.Context, transac
 		transaction.Source = TransactionSourcePos
 	}
 
-	err := usecase.transactionRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+	err := usecase.transactionRepoPort.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
 
 		for index, item := range transaction.TransactionItems {
-			variant, err := usecase.variantRepository.GetVariantById(ctxWithTx, item.VariantId)
+			variant, err := usecase.variantRepoPort.GetVariantById(ctxWithTx, item.VariantId)
 			if err != nil {
 				return err
 			}
@@ -115,7 +115,7 @@ func (usecase TransactionUsecase) CreateTransaction(ctx context.Context, transac
 			return err
 		}
 
-		ct, err := usecase.transactionRepository.CreateTransaction(ctxWithTx, transaction)
+		ct, err := usecase.transactionRepoPort.CreateTransaction(ctxWithTx, transaction)
 		if err != nil {
 			return err
 		}
@@ -134,8 +134,8 @@ func (usecase TransactionUsecase) UpdateTransactionById(ctx context.Context, tra
 		return Transaction{}, &Error{Type: BadRequest, Message: "invalid dining option"}
 	}
 
-	err := usecase.transactionRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
-		existingTransaction, err := usecase.transactionRepository.GetTransactionById(ctxWithTx, id)
+	err := usecase.transactionRepoPort.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+		existingTransaction, err := usecase.transactionRepoPort.GetTransactionById(ctxWithTx, id)
 		if err != nil {
 			return err
 		}
@@ -173,7 +173,7 @@ func (usecase TransactionUsecase) UpdateTransactionById(ctx context.Context, tra
 				continue
 			}
 
-			variant, err := usecase.variantRepository.GetVariantById(ctxWithTx, item.VariantId)
+			variant, err := usecase.variantRepoPort.GetVariantById(ctxWithTx, item.VariantId)
 			if err != nil {
 				return err
 			}
@@ -205,7 +205,7 @@ func (usecase TransactionUsecase) UpdateTransactionById(ctx context.Context, tra
 			return err
 		}
 
-		ut, err := usecase.transactionRepository.UpdateTransactionById(ctxWithTx, transaction, id)
+		ut, err := usecase.transactionRepoPort.UpdateTransactionById(ctxWithTx, transaction, id)
 		if err != nil {
 			return err
 		}
@@ -218,8 +218,8 @@ func (usecase TransactionUsecase) UpdateTransactionById(ctx context.Context, tra
 }
 
 func (usecase TransactionUsecase) DeleteTransactionById(ctx context.Context, id int64) *Error {
-	return usecase.transactionRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
-		transaction, err := usecase.transactionRepository.GetTransactionById(ctxWithTx, id)
+	return usecase.transactionRepoPort.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+		transaction, err := usecase.transactionRepoPort.GetTransactionById(ctxWithTx, id)
 		if err != nil {
 			return err
 		}
@@ -232,13 +232,13 @@ func (usecase TransactionUsecase) DeleteTransactionById(ctx context.Context, id 
 			return err
 		}
 
-		return usecase.transactionRepository.DeleteTransactionById(ctxWithTx, id)
+		return usecase.transactionRepoPort.DeleteTransactionById(ctxWithTx, id)
 	})
 }
 
 func (usecase TransactionUsecase) PayTransaction(ctx context.Context, walletId int64, paidAmount float32, id int64) *Error {
-	err := usecase.transactionRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
-		transaction, err := usecase.transactionRepository.GetTransactionById(ctxWithTx, id)
+	err := usecase.transactionRepoPort.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+		transaction, err := usecase.transactionRepoPort.GetTransactionById(ctxWithTx, id)
 		if err != nil {
 			return err
 		}
@@ -248,7 +248,7 @@ func (usecase TransactionUsecase) PayTransaction(ctx context.Context, walletId i
 		// unguarded); an order transaction whose payment the guest already cancelled must never
 		// be resurrected by a cashier working from a stale list. The same locked row is reused
 		// below, in settleOrderPayment, rather than read a second time.
-		linkedPayment, paymentErr := usecase.paymentRepository.GetPaymentByTransactionIdForUpdate(ctxWithTx, id)
+		linkedPayment, paymentErr := usecase.paymentRepoPort.GetPaymentByTransactionIdForUpdate(ctxWithTx, id)
 		hasLinkedPayment := paymentErr == nil
 		if paymentErr != nil && paymentErr.Type != NotFound {
 			return paymentErr
@@ -269,7 +269,7 @@ func (usecase TransactionUsecase) PayTransaction(ctx context.Context, walletId i
 		if transaction.DeletedAt != nil && transaction.Source == TransactionSourceOrder {
 			slog.WarnContext(ctxWithTx, "paying a soft-deleted order transaction", slog.Int64("transactionId", transaction.Id), slog.Int64("transactionNumber", transaction.TransactionNumber))
 
-			if undeleteErr := usecase.transactionRepository.UndeleteTransactionById(ctxWithTx, transaction.Id); undeleteErr != nil {
+			if undeleteErr := usecase.transactionRepoPort.UndeleteTransactionById(ctxWithTx, transaction.Id); undeleteErr != nil {
 				return undeleteErr
 			}
 			transaction.DeletedAt = nil
@@ -296,8 +296,8 @@ func (usecase TransactionUsecase) PayTransaction(ctx context.Context, walletId i
 }
 
 func (usecase TransactionUsecase) UnpayTransaction(ctx context.Context, id int64) *Error {
-	return usecase.transactionRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
-		transaction, err := usecase.transactionRepository.GetTransactionById(ctxWithTx, id)
+	return usecase.transactionRepoPort.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+		transaction, err := usecase.transactionRepoPort.GetTransactionById(ctxWithTx, id)
 		if err != nil {
 			return err
 		}
@@ -311,7 +311,7 @@ func (usecase TransactionUsecase) UnpayTransaction(ctx context.Context, id int64
 			return &Error{Type: BadRequest, Message: "cannot unpay if more than 24 hours"}
 		}
 
-		paymentWallet, err := usecase.walletRepository.GetWalletById(ctxWithTx, *transaction.WalletId)
+		paymentWallet, err := usecase.walletRepoPort.GetWalletById(ctxWithTx, *transaction.WalletId)
 		if err != nil {
 			return err
 		}
@@ -319,7 +319,7 @@ func (usecase TransactionUsecase) UnpayTransaction(ctx context.Context, id int64
 		paymentCost := transaction.Total * paymentWallet.PaymentCostPercentage / 100
 		newBalance := paymentWallet.Balance - (transaction.Total - paymentCost)
 
-		if _, err := usecase.walletRepository.UpdateWalletById(ctxWithTx, Wallet{
+		if _, err := usecase.walletRepoPort.UpdateWalletById(ctxWithTx, Wallet{
 			Name:                  paymentWallet.Name,
 			PaymentCostPercentage: paymentWallet.PaymentCostPercentage,
 			Balance:               newBalance,
@@ -330,13 +330,13 @@ func (usecase TransactionUsecase) UnpayTransaction(ctx context.Context, id int64
 			return err
 		}
 
-		return usecase.transactionRepository.UnpayTransaction(ctxWithTx, id)
+		return usecase.transactionRepoPort.UnpayTransaction(ctxWithTx, id)
 	})
 }
 
 func (usecase TransactionUsecase) CompleteTransaction(ctx context.Context, id int64) *Error {
-	err := usecase.transactionRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
-		transaction, err := usecase.transactionRepository.GetTransactionById(ctxWithTx, id)
+	err := usecase.transactionRepoPort.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+		transaction, err := usecase.transactionRepoPort.GetTransactionById(ctxWithTx, id)
 		if err != nil {
 			return err
 		}
@@ -355,7 +355,7 @@ func (usecase TransactionUsecase) CompleteTransaction(ctx context.Context, id in
 
 		var sessionId *string
 		var whatsappNumber *string
-		payment, paymentErr := usecase.paymentRepository.GetPaymentByTransactionId(ctxWithTx, id)
+		payment, paymentErr := usecase.paymentRepoPort.GetPaymentByTransactionId(ctxWithTx, id)
 		if paymentErr != nil {
 			if paymentErr.Type != NotFound {
 				return paymentErr
@@ -368,11 +368,11 @@ func (usecase TransactionUsecase) CompleteTransaction(ctx context.Context, id in
 			whatsappNumber = payment.CustomerWhatsappNumber
 		}
 
-		if err := usecase.transactionRepository.CompleteTransaction(ctxWithTx, time.Now(), id); err != nil {
+		if err := usecase.transactionRepoPort.CompleteTransaction(ctxWithTx, time.Now(), id); err != nil {
 			return err
 		}
 
-		return usecase.guestNotificationRepository.EnqueueForCompletedTransaction(ctxWithTx, transaction, sessionId, whatsappNumber)
+		return usecase.guestNotificationRepoPort.EnqueueForCompletedTransaction(ctxWithTx, transaction, sessionId, whatsappNumber)
 	})
 	if err == nil {
 		usecase.guestNotificationService.TriggerDispatch()
@@ -381,8 +381,8 @@ func (usecase TransactionUsecase) CompleteTransaction(ctx context.Context, id in
 }
 
 func (usecase TransactionUsecase) UncompleteTransaction(ctx context.Context, id int64) *Error {
-	return usecase.transactionRepository.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
-		transaction, err := usecase.transactionRepository.GetTransactionById(ctxWithTx, id)
+	return usecase.transactionRepoPort.BeginTransaction(ctx, func(ctxWithTx context.Context) *Error {
+		transaction, err := usecase.transactionRepoPort.GetTransactionById(ctxWithTx, id)
 		if err != nil {
 			return err
 		}
@@ -399,7 +399,7 @@ func (usecase TransactionUsecase) UncompleteTransaction(ctx context.Context, id 
 			return &Error{Type: BadRequest, Message: "transaction is not completed"}
 		}
 
-		return usecase.transactionRepository.UncompleteTransaction(ctxWithTx, id)
+		return usecase.transactionRepoPort.UncompleteTransaction(ctxWithTx, id)
 	})
 }
 
@@ -408,5 +408,5 @@ func (usecase TransactionUsecase) GetTransactionStatistics(ctx context.Context, 
 		return []TransactionStatistic{}, &Error{Type: BadRequest, Message: "startDate must be on or before endDate"}
 	}
 
-	return usecase.transactionRepository.GetTransactionStatistics(ctx, groupBy, startDate, endDate)
+	return usecase.transactionRepoPort.GetTransactionStatistics(ctx, groupBy, startDate, endDate)
 }

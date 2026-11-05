@@ -15,10 +15,10 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-func newCalculationHandler(t *testing.T, setupMocks func(calcRepo *mock.MockCalculationRepository, walletRepo *mock.MockWalletRepository)) (restapi.CalculationHandler, *gomock.Controller) {
+func newCalculationHandler(t *testing.T, setupMocks func(calcRepo *mock.MockCalculationRepoPort, walletRepo *mock.MockWalletRepoPort)) (restapi.CalculationHandler, *gomock.Controller) {
 	ctrl := gomock.NewController(t)
-	calcRepo := mock.NewMockCalculationRepository(ctrl)
-	walletRepo := mock.NewMockWalletRepository(ctrl)
+	calcRepo := mock.NewMockCalculationRepoPort(ctrl)
+	walletRepo := mock.NewMockWalletRepoPort(ctrl)
 	setupMocks(calcRepo, walletRepo)
 	usecase := domain.NewCalculationUsecase(calcRepo, walletRepo)
 	return restapi.NewCalculationHandler(usecase), ctrl
@@ -28,13 +28,13 @@ func TestCalculationHandler_GetCalculationList(t *testing.T) {
 	tests := []struct {
 		name           string
 		url            string
-		setupMocks     func(calcRepo *mock.MockCalculationRepository, walletRepo *mock.MockWalletRepository)
+		setupMocks     func(calcRepo *mock.MockCalculationRepoPort, walletRepo *mock.MockWalletRepoPort)
 		expectedStatus int
 	}{
 		{
 			name: "success",
 			url:  "/calculations",
-			setupMocks: func(calcRepo *mock.MockCalculationRepository, walletRepo *mock.MockWalletRepository) {
+			setupMocks: func(calcRepo *mock.MockCalculationRepoPort, walletRepo *mock.MockWalletRepoPort) {
 				calcRepo.EXPECT().GetCalculationList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]domain.Calculation{{Id: 1}}, nil)
 			},
 			expectedStatus: http.StatusOK,
@@ -42,13 +42,13 @@ func TestCalculationHandler_GetCalculationList(t *testing.T) {
 		{
 			name:           "invalid skip param",
 			url:            "/calculations?skip=abc",
-			setupMocks:     func(calcRepo *mock.MockCalculationRepository, walletRepo *mock.MockWalletRepository) {},
+			setupMocks:     func(calcRepo *mock.MockCalculationRepoPort, walletRepo *mock.MockWalletRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name: "repo error",
 			url:  "/calculations",
-			setupMocks: func(calcRepo *mock.MockCalculationRepository, walletRepo *mock.MockWalletRepository) {
+			setupMocks: func(calcRepo *mock.MockCalculationRepoPort, walletRepo *mock.MockWalletRepoPort) {
 				calcRepo.EXPECT().GetCalculationList(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, &domain.Error{Type: domain.InternalServerError, Message: "db error"})
 			},
 			expectedStatus: http.StatusInternalServerError,
@@ -71,13 +71,13 @@ func TestCalculationHandler_GetCalculationById(t *testing.T) {
 	tests := []struct {
 		name           string
 		calculationId  string
-		setupMocks     func(calcRepo *mock.MockCalculationRepository, walletRepo *mock.MockWalletRepository)
+		setupMocks     func(calcRepo *mock.MockCalculationRepoPort, walletRepo *mock.MockWalletRepoPort)
 		expectedStatus int
 	}{
 		{
 			name:          "success",
 			calculationId: "1",
-			setupMocks: func(calcRepo *mock.MockCalculationRepository, walletRepo *mock.MockWalletRepository) {
+			setupMocks: func(calcRepo *mock.MockCalculationRepoPort, walletRepo *mock.MockWalletRepoPort) {
 				calcRepo.EXPECT().GetCalculationById(gomock.Any(), int64(1)).Return(domain.Calculation{Id: 1}, nil)
 			},
 			expectedStatus: http.StatusOK,
@@ -85,7 +85,7 @@ func TestCalculationHandler_GetCalculationById(t *testing.T) {
 		{
 			name:          "not found",
 			calculationId: "99",
-			setupMocks: func(calcRepo *mock.MockCalculationRepository, walletRepo *mock.MockWalletRepository) {
+			setupMocks: func(calcRepo *mock.MockCalculationRepoPort, walletRepo *mock.MockWalletRepoPort) {
 				calcRepo.EXPECT().GetCalculationById(gomock.Any(), int64(99)).Return(domain.Calculation{}, &domain.Error{Type: domain.NotFound, Message: "not found"})
 			},
 			expectedStatus: http.StatusNotFound,
@@ -93,7 +93,7 @@ func TestCalculationHandler_GetCalculationById(t *testing.T) {
 		{
 			name:           "invalid id",
 			calculationId:  "abc",
-			setupMocks:     func(calcRepo *mock.MockCalculationRepository, walletRepo *mock.MockWalletRepository) {},
+			setupMocks:     func(calcRepo *mock.MockCalculationRepoPort, walletRepo *mock.MockWalletRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 	}
@@ -115,13 +115,13 @@ func TestCalculationHandler_CreateCalculation(t *testing.T) {
 	tests := []struct {
 		name           string
 		body           string
-		setupMocks     func(calcRepo *mock.MockCalculationRepository, walletRepo *mock.MockWalletRepository)
+		setupMocks     func(calcRepo *mock.MockCalculationRepoPort, walletRepo *mock.MockWalletRepoPort)
 		expectedStatus int
 	}{
 		{
 			name: "success",
 			body: `{"walletId": 1, "calculationItems": [{"price": 15000, "amount": 2}]}`,
-			setupMocks: func(calcRepo *mock.MockCalculationRepository, walletRepo *mock.MockWalletRepository) {
+			setupMocks: func(calcRepo *mock.MockCalculationRepoPort, walletRepo *mock.MockWalletRepoPort) {
 				calcRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(1)).Return(domain.Wallet{Id: 1, Balance: 100000}, nil)
@@ -132,13 +132,13 @@ func TestCalculationHandler_CreateCalculation(t *testing.T) {
 		{
 			name:           "invalid JSON body",
 			body:           `{invalid`,
-			setupMocks:     func(calcRepo *mock.MockCalculationRepository, walletRepo *mock.MockWalletRepository) {},
+			setupMocks:     func(calcRepo *mock.MockCalculationRepoPort, walletRepo *mock.MockWalletRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name: "wallet not found",
 			body: `{"walletId": 99, "calculationItems": [{"price": 15000, "amount": 2}]}`,
-			setupMocks: func(calcRepo *mock.MockCalculationRepository, walletRepo *mock.MockWalletRepository) {
+			setupMocks: func(calcRepo *mock.MockCalculationRepoPort, walletRepo *mock.MockWalletRepoPort) {
 				calcRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				walletRepo.EXPECT().GetWalletById(gomock.Any(), int64(99)).Return(domain.Wallet{}, &domain.Error{Type: domain.NotFound, Message: "wallet not found"})
@@ -165,14 +165,14 @@ func TestCalculationHandler_UpdateCalculationById(t *testing.T) {
 		name           string
 		calculationId  string
 		body           string
-		setupMocks     func(calcRepo *mock.MockCalculationRepository, walletRepo *mock.MockWalletRepository)
+		setupMocks     func(calcRepo *mock.MockCalculationRepoPort, walletRepo *mock.MockWalletRepoPort)
 		expectedStatus int
 	}{
 		{
 			name:          "success",
 			calculationId: "1",
 			body:          `{"walletId": 1, "calculationItems": [{"price": 20000, "amount": 1}]}`,
-			setupMocks: func(calcRepo *mock.MockCalculationRepository, walletRepo *mock.MockWalletRepository) {
+			setupMocks: func(calcRepo *mock.MockCalculationRepoPort, walletRepo *mock.MockWalletRepoPort) {
 				calcRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				calcRepo.EXPECT().GetCalculationById(gomock.Any(), int64(1)).Return(domain.Calculation{Id: 1}, nil)
@@ -185,14 +185,14 @@ func TestCalculationHandler_UpdateCalculationById(t *testing.T) {
 			name:           "invalid id",
 			calculationId:  "abc",
 			body:           `{}`,
-			setupMocks:     func(calcRepo *mock.MockCalculationRepository, walletRepo *mock.MockWalletRepository) {},
+			setupMocks:     func(calcRepo *mock.MockCalculationRepoPort, walletRepo *mock.MockWalletRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:          "not found",
 			calculationId: "99",
 			body:          `{"walletId": 1, "calculationItems": [{"price": 20000, "amount": 1}]}`,
-			setupMocks: func(calcRepo *mock.MockCalculationRepository, walletRepo *mock.MockWalletRepository) {
+			setupMocks: func(calcRepo *mock.MockCalculationRepoPort, walletRepo *mock.MockWalletRepoPort) {
 				calcRepo.EXPECT().BeginTransaction(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, cb func(context.Context) *domain.Error) *domain.Error { return cb(ctx) })
 				calcRepo.EXPECT().GetCalculationById(gomock.Any(), int64(99)).Return(domain.Calculation{}, &domain.Error{Type: domain.NotFound, Message: "not found"})
@@ -219,13 +219,13 @@ func TestCalculationHandler_DeleteCalculationById(t *testing.T) {
 	tests := []struct {
 		name           string
 		calculationId  string
-		setupMocks     func(calcRepo *mock.MockCalculationRepository, walletRepo *mock.MockWalletRepository)
+		setupMocks     func(calcRepo *mock.MockCalculationRepoPort, walletRepo *mock.MockWalletRepoPort)
 		expectedStatus int
 	}{
 		{
 			name:          "success",
 			calculationId: "1",
-			setupMocks: func(calcRepo *mock.MockCalculationRepository, walletRepo *mock.MockWalletRepository) {
+			setupMocks: func(calcRepo *mock.MockCalculationRepoPort, walletRepo *mock.MockWalletRepoPort) {
 				calcRepo.EXPECT().GetCalculationById(gomock.Any(), int64(1)).Return(domain.Calculation{Id: 1}, nil)
 				calcRepo.EXPECT().DeleteCalculationById(gomock.Any(), int64(1)).Return(nil)
 			},
@@ -234,13 +234,13 @@ func TestCalculationHandler_DeleteCalculationById(t *testing.T) {
 		{
 			name:           "invalid id",
 			calculationId:  "abc",
-			setupMocks:     func(calcRepo *mock.MockCalculationRepository, walletRepo *mock.MockWalletRepository) {},
+			setupMocks:     func(calcRepo *mock.MockCalculationRepoPort, walletRepo *mock.MockWalletRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:          "not found",
 			calculationId: "99",
-			setupMocks: func(calcRepo *mock.MockCalculationRepository, walletRepo *mock.MockWalletRepository) {
+			setupMocks: func(calcRepo *mock.MockCalculationRepoPort, walletRepo *mock.MockWalletRepoPort) {
 				calcRepo.EXPECT().GetCalculationById(gomock.Any(), int64(99)).Return(domain.Calculation{}, &domain.Error{Type: domain.NotFound, Message: "not found"})
 			},
 			expectedStatus: http.StatusNotFound,
@@ -264,13 +264,13 @@ func TestCalculationHandler_CompleteCalculationById(t *testing.T) {
 	tests := []struct {
 		name           string
 		calculationId  string
-		setupMocks     func(calcRepo *mock.MockCalculationRepository, walletRepo *mock.MockWalletRepository)
+		setupMocks     func(calcRepo *mock.MockCalculationRepoPort, walletRepo *mock.MockWalletRepoPort)
 		expectedStatus int
 	}{
 		{
 			name:          "success",
 			calculationId: "1",
-			setupMocks: func(calcRepo *mock.MockCalculationRepository, walletRepo *mock.MockWalletRepository) {
+			setupMocks: func(calcRepo *mock.MockCalculationRepoPort, walletRepo *mock.MockWalletRepoPort) {
 				calcRepo.EXPECT().CompleteCalculationById(gomock.Any(), int64(1)).Return(nil)
 			},
 			expectedStatus: http.StatusOK,
@@ -278,13 +278,13 @@ func TestCalculationHandler_CompleteCalculationById(t *testing.T) {
 		{
 			name:           "invalid id",
 			calculationId:  "abc",
-			setupMocks:     func(calcRepo *mock.MockCalculationRepository, walletRepo *mock.MockWalletRepository) {},
+			setupMocks:     func(calcRepo *mock.MockCalculationRepoPort, walletRepo *mock.MockWalletRepoPort) {},
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:          "not found",
 			calculationId: "99",
-			setupMocks: func(calcRepo *mock.MockCalculationRepository, walletRepo *mock.MockWalletRepository) {
+			setupMocks: func(calcRepo *mock.MockCalculationRepoPort, walletRepo *mock.MockWalletRepoPort) {
 				calcRepo.EXPECT().CompleteCalculationById(gomock.Any(), int64(99)).Return(&domain.Error{Type: domain.NotFound, Message: "not found"})
 			},
 			expectedStatus: http.StatusNotFound,
