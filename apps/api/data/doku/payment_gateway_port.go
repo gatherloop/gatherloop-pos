@@ -5,15 +5,11 @@ import (
 	"apps/api/utils"
 	"bytes"
 	"context"
-	"crypto/rsa"
-	"crypto/x509"
 	"encoding/json"
-	"encoding/pem"
 	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -22,65 +18,12 @@ const (
 	tokenPath      = "/authorization/v1/access-token/b2b"
 	qrGeneratePath = "/snap-adapter/b2b/v1.0/qr/qr-mpm-generate"
 	qrQueryPath    = "/snap-adapter/b2b/v1.0/qr/qr-mpm-query"
-	// qrCancelPath is DOKU's "Cancel QRIS (QR Expire)" operation (qr-expire): it invalidates a
-	// generated QR by moving its expiry to now. Confirmed against
-	// https://developers.doku.com/accept-payments/direct-api/snap/integration-guide/qris#id-6.-cancel-qris.
-	qrCancelPath = "/snap-adapter/b2b/v1.0/qr/qr-expire"
+	qrCancelPath   = "/snap-adapter/b2b/v1.0/qr/qr-expire"
 
 	qrisServiceCode = "47"
 
 	requestTimeout = 10 * time.Second
 )
-
-var dokuTimeZone = time.FixedZone("WIB", 7*60*60)
-
-type Config struct {
-	BaseURL      string
-	ClientId     string
-	ClientSecret string
-	PrivateKey   *rsa.PrivateKey
-	MerchantId   string
-	ChannelId    string
-	TerminalId   string
-	PostalCode   string
-	FeeType      string
-}
-
-func (c Config) Validate() error {
-	var missing []string
-
-	for _, field := range []struct {
-		name  string
-		value string
-	}{
-		{"DOKU_BASE_URL", c.BaseURL},
-		{"DOKU_CLIENT_ID", c.ClientId},
-		{"DOKU_CLIENT_SECRET", c.ClientSecret},
-		{"DOKU_MERCHANT_ID", c.MerchantId},
-		{"DOKU_CHANNEL_ID", c.ChannelId},
-		{"DOKU_TERMINAL_ID", c.TerminalId},
-	} {
-		if field.value == "" {
-			missing = append(missing, field.name)
-		}
-	}
-
-	if c.PrivateKey == nil {
-		missing = append(missing, "DOKU_PRIVATE_KEY")
-	}
-
-	if len(missing) > 0 {
-		return fmt.Errorf("doku: missing configuration: %s", strings.Join(missing, ", "))
-	}
-	return nil
-}
-
-type Client struct {
-	config     Config
-	httpClient *http.Client
-	token      *tokenCache
-	logger     *slog.Logger
-}
 
 func NewPaymentGatewayPort(config Config) domain.PaymentGatewayPort {
 	return NewClient(config)
@@ -99,101 +42,6 @@ func NewClient(config Config) *Client {
 func (c *Client) VerifyCredentials(ctx context.Context) *domain.Error {
 	_, err := c.fetchAccessToken(ctx)
 	return err
-}
-
-func ParsePrivateKeyPEM(pemStr string) (*rsa.PrivateKey, error) {
-	block, _ := pem.Decode([]byte(normalizePrivateKeyPEM(pemStr)))
-	if block == nil {
-		return nil, fmt.Errorf("doku: DOKU_PRIVATE_KEY is not valid PEM")
-	}
-
-	if key, err := x509.ParsePKCS1PrivateKey(block.Bytes); err == nil {
-		return key, nil
-	}
-
-	parsed, err := x509.ParsePKCS8PrivateKey(block.Bytes)
-	if err != nil {
-		return nil, fmt.Errorf("doku: failed to parse DOKU_PRIVATE_KEY: %w", err)
-	}
-	rsaKey, ok := parsed.(*rsa.PrivateKey)
-	if !ok {
-		return nil, fmt.Errorf("doku: DOKU_PRIVATE_KEY is not an RSA key")
-	}
-	return rsaKey, nil
-}
-
-// .env and systemd EnvironmentFile can both hand over the PEM still quoted and with its newlines escaped.
-func normalizePrivateKeyPEM(pemStr string) string {
-	normalized := strings.TrimSpace(pemStr)
-	normalized = strings.Trim(normalized, `"'`)
-	normalized = strings.ReplaceAll(normalized, `\n`, "\n")
-	return strings.TrimSpace(normalized)
-}
-
-func maskCredential(value string) string {
-	if value == "" {
-		return "<empty>"
-	}
-	if len(value) <= 4 {
-		return "****"
-	}
-	return "****" + value[len(value)-4:]
-}
-
-// DOKU wants a numeric offset (2022-10-07T14:26:50+07:00), never the "Z" a UTC host would render.
-func formatTimestamp(t time.Time) string {
-	return t.In(dokuTimeZone).Format("2006-01-02T15:04:05-07:00")
-}
-
-func formatValidityPeriod(expiredAt time.Time) string {
-	if expiredAt.IsZero() {
-		return ""
-	}
-	return formatTimestamp(expiredAt)
-}
-
-func formatAmount(amount float32) string {
-	return strconv.FormatFloat(float64(amount), 'f', 2, 32)
-}
-
-const maxFailureDetailLength = 512
-
-type failureResponse struct {
-	ResponseCode    string `json:"responseCode"`
-	ResponseMessage string `json:"responseMessage"`
-}
-
-func describeFailure(body []byte) string {
-	var parsed failureResponse
-	if json.Unmarshal(body, &parsed) == nil && (parsed.ResponseCode != "" || parsed.ResponseMessage != "") {
-		return strings.TrimSpace(parsed.ResponseCode + " " + parsed.ResponseMessage)
-	}
-
-	raw := strings.TrimSpace(string(body))
-	if raw == "" {
-		return "<empty response body>"
-	}
-	if len(raw) > maxFailureDetailLength {
-		return raw[:maxFailureDetailLength] + "..."
-	}
-	return raw
-}
-
-func isSuccessResponseCode(code string) bool {
-	return len(code) >= 3 && code[:3] == "200"
-}
-
-func MapTransactionStatus(code string) domain.PaymentGatewayStatus {
-	switch code {
-	case "00":
-		return domain.PaymentGatewayStatusPaid
-	case "05":
-		return domain.PaymentGatewayStatusExpired
-	case "06", "07":
-		return domain.PaymentGatewayStatusFailed
-	default:
-		return domain.PaymentGatewayStatusPending
-	}
 }
 
 func (c *Client) send(ctx context.Context, path string, body []byte, accessToken string) ([]byte, int, *domain.Error) {
@@ -270,55 +118,6 @@ func (c *Client) doSignedRequest(ctx context.Context, path string, requestBody a
 	}
 
 	return respBody, nil
-}
-
-type qrisAmount struct {
-	Value    string `json:"value"`
-	Currency string `json:"currency"`
-}
-
-type qrisAmountResponse struct {
-	Value    float32 `json:"value"`
-	Currency string  `json:"currency"`
-}
-
-type qrisAdditionalInfo struct {
-	PostalCode string `json:"postalCode,omitempty"`
-	FeeType    string `json:"feeType,omitempty"`
-}
-
-type generateQrisRequest struct {
-	PartnerReferenceNo string             `json:"partnerReferenceNo"`
-	Amount             qrisAmount         `json:"amount"`
-	MerchantId         string             `json:"merchantId"`
-	TerminalId         string             `json:"terminalId"`
-	ValidityPeriod     string             `json:"validityPeriod,omitempty"`
-	AdditionalInfo     qrisAdditionalInfo `json:"additionalInfo"`
-}
-
-type generateQrisResponse struct {
-	ResponseCode       string `json:"responseCode"`
-	ResponseMessage    string `json:"responseMessage"`
-	ReferenceNo        string `json:"referenceNo"`
-	PartnerReferenceNo string `json:"partnerReferenceNo"`
-	QrContent          string `json:"qrContent"`
-}
-
-type queryQrisRequest struct {
-	OriginalPartnerReferenceNo string `json:"originalPartnerReferenceNo"`
-	OriginalReferenceNo        string `json:"originalReferenceNo"`
-	MerchantId                 string `json:"merchantId"`
-	ServiceCode                string `json:"serviceCode"`
-}
-
-type queryQrisResponse struct {
-	ResponseCode               string             `json:"responseCode"`
-	ResponseMessage            string             `json:"responseMessage"`
-	OriginalPartnerReferenceNo string             `json:"originalPartnerReferenceNo"`
-	OriginalReferenceNo        string             `json:"originalReferenceNo"`
-	LatestTransactionStatus    string             `json:"latestTransactionStatus"`
-	TransactionStatusDesc      string             `json:"transactionStatusDesc"`
-	Amount                     qrisAmountResponse `json:"amount"`
 }
 
 func (c *Client) GenerateQris(ctx context.Context, input domain.GenerateQrisInput) (domain.QrisPayment, *domain.Error) {
@@ -401,7 +200,7 @@ func (c *Client) QueryQris(ctx context.Context, input domain.QueryQrisInput) (do
 	}
 
 	amount := parsed.Amount.Value
-	status := MapTransactionStatus(parsed.LatestTransactionStatus)
+	status := ToPaymentGatewayStatus(parsed.LatestTransactionStatus)
 
 	c.logger.Info("doku: queried qris",
 		slog.String("partnerReferenceNo", input.PartnerReferenceNo),
@@ -415,21 +214,6 @@ func (c *Client) QueryQris(ctx context.Context, input domain.QueryQrisInput) (do
 		PaidAmount:         float32(amount),
 		RawStatusCode:      parsed.LatestTransactionStatus,
 	}, nil
-}
-
-type cancelQrisRequest struct {
-	PartnerReferenceNo string `json:"partnerReferenceNo"`
-	ReferenceNo        string `json:"referenceNo"`
-	MerchantId         string `json:"merchantId"`
-	Reason             string `json:"reason,omitempty"`
-}
-
-type cancelQrisResponse struct {
-	ResponseCode       string `json:"responseCode"`
-	ResponseMessage    string `json:"responseMessage"`
-	PartnerReferenceNo string `json:"partnerReferenceNo"`
-	ReferenceNo        string `json:"referenceNo"`
-	ExpiredDate        string `json:"expiredDate"`
 }
 
 func (c *Client) CancelQris(ctx context.Context, input domain.CancelQrisInput) *domain.Error {
@@ -466,8 +250,4 @@ func (c *Client) CancelQris(ctx context.Context, input domain.CancelQrisInput) *
 	)
 
 	return nil
-}
-
-func generateExternalId() string {
-	return strconv.FormatInt(time.Now().UnixNano(), 10)
 }

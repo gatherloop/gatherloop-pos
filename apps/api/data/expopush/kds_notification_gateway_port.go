@@ -10,34 +10,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
-	"time"
 )
-
-const (
-	sendPath               = "/--/api/v2/push/send"
-	defaultBaseURL         = "https://exp.host"
-	requestTimeout         = 10 * time.Second
-	statusOk               = "ok"
-	maxFailureDetailLength = 512
-)
-
-type Config struct {
-	BaseURL     string
-	AccessToken string
-}
-
-func (c Config) Validate() error {
-	if c.AccessToken == "" {
-		return fmt.Errorf("expopush: missing configuration: EXPO_PUSH_ACCESS_TOKEN")
-	}
-	return nil
-}
-
-type Client struct {
-	config     Config
-	httpClient *http.Client
-	logger     *slog.Logger
-}
 
 func NewKdsNotificationGatewayPort(config Config) domain.KdsNotificationGatewayPort {
 	return NewClient(config)
@@ -54,66 +27,6 @@ func NewClient(config Config) *Client {
 		httpClient: &http.Client{Timeout: requestTimeout},
 		logger:     slog.Default(),
 	}
-}
-
-type pushMessageRequest struct {
-	To        string         `json:"to"`
-	Title     string         `json:"title,omitempty"`
-	Body      string         `json:"body,omitempty"`
-	Sound     string         `json:"sound,omitempty"`
-	ChannelId string         `json:"channelId,omitempty"`
-	Priority  string         `json:"priority,omitempty"`
-	Data      map[string]any `json:"data,omitempty"`
-}
-
-type pushReceiptDetails struct {
-	Error string `json:"error,omitempty"`
-}
-
-type pushReceiptResponse struct {
-	Status  string             `json:"status"`
-	Id      string             `json:"id,omitempty"`
-	Message string             `json:"message,omitempty"`
-	Details pushReceiptDetails `json:"details,omitempty"`
-}
-
-type sendResponse struct {
-	Data []pushReceiptResponse `json:"data"`
-}
-
-func toPushMessageRequest(message domain.KdsPushMessage) pushMessageRequest {
-	return pushMessageRequest{
-		To:        message.To,
-		Title:     message.Title,
-		Body:      message.Body,
-		Sound:     message.Sound,
-		ChannelId: message.ChannelId,
-		Priority:  message.Priority,
-		Data:      message.Data,
-	}
-}
-
-func toKdsPushReceipt(receipt pushReceiptResponse) domain.KdsPushReceipt {
-	status := domain.KdsPushReceiptStatusError
-	if receipt.Status == statusOk {
-		status = domain.KdsPushReceiptStatusOk
-	}
-	return domain.KdsPushReceipt{
-		Status:    status,
-		Message:   receipt.Message,
-		ErrorCode: receipt.Details.Error,
-	}
-}
-
-func describeFailure(body []byte) string {
-	raw := strings.TrimSpace(string(body))
-	if raw == "" {
-		return "<empty response body>"
-	}
-	if len(raw) > maxFailureDetailLength {
-		return raw[:maxFailureDetailLength] + "..."
-	}
-	return raw
 }
 
 func (c *Client) Send(ctx context.Context, messages []domain.KdsPushMessage) ([]domain.KdsPushReceipt, *domain.Error) {

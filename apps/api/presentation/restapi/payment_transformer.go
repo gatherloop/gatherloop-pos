@@ -37,7 +37,7 @@ func ToQrisStatus(request apiContract.DokuNotificationRequest) domain.QrisStatus
 	return domain.QrisStatus{
 		PartnerReferenceNo: request.OriginalPartnerReferenceNo,
 		GatewayReferenceNo: request.OriginalReferenceNo,
-		Status:             doku.MapTransactionStatus(request.LatestTransactionStatus),
+		Status:             doku.ToPaymentGatewayStatus(request.LatestTransactionStatus),
 		PaidAmount:         float32(paidAmount),
 		RawStatusCode:      request.LatestTransactionStatus,
 	}

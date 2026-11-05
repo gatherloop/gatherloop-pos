@@ -1,4 +1,3 @@
-
 package domain
 
 type WhatsAppMessage struct {
