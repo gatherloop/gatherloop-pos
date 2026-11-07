@@ -166,9 +166,6 @@ export class MenuListUsecase extends Usecase<
           type: 'loaded',
         })
       )
-      // Selecting/clearing the sheet is orthogonal to the fetch machine's
-      // own `type` (D6) — it can happen from any of them, and never changes
-      // it.
       .with(
         [P._, { type: 'SELECT_ITEM' }],
         ([state, { productId, variantId }]) => ({

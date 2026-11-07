@@ -20,7 +20,14 @@ const createTester = (
     TableResolveState,
     TableResolveAction,
     TableResolveParams
-  >(new TableResolveUsecase(repository, { code }));
+  >(
+    new TableResolveUsecase(
+      repository,
+      new MockSessionRepository(),
+      new MockCartRepository(),
+      { code }
+    )
+  );
 
 describe('TableResolveUsecase', () => {
   it('starts in noCode and never fetches when there is no code', async () => {
@@ -115,7 +122,14 @@ describe('TableResolveUsecase', () => {
       TableResolveState,
       TableResolveAction,
       TableResolveParams
-    >(new TableResolveUsecase(repository, { code, table }));
+    >(
+      new TableResolveUsecase(
+        repository,
+        new MockSessionRepository(),
+        new MockCartRepository(),
+        { code, table }
+      )
+    );
 
     expect(tableResolve.state).toEqual({
       type: 'resolved',
@@ -138,7 +152,14 @@ describe('TableResolveUsecase', () => {
       TableResolveState,
       TableResolveAction,
       TableResolveParams
-    >(new TableResolveUsecase(repository, { code, table: null }));
+    >(
+      new TableResolveUsecase(
+        repository,
+        new MockSessionRepository(),
+        new MockCartRepository(),
+        { code, table: null }
+      )
+    );
 
     expect(tableResolve.state).toEqual({
       type: 'notFound',
@@ -161,8 +182,9 @@ describe('TableResolveUsecase', () => {
 
     const usecase = new TableResolveUsecase(
       repository,
-      { code, table: repository.tables[code] },
-      { sessionRepository, cartRepository }
+      sessionRepository,
+      cartRepository,
+      { code, table: repository.tables[code] }
     );
     const state = usecase.getInitialState();
     expect(state.type).toEqual('resolved');
@@ -177,14 +199,16 @@ describe('TableResolveUsecase', () => {
     expect(updateTableSpy).toHaveBeenCalledWith(code);
   });
 
-  it('does not touch the session or cart repository when neither dependency is provided', async () => {
+  it('does not throw when the table is resolved', async () => {
     const repository = new MockPublicTableRepository();
     const code = repository.codes[0];
 
-    const usecase = new TableResolveUsecase(repository, {
-      code,
-      table: repository.tables[code],
-    });
+    const usecase = new TableResolveUsecase(
+      repository,
+      new MockSessionRepository(),
+      new MockCartRepository(),
+      { code, table: repository.tables[code] }
+    );
     const state = usecase.getInitialState();
 
     expect(() => usecase.onStateChange(state, jest.fn())).not.toThrow();

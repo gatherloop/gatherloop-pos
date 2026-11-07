@@ -36,9 +36,11 @@ export function Cart({
 
   const tableResolveUsecase = new TableResolveUsecase(
     publicTableRepository,
-    { code, table },
-    { sessionRepository }
+    sessionRepository,
+    cartRepository,
+    { code, table }
   );
+
   const cartUsecase = new CartUsecase(cartRepository, cartQueryRepository);
   const enabled = process.env['NEXT_PUBLIC_ORDER_CHECKOUT_ENABLED'] === 'true';
   const isCashPaymentEnabled =

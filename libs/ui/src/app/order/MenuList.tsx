@@ -48,8 +48,9 @@ export function MenuList({
 
   const tableResolveUsecase = new TableResolveUsecase(
     publicTableRepository,
-    { code, table },
-    { sessionRepository, cartRepository }
+    sessionRepository,
+    cartRepository,
+    { code, table }
   );
   const menuListUsecase = new MenuListUsecase(
     menuRepository,
@@ -64,7 +65,10 @@ export function MenuList({
     productId: selectedProductId,
     product: selectedProduct,
   });
-  const cartUsecase = new CartUsecase(cartRepository, new UrlCartQueryRepository());
+  const cartUsecase = new CartUsecase(
+    cartRepository,
+    new UrlCartQueryRepository()
+  );
   const paymentCancelUsecase = new PaymentCancelUsecase(paymentRepository, {
     reference: '',
     method: 'qris',

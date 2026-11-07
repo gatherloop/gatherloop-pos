@@ -41,24 +41,22 @@ export class TableResolveUsecase extends Usecase<
   TableResolveParams
 > {
   params: TableResolveParams;
-  repository: PublicTableRepository;
+  publicTableRepository: PublicTableRepository;
   private sessionRepository?: SessionRepository;
   private cartRepository?: CartRepository;
   private boundTableCode: string | null = null;
 
   constructor(
-    repository: PublicTableRepository,
-    params: TableResolveParams,
-    dependencies: {
-      sessionRepository?: SessionRepository;
-      cartRepository?: CartRepository;
-    } = {}
+    publicTableRepository: PublicTableRepository,
+    sessionRepository: SessionRepository,
+    cartRepository: CartRepository,
+    params: TableResolveParams
   ) {
     super();
-    this.repository = repository;
+    this.publicTableRepository = publicTableRepository;
+    this.sessionRepository = sessionRepository;
+    this.cartRepository = cartRepository;
     this.params = params;
-    this.sessionRepository = dependencies.sessionRepository;
-    this.cartRepository = dependencies.cartRepository;
   }
 
   getInitialState(): TableResolveState {
@@ -124,7 +122,7 @@ export class TableResolveUsecase extends Usecase<
     match(state)
       .with({ type: 'idle' }, () => dispatch({ type: 'FETCH' }))
       .with({ type: 'resolving' }, ({ code }) => {
-        this.repository
+        this.publicTableRepository
           .resolveTableByCode(code ?? '')
           .then((table) => dispatch({ type: 'RESOLVE_SUCCESS', table }))
           .catch((error) => {

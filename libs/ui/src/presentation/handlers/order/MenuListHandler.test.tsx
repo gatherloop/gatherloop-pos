@@ -140,8 +140,9 @@ const renderHandler = ({
 } = {}) => {
   const tableResolveUsecase = new TableResolveUsecase(
     tableRepository,
-    { code: TABLE_CODE },
-    { sessionRepository, cartRepository }
+    sessionRepository,
+    cartRepository,
+    { code: TABLE_CODE }
   );
   const menuListUsecase = new MenuListUsecase(
     menuRepository,
