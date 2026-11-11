@@ -248,36 +248,11 @@ export const MenuListHandler = ({
     if (variant) {
       cart.dispatch({ type: 'ADD_ITEM', variantId: variant.id, amount, note });
     }
-    menuList.dispatch({ type: 'CLEAR_ITEM' });
-  }, [cart.state.type, cart.dispatch, menuItemDetail.state, menuList.dispatch]);
-
-  useEffect(() => {
-    const { selectedProductId, selectedVariantId, query } = menuList.state;
-    if (selectedProductId !== null) {
-      const product = menuList.state.products.find(
-        (candidate) => candidate.id === selectedProductId
-      );
-      const variant = menuList.state.variants.find(
-        (candidate) => candidate.id === selectedVariantId
-      );
-      menuItemDetail.dispatch({
-        type: 'SELECT_PRODUCT',
-        productId: selectedProductId,
-        product,
-        preselectedOptionValueIds: product
-          ? computePreselectedOptionValueIds(query, product, variant)
-          : [],
-      });
-    }
-    // `menuList.state.products` is deliberately not a dependency: this
-    // effect's job is reacting to a *selection* changing, not to the menu
-    // list refetching. Depending on it too would re-dispatch SELECT_PRODUCT
-    // (and reset the draft's amount/note) whenever a background
-    // revalidation resolves while the sheet is open.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    menuItemDetail.dispatch({ type: 'CLEAR_PRODUCT' });
   }, [
-    menuList.state.selectedProductId,
-    menuList.state.selectedVariantId,
+    cart.state.type,
+    cart.dispatch,
+    menuItemDetail.state,
     menuItemDetail.dispatch,
   ]);
 
@@ -342,13 +317,25 @@ export const MenuListHandler = ({
     menuItemDetail.state.selectedOptionValueIds
   );
 
+  const selectItem = (product: Product, variant?: Variant) =>
+    menuItemDetail.dispatch({
+      type: 'SELECT_PRODUCT',
+      productId: product.id,
+      product,
+      preselectedOptionValueIds: computePreselectedOptionValueIds(
+        menuList.state.query,
+        product,
+        variant
+      ),
+    });
+
   const itemDetail: MenuListScreenProps['itemDetail'] =
-    menuList.state.selectedProductId === null
+    menuItemDetail.state.productId === null
       ? null
       : {
           isOpen: true,
           onOpenChange: (isOpen) => {
-            if (!isOpen) menuList.dispatch({ type: 'CLEAR_ITEM' });
+            if (!isOpen) menuItemDetail.dispatch({ type: 'CLEAR_PRODUCT' });
           },
           variant: toItemDetailScreenVariant(menuItemDetail.state),
           selectedOptionValueIds: menuItemDetail.state.selectedOptionValueIds,
@@ -388,7 +375,7 @@ export const MenuListHandler = ({
               amount,
               note,
             });
-            menuList.dispatch({ type: 'CLEAR_ITEM' });
+            menuItemDetail.dispatch({ type: 'CLEAR_PRODUCT' });
           },
           onRetryButtonPress: () => menuItemDetail.dispatch({ type: 'FETCH' }),
           lockedNotice: pendingPayment
@@ -472,16 +459,13 @@ export const MenuListHandler = ({
         })
       }
       onRetryButtonPress={() => menuList.dispatch({ type: 'FETCH' })}
-      onItemPress={(product: Product) =>
-        menuList.dispatch({ type: 'SELECT_ITEM', productId: product.id })
-      }
+      onItemPress={(product: Product) => selectItem(product)}
       highlightSections={highlightSections}
       onHighlightEntryPress={(entry: TagHighlightEntry) =>
-        menuList.dispatch({
-          type: 'SELECT_ITEM',
-          productId: entry.product.id,
-          variantId: entry.kind === 'variant' ? entry.variant.id : undefined,
-        })
+        selectItem(
+          entry.product,
+          entry.kind === 'variant' ? entry.variant : undefined
+        )
       }
       startingPriceByProductId={startingPriceByProductId}
       matchedLabelsByProductId={matchedLabelsByProductId}

@@ -1,6 +1,6 @@
 import { match, P } from 'ts-pattern';
 import { Category, Product, Variant } from '../entities';
-import { MenuListQueryRepository, MenuRepository } from '../repositories';
+import { MenuRepository } from '../repositories';
 import { createDebounce } from '../../utils';
 import { Usecase } from './IUsecase';
 
@@ -11,8 +11,6 @@ type Context = {
   query: string;
   selectedCategoryId: number | null;
   selectedTagId: number | null;
-  selectedProductId: number | null;
-  selectedVariantId: number | null;
   errorMessage: string | null;
   fetchDebounceDelay: number;
 };
@@ -48,15 +46,12 @@ export type MenuListAction =
       products: Product[];
       categories: Category[];
       variants: Variant[];
-    }
-  | { type: 'SELECT_ITEM'; productId: number; variantId?: number }
-  | { type: 'CLEAR_ITEM' };
+    };
 
 export type MenuListParams = {
   products: Product[];
   categories: Category[];
   variants?: Variant[];
-  selectedProductId?: number | null;
 };
 
 const changeParamsDebounce = createDebounce();
@@ -67,17 +62,11 @@ export class MenuListUsecase extends Usecase<
   MenuListParams
 > {
   menuRepository: MenuRepository;
-  menuListQueryRepository: MenuListQueryRepository;
   params: MenuListParams;
 
-  constructor(
-    menuRepository: MenuRepository,
-    menuListQueryRepository: MenuListQueryRepository,
-    params: MenuListParams
-  ) {
+  constructor(menuRepository: MenuRepository, params: MenuListParams) {
     super();
     this.menuRepository = menuRepository;
-    this.menuListQueryRepository = menuListQueryRepository;
     this.params = params;
   }
 
@@ -90,10 +79,6 @@ export class MenuListUsecase extends Usecase<
       query: '',
       selectedCategoryId: null,
       selectedTagId: null,
-      selectedProductId:
-        this.params.selectedProductId ??
-        this.menuListQueryRepository.getSelectedProductId(),
-      selectedVariantId: null,
       errorMessage: null,
       fetchDebounceDelay: 0,
     };
@@ -166,19 +151,6 @@ export class MenuListUsecase extends Usecase<
           type: 'loaded',
         })
       )
-      .with(
-        [P._, { type: 'SELECT_ITEM' }],
-        ([state, { productId, variantId }]) => ({
-          ...state,
-          selectedProductId: productId,
-          selectedVariantId: variantId ?? null,
-        })
-      )
-      .with([P._, { type: 'CLEAR_ITEM' }], ([state]) => ({
-        ...state,
-        selectedProductId: null,
-        selectedVariantId: null,
-      }))
       .otherwise(() => state);
   }
 
@@ -186,15 +158,6 @@ export class MenuListUsecase extends Usecase<
     state: MenuListState,
     dispatch: (action: MenuListAction) => void
   ): void {
-    if (
-      state.selectedProductId !==
-      this.menuListQueryRepository.getSelectedProductId()
-    ) {
-      this.menuListQueryRepository.setSelectedProductId(
-        state.selectedProductId
-      );
-    }
-
     match(state)
       .with({ type: 'idle' }, () => dispatch({ type: 'FETCH' }))
       .with({ type: 'loading' }, ({ query }) =>

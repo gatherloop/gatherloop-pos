@@ -4,23 +4,19 @@ import {
   MenuListState,
   MenuListParams,
 } from './menuList';
-import {
-  MockMenuListQueryRepository,
-  MockMenuRepository,
-} from '../../data/mock';
+import { MockMenuRepository } from '../../data/mock';
 import { UsecaseTester, flushPromises } from '../../utils/usecase';
 
 const createTester = (
   repository: MockMenuRepository,
-  params: MenuListParams = { products: [], categories: [] },
-  queryRepository: MockMenuListQueryRepository = new MockMenuListQueryRepository()
+  params: MenuListParams = { products: [], categories: [] }
 ) =>
   new UsecaseTester<
     MenuListUsecase,
     MenuListState,
     MenuListAction,
     MenuListParams
-  >(new MenuListUsecase(repository, queryRepository, params));
+  >(new MenuListUsecase(repository, params));
 
 describe('MenuListUsecase', () => {
   describe('success flow', () => {
@@ -36,8 +32,6 @@ describe('MenuListUsecase', () => {
         query: '',
         selectedCategoryId: null,
         selectedTagId: null,
-        selectedProductId: null,
-        selectedVariantId: null,
         errorMessage: null,
         fetchDebounceDelay: 0,
       });
@@ -51,8 +45,6 @@ describe('MenuListUsecase', () => {
         query: '',
         selectedCategoryId: null,
         selectedTagId: null,
-        selectedProductId: null,
-        selectedVariantId: null,
         errorMessage: null,
         fetchDebounceDelay: 0,
       });
@@ -69,8 +61,6 @@ describe('MenuListUsecase', () => {
         query: '',
         selectedCategoryId: null,
         selectedTagId: null,
-        selectedProductId: null,
-        selectedVariantId: null,
         errorMessage: null,
         fetchDebounceDelay: 0,
       });
@@ -84,8 +74,6 @@ describe('MenuListUsecase', () => {
         query: '',
         selectedCategoryId: 2,
         selectedTagId: null,
-        selectedProductId: null,
-        selectedVariantId: null,
         errorMessage: null,
         fetchDebounceDelay: 0,
       });
@@ -129,8 +117,6 @@ describe('MenuListUsecase', () => {
         query: '',
         selectedCategoryId: null,
         selectedTagId: null,
-        selectedProductId: null,
-        selectedVariantId: null,
         errorMessage: 'Failed to fetch menu',
         fetchDebounceDelay: 0,
       });
@@ -220,108 +206,6 @@ describe('MenuListUsecase', () => {
       menuList.dispatch({ type: 'CHANGE_PARAMS', query: 'kopi' });
 
       expect(menuList.state.selectedTagId).toBe(1);
-    });
-  });
-
-  describe('item selection', () => {
-    it('holds the selected product id, from any fetch state, without changing it', async () => {
-      const repository = new MockMenuRepository();
-      const menuList = createTester(repository);
-      await flushPromises();
-
-      menuList.dispatch({ type: 'SELECT_ITEM', productId: 1 });
-
-      expect(menuList.state.type).toBe('loaded');
-      expect(menuList.state.selectedProductId).toBe(1);
-    });
-
-    it('keeps the variant id alongside the selected product', async () => {
-      const repository = new MockMenuRepository();
-      const menuList = createTester(repository);
-      await flushPromises();
-
-      menuList.dispatch({ type: 'SELECT_ITEM', productId: 1, variantId: 2 });
-
-      expect(menuList.state.selectedProductId).toBe(1);
-      expect(menuList.state.selectedVariantId).toBe(2);
-    });
-
-    it('selects a product without a variant when none is given, dropping a previous one', async () => {
-      const repository = new MockMenuRepository();
-      const menuList = createTester(repository);
-      await flushPromises();
-
-      menuList.dispatch({ type: 'SELECT_ITEM', productId: 1, variantId: 2 });
-      menuList.dispatch({ type: 'SELECT_ITEM', productId: 2 });
-
-      expect(menuList.state.selectedVariantId).toBeNull();
-    });
-
-    it('clears the selected product id', async () => {
-      const repository = new MockMenuRepository();
-      const menuList = createTester(repository);
-      await flushPromises();
-
-      menuList.dispatch({ type: 'SELECT_ITEM', productId: 1 });
-      menuList.dispatch({ type: 'CLEAR_ITEM' });
-
-      expect(menuList.state.selectedProductId).toBeNull();
-      expect(menuList.state.selectedVariantId).toBeNull();
-    });
-
-    it('reads the initial selection from the query repository when the params do not seed one', () => {
-      const repository = new MockMenuRepository();
-      const queryRepository = new MockMenuListQueryRepository();
-      jest.spyOn(queryRepository, 'getSelectedProductId').mockReturnValue(5);
-
-      const menuList = createTester(
-        repository,
-        { products: [], categories: [] },
-        queryRepository
-      );
-
-      expect(menuList.state.selectedProductId).toBe(5);
-    });
-
-    it('prefers a seeded selectedProductId param over the query repository', () => {
-      const repository = new MockMenuRepository();
-      const queryRepository = new MockMenuListQueryRepository();
-      jest.spyOn(queryRepository, 'getSelectedProductId').mockReturnValue(5);
-
-      const menuList = createTester(
-        repository,
-        { products: [], categories: [], selectedProductId: 9 },
-        queryRepository
-      );
-
-      expect(menuList.state.selectedProductId).toBe(9);
-    });
-
-    it('mirrors a selection into the query repository', async () => {
-      const repository = new MockMenuRepository();
-      const queryRepository = new MockMenuListQueryRepository();
-      const setSpy = jest.spyOn(queryRepository, 'setSelectedProductId');
-      const menuList = createTester(repository, undefined, queryRepository);
-      await flushPromises();
-      setSpy.mockClear();
-
-      menuList.dispatch({ type: 'SELECT_ITEM', productId: 3 });
-
-      expect(setSpy).toHaveBeenCalledWith(3);
-    });
-
-    it('does not re-write the query repository on unrelated state changes', async () => {
-      const repository = new MockMenuRepository();
-      const queryRepository = new MockMenuListQueryRepository();
-      jest.spyOn(queryRepository, 'getSelectedProductId').mockReturnValue(3);
-      const setSpy = jest.spyOn(queryRepository, 'setSelectedProductId');
-      const menuList = createTester(repository, undefined, queryRepository);
-      await flushPromises();
-      setSpy.mockClear();
-
-      menuList.dispatch({ type: 'CHANGE_PARAMS', query: 'kopi' });
-
-      expect(setSpy).not.toHaveBeenCalled();
     });
   });
 });

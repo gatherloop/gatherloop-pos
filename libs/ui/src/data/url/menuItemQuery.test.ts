@@ -1,8 +1,8 @@
 import Router from 'next/router';
-import { UrlMenuListQueryRepository } from './menuListQuery';
+import { UrlMenuItemQueryRepository } from './menuItemQuery';
 
-describe('UrlMenuListQueryRepository', () => {
-  const repository = new UrlMenuListQueryRepository();
+describe('UrlMenuItemQueryRepository', () => {
+  const repository = new UrlMenuItemQueryRepository();
 
   afterEach(() => {
     window.history.pushState({}, '', 'http://localhost/');

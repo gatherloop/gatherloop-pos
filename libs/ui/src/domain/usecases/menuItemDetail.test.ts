@@ -5,19 +5,23 @@ import {
   MenuItemDetailParams,
 } from './menuItemDetail';
 import { Product, Variant } from '../entities';
-import { MockMenuRepository } from '../../data/mock';
+import {
+  MockMenuItemQueryRepository,
+  MockMenuRepository,
+} from '../../data/mock';
 import { UsecaseTester, flushPromises } from '../../utils/usecase';
 
 const createTester = (
   repository: MockMenuRepository,
-  params: MenuItemDetailParams
+  params: MenuItemDetailParams,
+  queryRepository: MockMenuItemQueryRepository = new MockMenuItemQueryRepository()
 ) =>
   new UsecaseTester<
     MenuItemDetailUsecase,
     MenuItemDetailState,
     MenuItemDetailAction,
     MenuItemDetailParams
-  >(new MenuItemDetailUsecase(repository, params));
+  >(new MenuItemDetailUsecase(repository, queryRepository, params));
 
 function addSingleOptionProduct(repository: MockMenuRepository): {
   product: Product;
@@ -478,6 +482,108 @@ describe('MenuItemDetailUsecase', () => {
       await flushPromises();
       expect(menuItemDetail.state.type).toBe('ready');
       expect(menuItemDetail.state.variant).toEqual(variant);
+    });
+  });
+
+  describe('product selection in the query repository', () => {
+    it('reads the initial product id from the query repository when the params do not seed one', () => {
+      const repository = new MockMenuRepository();
+      const queryRepository = new MockMenuItemQueryRepository();
+      jest.spyOn(queryRepository, 'getSelectedProductId').mockReturnValue(5);
+
+      const menuItemDetail = createTester(
+        repository,
+        { productId: null },
+        queryRepository
+      );
+
+      expect(menuItemDetail.state.productId).toBe(5);
+    });
+
+    it('prefers a seeded productId param over the query repository', () => {
+      const repository = new MockMenuRepository();
+      const queryRepository = new MockMenuItemQueryRepository();
+      jest.spyOn(queryRepository, 'getSelectedProductId').mockReturnValue(5);
+
+      const menuItemDetail = createTester(
+        repository,
+        { productId: 9 },
+        queryRepository
+      );
+
+      expect(menuItemDetail.state.productId).toBe(9);
+    });
+
+    it('mirrors a selection into the query repository', async () => {
+      const repository = new MockMenuRepository();
+      const { product } = addSingleOptionProduct(repository);
+      const queryRepository = new MockMenuItemQueryRepository();
+      const setSpy = jest.spyOn(queryRepository, 'setSelectedProductId');
+      const menuItemDetail = createTester(
+        repository,
+        { productId: null },
+        queryRepository
+      );
+      await flushPromises();
+      setSpy.mockClear();
+
+      menuItemDetail.dispatch({
+        type: 'SELECT_PRODUCT',
+        productId: product.id,
+        product,
+      });
+
+      expect(setSpy).toHaveBeenCalledWith(product.id);
+    });
+
+    it('does not re-write the query repository on unrelated state changes', async () => {
+      const repository = new MockMenuRepository();
+      const queryRepository = new MockMenuItemQueryRepository();
+      jest.spyOn(queryRepository, 'getSelectedProductId').mockReturnValue(3);
+      const setSpy = jest.spyOn(queryRepository, 'setSelectedProductId');
+      const menuItemDetail = createTester(
+        repository,
+        { productId: 3 },
+        queryRepository
+      );
+      await flushPromises();
+      setSpy.mockClear();
+
+      menuItemDetail.dispatch({ type: 'CHANGE_NOTE', note: 'less ice' });
+
+      expect(setSpy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('CLEAR_PRODUCT', () => {
+    it('returns to idle and resets the draft', async () => {
+      const repository = new MockMenuRepository();
+      const { product } = addSingleOptionProduct(repository);
+      const queryRepository = new MockMenuItemQueryRepository();
+      jest
+        .spyOn(queryRepository, 'getSelectedProductId')
+        .mockReturnValue(product.id);
+      const setSpy = jest.spyOn(queryRepository, 'setSelectedProductId');
+      const menuItemDetail = createTester(
+        repository,
+        { productId: product.id, product },
+        queryRepository
+      );
+      await flushPromises();
+      menuItemDetail.dispatch({ type: 'CHANGE_NOTE', note: 'less ice' });
+
+      menuItemDetail.dispatch({ type: 'CLEAR_PRODUCT' });
+
+      expect(menuItemDetail.state).toMatchObject({
+        type: 'idle',
+        productId: null,
+        product: null,
+        selectedOptionValueIds: [],
+        variant: null,
+        amount: 1,
+        note: '',
+      });
+      expect(setSpy).toHaveBeenLastCalledWith(null);
     });
   });
 });

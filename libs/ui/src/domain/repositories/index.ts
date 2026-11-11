@@ -32,7 +32,7 @@ export * from './purchaseListQuery';
 export * from './publicTable';
 export * from './session';
 export * from './menu';
-export * from './menuListQuery';
+export * from './menuItemQuery';
 export * from './cart';
 export * from './cartQuery';
 export * from './payment';

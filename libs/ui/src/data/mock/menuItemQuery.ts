@@ -1,6 +1,6 @@
-import { MenuListQueryRepository } from '../../domain/repositories/menuListQuery';
+import { MenuItemQueryRepository } from '../../domain/repositories/menuItemQuery';
 
-export class MockMenuListQueryRepository implements MenuListQueryRepository {
+export class MockMenuItemQueryRepository implements MenuItemQueryRepository {
   getSelectedProductId = (): number | null => null;
 
   setSelectedProductId = (productId: number | null) => {

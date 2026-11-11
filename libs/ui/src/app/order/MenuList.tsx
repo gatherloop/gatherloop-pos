@@ -5,7 +5,7 @@ import { ApiPaymentRepository } from '../../data/api/payment';
 import { ApiPublicTableRepository } from '../../data/api/publicTable';
 import { CookieSessionRepository } from '../../data/session/CookieSessionRepository';
 import { UrlCartQueryRepository } from '../../data/url/cartQuery';
-import { UrlMenuListQueryRepository } from '../../data/url/menuListQuery';
+import { UrlMenuItemQueryRepository } from '../../data/url/menuItemQuery';
 import { Category } from '../../domain/entities/Category';
 import { Product } from '../../domain/entities/Product';
 import { PublicTable } from '../../domain/entities/PublicTable';
@@ -44,7 +44,7 @@ export function MenuList({
   const publicTableRepository = new ApiPublicTableRepository();
   const cartRepository = new ApiCartRepository(sessionRepository);
   const paymentRepository = new ApiPaymentRepository(sessionRepository);
-  const menuListQueryRepository = new UrlMenuListQueryRepository();
+  const menuItemQueryRepository = new UrlMenuItemQueryRepository();
 
   const tableResolveUsecase = new TableResolveUsecase(
     publicTableRepository,
@@ -52,19 +52,20 @@ export function MenuList({
     cartRepository,
     { code, table }
   );
-  const menuListUsecase = new MenuListUsecase(
-    menuRepository,
-    menuListQueryRepository,
-    { products, categories, variants, selectedProductId }
-  );
+  const menuListUsecase = new MenuListUsecase(menuRepository, {
+    products,
+    categories,
+    variants,
+  });
   const selectedProduct =
     selectedProductId !== null
       ? products.find((product) => product.id === selectedProductId) ?? null
       : null;
-  const menuItemDetailUsecase = new MenuItemDetailUsecase(menuRepository, {
-    productId: selectedProductId,
-    product: selectedProduct,
-  });
+  const menuItemDetailUsecase = new MenuItemDetailUsecase(
+    menuRepository,
+    menuItemQueryRepository,
+    { productId: selectedProductId, product: selectedProduct }
+  );
   const cartUsecase = new CartUsecase(
     cartRepository,
     new UrlCartQueryRepository()

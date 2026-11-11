@@ -5,7 +5,7 @@ import { MenuListHandler } from './MenuListHandler';
 import {
   MockCartQueryRepository,
   MockCartRepository,
-  MockMenuListQueryRepository,
+  MockMenuItemQueryRepository,
   MockMenuRepository,
   MockPaymentRepository,
   MockPublicTableRepository,
@@ -15,6 +15,7 @@ import {
   Tag,
   CartUsecase,
   MenuItemDetailUsecase,
+  MenuItemDetailParams,
   MenuListParams,
   MenuListUsecase,
   PaymentCancelUsecase,
@@ -124,8 +125,9 @@ const renderHandler = ({
   tableRepository = new MockPublicTableRepository(),
   cartRepository = new MockCartRepository(),
   paymentRepository = new MockPaymentRepository(),
-  menuListQueryRepository = new MockMenuListQueryRepository(),
+  menuItemQueryRepository = new MockMenuItemQueryRepository(),
   menuListParams = { products: [], categories: [] } as MenuListParams,
+  menuItemDetailParams = { productId: null } as MenuItemDetailParams,
   sessionRepository = new MockSessionRepository(),
   preparingCount,
 }: {
@@ -133,8 +135,9 @@ const renderHandler = ({
   tableRepository?: MockPublicTableRepository;
   cartRepository?: MockCartRepository;
   paymentRepository?: MockPaymentRepository;
-  menuListQueryRepository?: MockMenuListQueryRepository;
+  menuItemQueryRepository?: MockMenuItemQueryRepository;
   menuListParams?: MenuListParams;
+  menuItemDetailParams?: MenuItemDetailParams;
   sessionRepository?: MockSessionRepository;
   preparingCount?: number;
 } = {}) => {
@@ -144,14 +147,12 @@ const renderHandler = ({
     cartRepository,
     { code: TABLE_CODE }
   );
-  const menuListUsecase = new MenuListUsecase(
+  const menuListUsecase = new MenuListUsecase(menuRepository, menuListParams);
+  const menuItemDetailUsecase = new MenuItemDetailUsecase(
     menuRepository,
-    menuListQueryRepository,
-    menuListParams
+    menuItemQueryRepository,
+    menuItemDetailParams
   );
-  const menuItemDetailUsecase = new MenuItemDetailUsecase(menuRepository, {
-    productId: null,
-  });
   const cartUsecase = new CartUsecase(
     cartRepository,
     new MockCartQueryRepository()
@@ -811,13 +812,9 @@ describe('MenuListHandler', () => {
       expect(screen.getByText('Pilih Ukuran dulu ya')).toBeTruthy();
     });
 
-    it('deep-links open via a seeded selectedProductId, with no click', async () => {
+    it('deep-links open via a seeded productId, with no click', async () => {
       renderHandler({
-        menuListParams: {
-          products: [],
-          categories: [],
-          selectedProductId: 1,
-        },
+        menuItemDetailParams: { productId: 1 },
       });
 
       await settle();
@@ -885,11 +882,7 @@ describe('MenuListHandler', () => {
 
     it('falls back to fetching the product directly when a deep link points at an id the menu fetch has not resolved yet, and shows an error if that also fails', async () => {
       renderHandler({
-        menuListParams: {
-          products: [],
-          categories: [],
-          selectedProductId: 999,
-        },
+        menuItemDetailParams: { productId: 999 },
       });
 
       await settle();
