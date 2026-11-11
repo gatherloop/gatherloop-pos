@@ -11,6 +11,7 @@ type Context = {
   amount: number;
   note: string;
   errorMessage: string | null;
+  isValidationVisible: boolean;
 };
 
 export type MenuItemDetailState = (
@@ -33,6 +34,7 @@ export type MenuItemDetailAction =
   | { type: 'CHANGE_AMOUNT'; amount: number }
   | { type: 'CHANGE_NOTE'; note: string }
   | { type: 'CLEAR_PRODUCT' }
+  | { type: 'SHOW_VALIDATION' }
   | {
       type: 'SELECT_PRODUCT';
       productId: number;
@@ -116,6 +118,7 @@ export class MenuItemDetailUsecase extends Usecase<
       amount: 1,
       note: '',
       errorMessage: null,
+      isValidationVisible: false,
     };
 
     if (context.productId === null) {
@@ -176,6 +179,7 @@ export class MenuItemDetailUsecase extends Usecase<
               amount: 1,
               note: '',
               errorMessage: null,
+              isValidationVisible: false,
             };
           }
         )
@@ -189,7 +193,15 @@ export class MenuItemDetailUsecase extends Usecase<
           amount: 1,
           note: '',
           errorMessage: null,
+          isValidationVisible: false,
         }))
+        .with(
+          [
+            { type: P.union('selectingOptions', 'resolvingVariant', 'ready') },
+            { type: 'SHOW_VALIDATION' },
+          ],
+          ([state]) => ({ ...state, isValidationVisible: true })
+        )
         .with(
           [{ type: 'loadingProduct' }, { type: 'FETCH_SUCCESS' }],
           ([state, { product }]) => {

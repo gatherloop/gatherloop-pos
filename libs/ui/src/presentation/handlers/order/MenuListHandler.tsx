@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { match, P } from 'ts-pattern';
 import { useRouter } from 'solito/router';
 import { Category } from '../../../domain/entities/Category';
@@ -202,9 +202,6 @@ export const MenuListHandler = ({
   const menuItemDetail = useUsecase(menuItemDetailUsecase);
   const cart = useCart(cartUsecase);
   const router = useRouter();
-  const [validationErrorProductId, setValidationErrorProductId] = useState<
-    number | null
-  >(null);
 
   const currentCart = cart.state.cart;
   const pendingPayment = currentCart?.pendingPayment ?? null;
@@ -359,12 +356,12 @@ export const MenuListHandler = ({
           ctaState: toCtaState(menuItemDetail.state),
           missingOptionNames,
           validationMessage:
-            validationErrorProductId === menuItemDetail.state.productId
+            menuItemDetail.state.isValidationVisible
               ? buildValidationMessage(missingOptionNames)
               : null,
           onAddToCartPress: () => {
             if (missingOptionNames.length > 0) {
-              setValidationErrorProductId(menuItemDetail.state.productId);
+              menuItemDetail.dispatch({ type: 'SHOW_VALIDATION' });
               return;
             }
             const { variant, amount, note } = menuItemDetail.state;

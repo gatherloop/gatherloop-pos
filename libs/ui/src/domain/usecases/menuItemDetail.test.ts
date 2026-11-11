@@ -82,6 +82,7 @@ describe('MenuItemDetailUsecase', () => {
       amount: 1,
       note: '',
       errorMessage: null,
+      isValidationVisible: false,
     });
 
     await flushPromises();
@@ -101,6 +102,7 @@ describe('MenuItemDetailUsecase', () => {
       amount: 1,
       note: '',
       errorMessage: null,
+      isValidationVisible: false,
     });
 
     await flushPromises();
@@ -113,6 +115,7 @@ describe('MenuItemDetailUsecase', () => {
       amount: 1,
       note: '',
       errorMessage: null,
+      isValidationVisible: false,
     });
   });
 
@@ -141,6 +144,7 @@ describe('MenuItemDetailUsecase', () => {
       amount: 1,
       note: '',
       errorMessage: null,
+      isValidationVisible: false,
     });
   });
 
@@ -203,6 +207,7 @@ describe('MenuItemDetailUsecase', () => {
       amount: 1,
       note: '',
       errorMessage: 'Failed to resolve variant',
+      isValidationVisible: false,
     });
   });
 
@@ -221,6 +226,7 @@ describe('MenuItemDetailUsecase', () => {
       amount: 1,
       note: '',
       errorMessage: 'Failed to fetch product',
+      isValidationVisible: false,
     });
   });
 
@@ -394,6 +400,7 @@ describe('MenuItemDetailUsecase', () => {
         amount: 1,
         note: '',
         errorMessage: null,
+        isValidationVisible: false,
       });
 
       await flushPromises();
@@ -584,6 +591,67 @@ describe('MenuItemDetailUsecase', () => {
         note: '',
       });
       expect(setSpy).toHaveBeenLastCalledWith(null);
+    });
+  });
+
+  describe('SHOW_VALIDATION', () => {
+    it('starts hidden and becomes visible once a product is open', async () => {
+      const repository = new MockMenuRepository();
+      const { product } = addSingleOptionProduct(repository);
+      const menuItemDetail = createTester(repository, {
+        productId: product.id,
+        product,
+      });
+      await flushPromises();
+      expect(menuItemDetail.state.isValidationVisible).toBe(false);
+
+      menuItemDetail.dispatch({ type: 'SHOW_VALIDATION' });
+
+      expect(menuItemDetail.state.isValidationVisible).toBe(true);
+    });
+
+    it('is ignored while idle', () => {
+      const menuItemDetail = createTester(new MockMenuRepository(), {
+        productId: null,
+      });
+
+      menuItemDetail.dispatch({ type: 'SHOW_VALIDATION' });
+
+      expect(menuItemDetail.state.isValidationVisible).toBe(false);
+    });
+
+    it('resets on CLEAR_PRODUCT', async () => {
+      const repository = new MockMenuRepository();
+      const { product } = addSingleOptionProduct(repository);
+      const menuItemDetail = createTester(repository, {
+        productId: product.id,
+        product,
+      });
+      await flushPromises();
+      menuItemDetail.dispatch({ type: 'SHOW_VALIDATION' });
+
+      menuItemDetail.dispatch({ type: 'CLEAR_PRODUCT' });
+
+      expect(menuItemDetail.state.isValidationVisible).toBe(false);
+    });
+
+    it('resets on SELECT_PRODUCT', async () => {
+      const repository = new MockMenuRepository();
+      const { product } = addSingleOptionProduct(repository);
+      const menuItemDetail = createTester(repository, {
+        productId: product.id,
+        product,
+      });
+      await flushPromises();
+      menuItemDetail.dispatch({ type: 'SHOW_VALIDATION' });
+
+      menuItemDetail.dispatch({
+        type: 'SELECT_PRODUCT',
+        productId: product.id,
+        product,
+      });
+
+      expect(menuItemDetail.state.isValidationVisible).toBe(false);
     });
   });
 });
