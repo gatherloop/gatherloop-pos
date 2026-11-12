@@ -62,6 +62,22 @@ describe('PaymentCancelUsecase', () => {
     expect(paymentCancel.state.result?.cancelReason).toBe('guest');
   });
 
+  it('should return to idle and clear the result on acknowledge after settling', async () => {
+    const repository = new MockPaymentRepository();
+    const paymentCancel = createTester(repository);
+
+    paymentCancel.dispatch(requestFor(repository));
+    paymentCancel.dispatch({ type: 'CONFIRM' });
+    await flushPromises();
+    paymentCancel.dispatch({ type: 'ACKNOWLEDGE' });
+
+    expect(paymentCancel.state).toEqual({
+      type: 'idle',
+      result: null,
+      errorMessage: null,
+    });
+  });
+
   it('should settle with a paid result when the server answers paid', async () => {
     const repository = new MockPaymentRepository();
     repository.payment = { ...repository.payment, status: 'paid' };

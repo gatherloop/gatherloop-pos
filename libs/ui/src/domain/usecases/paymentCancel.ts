@@ -28,6 +28,7 @@ export type PaymentCancelAction =
   | ({ type: 'REQUEST' } & PaymentTarget)
   | { type: 'DISMISS' }
   | { type: 'CONFIRM' }
+  | { type: 'ACKNOWLEDGE' }
   | { type: 'CANCEL_SUCCESS'; payment: Payment }
   | { type: 'CANCEL_ERROR'; message: string };
 
@@ -87,6 +88,11 @@ export class PaymentCancelUsecase extends Usecase<
           errorMessage,
         })
       )
+      .with([{ type: 'settled' }, { type: 'ACKNOWLEDGE' }], () => ({
+        type: 'idle',
+        result: null,
+        errorMessage: null,
+      }))
       .with(
         [{ type: 'cancelling' }, { type: 'CANCEL_ERROR' }],
         ([{ result }, { message }]) => ({

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { match, P } from 'ts-pattern';
 import { useRouter } from 'solito/router';
 import { Category } from '../../../domain/entities/Category';
@@ -206,41 +206,28 @@ export const MenuListHandler = ({
   const pendingPayment = currentCart?.pendingPayment ?? null;
 
   const paymentCancel = useUsecase(paymentCancelUsecase);
-  const handledCancelResultRef =
-    useRef<typeof paymentCancel.state.result>(null);
-  const isAddAfterCancelPendingRef = useRef(false);
 
   useEffect(() => {
-    if (
-      paymentCancel.state.type !== 'settled' ||
-      !paymentCancel.state.result ||
-      handledCancelResultRef.current === paymentCancel.state.result
-    ) {
+    if (paymentCancel.state.type !== 'settled' || !paymentCancel.state.result) {
       return;
     }
-    handledCancelResultRef.current = paymentCancel.state.result;
+    const { result } = paymentCancel.state;
+    paymentCancel.dispatch({ type: 'ACKNOWLEDGE' });
 
-    if (paymentCancel.state.result.status === 'paid') {
-      router.push(`/orders/${paymentCancel.state.result.reference}`);
-    } else {
-      isAddAfterCancelPendingRef.current = true;
-      cart.dispatch({ type: 'FETCH' });
-    }
-  }, [paymentCancel.state, router, cart.dispatch]);
-
-  useEffect(() => {
-    if (!isAddAfterCancelPendingRef.current || cart.state.type !== 'loaded') {
+    if (result.status === 'paid') {
+      router.push(`/orders/${result.reference}`);
       return;
     }
 
-    isAddAfterCancelPendingRef.current = false;
     const { variant, amount, note } = menuItemDetail.state;
     if (variant) {
       cart.dispatch({ type: 'ADD_ITEM', variantId: variant.id, amount, note });
     }
     menuItemDetail.dispatch({ type: 'CLEAR_PRODUCT' });
   }, [
-    cart.state.type,
+    paymentCancel.state,
+    paymentCancel.dispatch,
+    router,
     cart.dispatch,
     menuItemDetail.state,
     menuItemDetail.dispatch,
