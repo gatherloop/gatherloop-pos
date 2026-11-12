@@ -25,6 +25,7 @@ export type CartState = (
   | { type: 'adding' }
   | { type: 'updating' }
   | { type: 'removing' }
+  | { type: 'confirmingClear' }
   | { type: 'clearing' }
   | { type: 'revalidating' }
 ) &
@@ -37,6 +38,8 @@ export type CartAction =
   | { type: 'ADD_ITEM'; variantId: number; amount: number; note: string }
   | { type: 'UPDATE_ITEM'; cartItemId: number; amount: number; note: string }
   | { type: 'REMOVE_ITEM'; cartItemId: number }
+  | { type: 'REQUEST_CLEAR' }
+  | { type: 'CANCEL_CLEAR' }
   | { type: 'CLEAR' }
   | { type: 'MUTATE_SUCCESS'; cart: Cart }
   | { type: 'MUTATE_ERROR'; message: string }
@@ -134,8 +137,6 @@ export class CartUsecase extends Usecase<CartState, CartAction, CartParams> {
           errorMessage: message,
         })
       )
-      // Refetching from `loaded` keeps the existing cart on screen instead
-      // of flashing a full loading state.
       .with([{ type: 'loaded' }, { type: 'FETCH' }], ([state]) => ({
         ...state,
         type: 'revalidating',
@@ -177,19 +178,35 @@ export class CartUsecase extends Usecase<CartState, CartAction, CartParams> {
           ...state,
           type: 'removing',
           previousCart: state.cart,
-          cart: state.cart ? withRemovedItem(state.cart, cartItemId) : state.cart,
+          cart: state.cart
+            ? withRemovedItem(state.cart, cartItemId)
+            : state.cart,
           pendingMutation: { kind: 'remove', cartItemId },
           errorMessage: null,
         })
       )
-      .with([{ type: 'loaded' }, { type: 'CLEAR' }], ([state]) => ({
+      .with([{ type: 'loaded' }, { type: 'REQUEST_CLEAR' }], ([state]) => ({
         ...state,
-        type: 'clearing',
-        previousCart: state.cart,
-        cart: state.cart ? recomputeCart(state.cart, []) : state.cart,
-        pendingMutation: { kind: 'clear' },
-        errorMessage: null,
+        type: 'confirmingClear',
       }))
+      .with(
+        [{ type: 'confirmingClear' }, { type: 'CANCEL_CLEAR' }],
+        ([state]) => ({
+          ...state,
+          type: 'loaded',
+        })
+      )
+      .with(
+        [{ type: P.union('loaded', 'confirmingClear') }, { type: 'CLEAR' }],
+        ([state]) => ({
+          ...state,
+          type: 'clearing',
+          previousCart: state.cart,
+          cart: state.cart ? recomputeCart(state.cart, []) : state.cart,
+          pendingMutation: { kind: 'clear' },
+          errorMessage: null,
+        })
+      )
       .with(
         [
           { type: P.union('adding', 'updating', 'removing', 'clearing') },
@@ -203,9 +220,6 @@ export class CartUsecase extends Usecase<CartState, CartAction, CartParams> {
           pendingMutation: null,
         })
       )
-      // A failed mutation refetches rather than reverting to `previousCart`
-      // (D23): a stale local snapshot can't explain *why* the write failed,
-      // but the refetched cart can, e.g. a lock created from another tab.
       .with(
         [
           { type: P.union('adding', 'updating', 'removing', 'clearing') },
@@ -219,9 +233,6 @@ export class CartUsecase extends Usecase<CartState, CartAction, CartParams> {
           errorMessage: message,
         })
       )
-      // Selecting/clearing the edit modal is orthogonal to the fetch/mutation
-      // machine's own `type` (D6) — it can happen from any of them, and
-      // never changes it.
       .with([P._, { type: 'SELECT_ITEM' }], ([state, { itemId }]) => ({
         ...state,
         selectedItemId: itemId,
@@ -233,10 +244,11 @@ export class CartUsecase extends Usecase<CartState, CartAction, CartParams> {
       .otherwise(() => state);
   }
 
-  onStateChange(state: CartState, dispatch: (action: CartAction) => void): void {
-    if (
-      state.selectedItemId !== this.cartQueryRepository.getSelectedItemId()
-    ) {
+  onStateChange(
+    state: CartState,
+    dispatch: (action: CartAction) => void
+  ): void {
+    if (state.selectedItemId !== this.cartQueryRepository.getSelectedItemId()) {
       this.cartQueryRepository.setSelectedItemId(state.selectedItemId);
     }
 

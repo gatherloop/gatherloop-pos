@@ -68,7 +68,6 @@ export const CartHandler = ({
   const cart = useCart(cartUsecase);
   const checkout = useCheckout(checkoutUsecase);
   const router = useRouter();
-  const [isClearConfirmationOpen, setIsClearConfirmationOpen] = useState(false);
 
   useEffect(() => {
     if (checkout.state.type !== 'created' || !checkout.state.payment) return;
@@ -253,7 +252,7 @@ export const CartHandler = ({
       variant={toScreenVariant(cart.state)}
       isMutating={mutating}
       errorMessage={!pendingPayment ? cart.state.errorMessage : null}
-      isClearConfirmationOpen={isClearConfirmationOpen}
+      isClearConfirmationOpen={cart.state.type === 'confirmingClear'}
       onAmountChange={(cartItemId, amount) => {
         const item = cart.state.cart?.items.find(
           (existing) => existing.id === cartItemId
@@ -272,13 +271,12 @@ export const CartHandler = ({
       onEditPress={(cartItemId) =>
         cart.dispatch({ type: 'SELECT_ITEM', itemId: cartItemId })
       }
-      onClearPress={() => setIsClearConfirmationOpen(true)}
-      onClearConfirm={() => {
-        cart.dispatch({ type: 'CLEAR' });
-        setIsClearConfirmationOpen(false);
+      onClearPress={() => cart.dispatch({ type: 'REQUEST_CLEAR' })}
+      onClearConfirm={() => cart.dispatch({ type: 'CLEAR' })}
+      onClearCancel={() => cart.dispatch({ type: 'CANCEL_CLEAR' })}
+      onClearConfirmationOpenChange={(isOpen) => {
+        if (!isOpen) cart.dispatch({ type: 'CANCEL_CLEAR' });
       }}
-      onClearCancel={() => setIsClearConfirmationOpen(false)}
-      onClearConfirmationOpenChange={setIsClearConfirmationOpen}
       onAddMoreItemsPress={() =>
         router.push(`/t/${tableResolveUsecase.params.code}`)
       }

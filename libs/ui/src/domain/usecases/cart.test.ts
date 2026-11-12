@@ -251,6 +251,34 @@ describe('CartUsecase', () => {
     });
   });
 
+  describe('clear confirmation', () => {
+    it('should transition loaded → confirmingClear → loaded on cancel, keeping the cart', () => {
+      const repository = new MockCartRepository();
+      const cart = createTester(repository, { cart: { ...repository.cart } });
+
+      cart.dispatch({ type: 'REQUEST_CLEAR' });
+      expect(cart.state.type).toBe('confirmingClear');
+      expect(cart.state.cart).toEqual(repository.cart);
+
+      cart.dispatch({ type: 'CANCEL_CLEAR' });
+      expect(cart.state.type).toBe('loaded');
+    });
+
+    it('should transition confirmingClear → clearing → loaded on CLEAR', async () => {
+      const repository = new MockCartRepository();
+      await repository.addItem({ variantId: 1, amount: 1, note: '' });
+      const cart = createTester(repository, { cart: { ...repository.cart } });
+
+      cart.dispatch({ type: 'REQUEST_CLEAR' });
+      cart.dispatch({ type: 'CLEAR' });
+      expect(cart.state.type).toBe('clearing');
+
+      await flushPromises();
+      expect(cart.state.type).toBe('loaded');
+      expect(cart.state.cart?.items).toHaveLength(0);
+    });
+  });
+
   describe('item selection', () => {
     it('holds the selected item id, from any fetch/mutation state, without changing it', async () => {
       const repository = new MockCartRepository();
