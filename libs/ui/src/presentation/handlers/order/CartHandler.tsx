@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { match, P } from 'ts-pattern';
 import { useRouter } from 'solito/router';
 import { Cart } from '../../../domain/entities/Cart';
@@ -84,25 +84,20 @@ export const CartHandler = ({
   const pendingPayment = cart.state.cart?.pendingPayment ?? null;
 
   const paymentCancel = useUsecase(paymentCancelUsecase);
-  const handledCancelResultRef =
-    useRef<typeof paymentCancel.state.result>(null);
 
   useEffect(() => {
-    if (
-      paymentCancel.state.type !== 'settled' ||
-      !paymentCancel.state.result ||
-      handledCancelResultRef.current === paymentCancel.state.result
-    ) {
+    if (paymentCancel.state.type !== 'settled' || !paymentCancel.state.result) {
       return;
     }
-    handledCancelResultRef.current = paymentCancel.state.result;
+    const { result } = paymentCancel.state;
+    paymentCancel.dispatch({ type: 'ACKNOWLEDGE' });
 
-    if (paymentCancel.state.result.status === 'paid') {
-      router.push(`/orders/${paymentCancel.state.result.reference}`);
+    if (result.status === 'paid') {
+      router.push(`/orders/${result.reference}`);
     } else {
       cart.dispatch({ type: 'FETCH' });
     }
-  }, [paymentCancel.state, router, cart.dispatch]);
+  }, [paymentCancel.state, paymentCancel.dispatch, router, cart.dispatch]);
 
   const cancelConfirmation = {
     isOpen:
