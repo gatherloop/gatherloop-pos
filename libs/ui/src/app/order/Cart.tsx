@@ -61,10 +61,7 @@ export function Cart({
     enabledMethods,
     cashierLocation,
   });
-  const paymentCancelUsecase = new PaymentCancelUsecase(paymentRepository, {
-    reference: '',
-    method: 'qris',
-  });
+  const paymentCancelUsecase = new PaymentCancelUsecase(paymentRepository);
 
   return (
     <CartHandler

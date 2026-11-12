@@ -157,10 +157,7 @@ const renderHandler = ({
     cartRepository,
     new MockCartQueryRepository()
   );
-  const paymentCancelUsecase = new PaymentCancelUsecase(paymentRepository, {
-    reference: '',
-    method: 'qris',
-  });
+  const paymentCancelUsecase = new PaymentCancelUsecase(paymentRepository);
 
   return {
     menuRepository,

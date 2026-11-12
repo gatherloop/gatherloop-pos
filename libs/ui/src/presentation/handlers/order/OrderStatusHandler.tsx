@@ -6,7 +6,7 @@ import { OrderStatusUsecase } from '../../../domain/usecases/orderStatus';
 import { PaymentCancelUsecase } from '../../../domain/usecases/paymentCancel';
 import { useBackNavigationGuard } from '../hooks/useBackNavigationGuard';
 import { useOrderStatus } from '../hooks/useOrderStatus';
-import { usePaymentCancelSyncedTo } from '../hooks/usePaymentCancelSyncedTo';
+import { useUsecase } from '../hooks/useUsecase';
 import {
   OrderStatusCancelConfirmation,
   OrderStatusScreen,
@@ -37,13 +37,16 @@ export const OrderStatusHandler = ({
 
   const payment = orderStatus.state.payment;
 
-  const paymentCancel = usePaymentCancelSyncedTo(
-    paymentCancelUsecase,
-    payment && {
+  const paymentCancel = useUsecase(paymentCancelUsecase);
+
+  const requestCancel = () => {
+    if (!payment) return;
+    paymentCancel.dispatch({
+      type: 'REQUEST',
       reference: orderStatusUsecase.params.reference,
       method: payment.method,
-    }
-  );
+    });
+  };
 
   useEffect(() => {
     if (paymentCancel.state.type !== 'settled' || !paymentCancel.state.result) {
@@ -70,14 +73,18 @@ export const OrderStatusHandler = ({
 
   useBackNavigationGuard(
     isAwaitingPayment && (payment?.canCancel ?? false),
-    () => paymentCancel.dispatch({ type: 'REQUEST' })
+    requestCancel
   );
 
   const cancelConfirmation: OrderStatusCancelConfirmation = {
     isOpen:
       paymentCancel.state.type === 'confirming' ||
       paymentCancel.state.type === 'cancelling',
-    method: paymentCancel.state.method,
+    method:
+      paymentCancel.state.type === 'confirming' ||
+      paymentCancel.state.type === 'cancelling'
+        ? paymentCancel.state.method
+        : payment?.method ?? 'qris',
     isCancelling: paymentCancel.state.type === 'cancelling',
     onConfirm: () => paymentCancel.dispatch({ type: 'CONFIRM' }),
     onDismiss: () => paymentCancel.dispatch({ type: 'DISMISS' }),
@@ -108,7 +115,7 @@ export const OrderStatusHandler = ({
             onCountdownElapsed: () =>
               orderStatus.dispatch({ type: 'COUNTDOWN_ELAPSED' }),
             canCancel: state.payment.canCancel,
-            onCancelPress: () => paymentCancel.dispatch({ type: 'REQUEST' }),
+            onCancelPress: requestCancel,
             cancelConfirmation,
             cancelErrorMessage,
           }
@@ -123,7 +130,7 @@ export const OrderStatusHandler = ({
             onCountdownElapsed: () =>
               orderStatus.dispatch({ type: 'COUNTDOWN_ELAPSED' }),
             canCancel: state.payment.canCancel,
-            onCancelPress: () => paymentCancel.dispatch({ type: 'REQUEST' }),
+            onCancelPress: requestCancel,
             cancelConfirmation,
             cancelErrorMessage,
           }
@@ -137,7 +144,7 @@ export const OrderStatusHandler = ({
             onCountdownElapsed: () =>
               orderStatus.dispatch({ type: 'COUNTDOWN_ELAPSED' }),
             canCancel: state.payment.canCancel,
-            onCancelPress: () => paymentCancel.dispatch({ type: 'REQUEST' }),
+            onCancelPress: requestCancel,
             cancelConfirmation,
             cancelErrorMessage,
           }

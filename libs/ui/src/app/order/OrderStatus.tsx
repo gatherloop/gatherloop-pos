@@ -31,10 +31,7 @@ export function OrderStatus({
     { reference, payment, cashierLocation },
     { sessionRepository }
   );
-  const paymentCancelUsecase = new PaymentCancelUsecase(paymentRepository, {
-    reference: payment?.reference ?? '',
-    method: payment?.method ?? 'qris',
-  });
+  const paymentCancelUsecase = new PaymentCancelUsecase(paymentRepository);
 
   return (
     <OrderStatusHandler

@@ -22,7 +22,6 @@ import { CartBar } from '../../views/components/cart/CartBar';
 import { PendingPaymentBar } from '../../views/components/cart/PendingPaymentBar';
 import { useUsecase } from '../hooks/useUsecase';
 import { useCart } from '../hooks/useCart';
-import { usePaymentCancelSyncedTo } from '../hooks/usePaymentCancelSyncedTo';
 import { useTableResolve } from '../hooks/useTableResolve';
 import { MenuItemDetailScreenProps } from '../../views/screens/order/MenuItemDetailScreen';
 import {
@@ -206,13 +205,7 @@ export const MenuListHandler = ({
   const currentCart = cart.state.cart;
   const pendingPayment = currentCart?.pendingPayment ?? null;
 
-  const paymentCancel = usePaymentCancelSyncedTo(
-    paymentCancelUsecase,
-    pendingPayment && {
-      reference: pendingPayment.partnerReferenceNo,
-      method: pendingPayment.method,
-    }
-  );
+  const paymentCancel = useUsecase(paymentCancelUsecase);
   const handledCancelResultRef =
     useRef<typeof paymentCancel.state.result>(null);
   const isAddAfterCancelPendingRef = useRef(false);
@@ -355,10 +348,9 @@ export const MenuListHandler = ({
             menuItemDetail.dispatch({ type: 'CHANGE_NOTE', note }),
           ctaState: toCtaState(menuItemDetail.state),
           missingOptionNames,
-          validationMessage:
-            menuItemDetail.state.isValidationVisible
-              ? buildValidationMessage(missingOptionNames)
-              : null,
+          validationMessage: menuItemDetail.state.isValidationVisible
+            ? buildValidationMessage(missingOptionNames)
+            : null,
           onAddToCartPress: () => {
             if (missingOptionNames.length > 0) {
               menuItemDetail.dispatch({ type: 'SHOW_VALIDATION' });
@@ -383,7 +375,11 @@ export const MenuListHandler = ({
                   ? {
                       label: 'Batalkan & tambah item',
                       onPress: () =>
-                        paymentCancel.dispatch({ type: 'REQUEST' }),
+                        paymentCancel.dispatch({
+                          type: 'REQUEST',
+                          reference: pendingPayment.partnerReferenceNo,
+                          method: pendingPayment.method,
+                        }),
                     }
                   : null,
               }
@@ -394,7 +390,11 @@ export const MenuListHandler = ({
     isOpen:
       paymentCancel.state.type === 'confirming' ||
       paymentCancel.state.type === 'cancelling',
-    method: paymentCancel.state.method,
+    method:
+      paymentCancel.state.type === 'confirming' ||
+      paymentCancel.state.type === 'cancelling'
+        ? paymentCancel.state.method
+        : pendingPayment?.method ?? 'qris',
     isCancelling: paymentCancel.state.type === 'cancelling',
     onConfirm: () => paymentCancel.dispatch({ type: 'CONFIRM' }),
     onDismiss: () => paymentCancel.dispatch({ type: 'DISMISS' }),

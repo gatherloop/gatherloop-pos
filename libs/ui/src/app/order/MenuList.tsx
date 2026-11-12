@@ -70,10 +70,7 @@ export function MenuList({
     cartRepository,
     new UrlCartQueryRepository()
   );
-  const paymentCancelUsecase = new PaymentCancelUsecase(paymentRepository, {
-    reference: '',
-    method: 'qris',
-  });
+  const paymentCancelUsecase = new PaymentCancelUsecase(paymentRepository);
 
   return (
     <MenuListHandler

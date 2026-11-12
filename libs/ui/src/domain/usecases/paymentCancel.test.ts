@@ -2,7 +2,6 @@ import {
   PaymentCancelUsecase,
   PaymentCancelState,
   PaymentCancelAction,
-  PaymentCancelParams,
 } from './paymentCancel';
 import { MockPaymentRepository } from '../../data/mock';
 import { UsecaseTester, flushPromises } from '../../utils/usecase';
@@ -12,13 +11,15 @@ const createTester = (repository: MockPaymentRepository) =>
     PaymentCancelUsecase,
     PaymentCancelState,
     PaymentCancelAction,
-    PaymentCancelParams
-  >(
-    new PaymentCancelUsecase(repository, {
-      reference: repository.payment.reference,
-      method: repository.payment.method,
-    })
-  );
+    undefined
+  >(new PaymentCancelUsecase(repository));
+
+const requestFor = (repository: MockPaymentRepository) =>
+  ({
+    type: 'REQUEST',
+    reference: repository.payment.reference,
+    method: repository.payment.method,
+  } as const);
 
 describe('PaymentCancelUsecase', () => {
   it('starts idle', () => {
@@ -27,8 +28,6 @@ describe('PaymentCancelUsecase', () => {
 
     expect(paymentCancel.state).toEqual({
       type: 'idle',
-      reference: repository.payment.reference,
-      method: repository.payment.method,
       result: null,
       errorMessage: null,
     });
@@ -39,7 +38,7 @@ describe('PaymentCancelUsecase', () => {
     const cancelSpy = jest.spyOn(repository, 'cancelPayment');
     const paymentCancel = createTester(repository);
 
-    paymentCancel.dispatch({ type: 'REQUEST' });
+    paymentCancel.dispatch(requestFor(repository));
     expect(paymentCancel.state.type).toBe('confirming');
 
     paymentCancel.dispatch({ type: 'DISMISS' });
@@ -53,7 +52,7 @@ describe('PaymentCancelUsecase', () => {
     const repository = new MockPaymentRepository();
     const paymentCancel = createTester(repository);
 
-    paymentCancel.dispatch({ type: 'REQUEST' });
+    paymentCancel.dispatch(requestFor(repository));
     paymentCancel.dispatch({ type: 'CONFIRM' });
     expect(paymentCancel.state.type).toBe('cancelling');
 
@@ -68,7 +67,7 @@ describe('PaymentCancelUsecase', () => {
     repository.payment = { ...repository.payment, status: 'paid' };
     const paymentCancel = createTester(repository);
 
-    paymentCancel.dispatch({ type: 'REQUEST' });
+    paymentCancel.dispatch(requestFor(repository));
     paymentCancel.dispatch({ type: 'CONFIRM' });
     await flushPromises();
 
@@ -81,7 +80,7 @@ describe('PaymentCancelUsecase', () => {
     repository.payment = { ...repository.payment, status: 'expired' };
     const paymentCancel = createTester(repository);
 
-    paymentCancel.dispatch({ type: 'REQUEST' });
+    paymentCancel.dispatch(requestFor(repository));
     paymentCancel.dispatch({ type: 'CONFIRM' });
     await flushPromises();
 
@@ -94,19 +93,17 @@ describe('PaymentCancelUsecase', () => {
     repository.setShouldFailCancel(true);
     const paymentCancel = createTester(repository);
 
-    paymentCancel.dispatch({ type: 'REQUEST' });
+    paymentCancel.dispatch(requestFor(repository));
     paymentCancel.dispatch({ type: 'CONFIRM' });
     await flushPromises();
 
     expect(paymentCancel.state).toEqual({
       type: 'error',
-      reference: repository.payment.reference,
-      method: repository.payment.method,
       result: null,
       errorMessage: 'Gagal membatalkan pembayaran. Silakan coba lagi.',
     });
 
-    paymentCancel.dispatch({ type: 'REQUEST' });
+    paymentCancel.dispatch(requestFor(repository));
     expect(paymentCancel.state.type).toBe('confirming');
     expect(paymentCancel.state.errorMessage).toBeNull();
   });
@@ -117,35 +114,5 @@ describe('PaymentCancelUsecase', () => {
 
     paymentCancel.dispatch({ type: 'CONFIRM' });
     expect(paymentCancel.state.type).toBe('idle');
-  });
-
-  it('should adopt a corrected reference and method on SYNC_PARAMS while idle', () => {
-    const repository = new MockPaymentRepository();
-    const paymentCancel = createTester(repository);
-
-    paymentCancel.dispatch({
-      type: 'SYNC_PARAMS',
-      reference: 'ORDNEWREF00000000',
-      method: 'cash',
-    });
-
-    expect(paymentCancel.state.type).toBe('idle');
-    expect(paymentCancel.state.reference).toBe('ORDNEWREF00000000');
-    expect(paymentCancel.state.method).toBe('cash');
-  });
-
-  it('should ignore SYNC_PARAMS outside idle', () => {
-    const repository = new MockPaymentRepository();
-    const paymentCancel = createTester(repository);
-
-    paymentCancel.dispatch({ type: 'REQUEST' });
-    paymentCancel.dispatch({
-      type: 'SYNC_PARAMS',
-      reference: 'ORDNEWREF00000000',
-      method: 'cash',
-    });
-
-    expect(paymentCancel.state.type).toBe('confirming');
-    expect(paymentCancel.state.reference).toBe(repository.payment.reference);
   });
 });

@@ -8,7 +8,7 @@ import { PaymentCancelUsecase } from '../../../domain/usecases/paymentCancel';
 import { TableResolveUsecase } from '../../../domain/usecases/tableResolve';
 import { useCart } from '../hooks/useCart';
 import { useCheckout } from '../hooks/useCheckout';
-import { usePaymentCancelSyncedTo } from '../hooks/usePaymentCancelSyncedTo';
+import { useUsecase } from '../hooks/useUsecase';
 import { useTableResolve } from '../hooks/useTableResolve';
 import { CodPhotoCaptureSheetProps } from '../../views/components/checkout/CodPhotoCaptureSheet';
 import { CustomerDetailsSheetProps } from '../../views/components/checkout/CustomerDetailsSheet';
@@ -84,13 +84,7 @@ export const CartHandler = ({
   const mutating = isMutating(cart.state);
   const pendingPayment = cart.state.cart?.pendingPayment ?? null;
 
-  const paymentCancel = usePaymentCancelSyncedTo(
-    paymentCancelUsecase,
-    pendingPayment && {
-      reference: pendingPayment.partnerReferenceNo,
-      method: pendingPayment.method,
-    }
-  );
+  const paymentCancel = useUsecase(paymentCancelUsecase);
   const handledCancelResultRef =
     useRef<typeof paymentCancel.state.result>(null);
 
@@ -115,7 +109,11 @@ export const CartHandler = ({
     isOpen:
       paymentCancel.state.type === 'confirming' ||
       paymentCancel.state.type === 'cancelling',
-    method: paymentCancel.state.method,
+    method:
+      paymentCancel.state.type === 'confirming' ||
+      paymentCancel.state.type === 'cancelling'
+        ? paymentCancel.state.method
+        : pendingPayment?.method ?? 'qris',
     isCancelling: paymentCancel.state.type === 'cancelling',
     onConfirm: () => paymentCancel.dispatch({ type: 'CONFIRM' }),
     onDismiss: () => paymentCancel.dispatch({ type: 'DISMISS' }),
@@ -128,7 +126,12 @@ export const CartHandler = ({
         cancelAction: pendingPayment.canCancel
           ? {
               label: 'Batalkan pembayaran',
-              onPress: () => paymentCancel.dispatch({ type: 'REQUEST' }),
+              onPress: () =>
+                paymentCancel.dispatch({
+                  type: 'REQUEST',
+                  reference: pendingPayment.partnerReferenceNo,
+                  method: pendingPayment.method,
+                }),
             }
           : null,
       }

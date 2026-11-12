@@ -6,56 +6,46 @@ import { Usecase } from './IUsecase';
 const CANCEL_ERROR_MESSAGE = 'Gagal membatalkan pembayaran. Silakan coba lagi.';
 
 type Context = {
-  reference: string;
-  method: PaymentMethod;
   result: Payment | null;
   errorMessage: string | null;
 };
 
+type PaymentTarget = {
+  reference: string;
+  method: PaymentMethod;
+};
+
 export type PaymentCancelState = (
   | { type: 'idle' }
-  | { type: 'confirming' }
-  | { type: 'cancelling' }
+  | ({ type: 'confirming' } & PaymentTarget)
+  | ({ type: 'cancelling' } & PaymentTarget)
   | { type: 'settled' }
   | { type: 'error' }
 ) &
   Context;
 
 export type PaymentCancelAction =
-  | { type: 'REQUEST' }
+  | ({ type: 'REQUEST' } & PaymentTarget)
   | { type: 'DISMISS' }
   | { type: 'CONFIRM' }
   | { type: 'CANCEL_SUCCESS'; payment: Payment }
-  | { type: 'CANCEL_ERROR'; message: string }
-  // useReducer only reads getInitialState() once, so a handler that
-  // reconstructs this usecase after its params become known (see
-  // usePaymentCancel) needs a way to correct the already-mounted state.
-  | { type: 'SYNC_PARAMS'; reference: string; method: PaymentMethod };
-
-export type PaymentCancelParams = {
-  reference: string;
-  method: PaymentMethod;
-};
+  | { type: 'CANCEL_ERROR'; message: string };
 
 export class PaymentCancelUsecase extends Usecase<
   PaymentCancelState,
-  PaymentCancelAction,
-  PaymentCancelParams
+  PaymentCancelAction
 > {
-  params: PaymentCancelParams;
+  params: undefined;
   private repository: PaymentRepository;
 
-  constructor(repository: PaymentRepository, params: PaymentCancelParams) {
+  constructor(repository: PaymentRepository) {
     super();
     this.repository = repository;
-    this.params = params;
   }
 
   getInitialState(): PaymentCancelState {
     return {
       type: 'idle',
-      reference: this.params.reference,
-      method: this.params.method,
       result: null,
       errorMessage: null,
     };
@@ -69,35 +59,41 @@ export class PaymentCancelUsecase extends Usecase<
       .returnType<PaymentCancelState>()
       .with(
         [{ type: P.union('idle', 'error') }, { type: 'REQUEST' }],
-        ([state]) => ({ ...state, type: 'confirming', errorMessage: null })
+        ([{ result }, { reference, method }]) => ({
+          type: 'confirming',
+          reference,
+          method,
+          result,
+          errorMessage: null,
+        })
       )
-      .with([{ type: 'confirming' }, { type: 'DISMISS' }], ([state]) => ({
-        ...state,
-        type: 'idle',
-      }))
+      .with(
+        [{ type: 'confirming' }, { type: 'DISMISS' }],
+        ([{ result, errorMessage }]) => ({
+          type: 'idle',
+          result,
+          errorMessage,
+        })
+      )
       .with([{ type: 'confirming' }, { type: 'CONFIRM' }], ([state]) => ({
         ...state,
         type: 'cancelling',
       }))
       .with(
         [{ type: 'cancelling' }, { type: 'CANCEL_SUCCESS' }],
-        ([state, { payment }]) => ({
-          ...state,
+        ([{ errorMessage }, { payment }]) => ({
           type: 'settled',
           result: payment,
+          errorMessage,
         })
       )
       .with(
         [{ type: 'cancelling' }, { type: 'CANCEL_ERROR' }],
-        ([state, { message }]) => ({
-          ...state,
+        ([{ result }, { message }]) => ({
           type: 'error',
+          result,
           errorMessage: message,
         })
-      )
-      .with(
-        [{ type: 'idle' }, { type: 'SYNC_PARAMS' }],
-        ([state, { reference, method }]) => ({ ...state, reference, method })
       )
       .otherwise(() => state);
   }

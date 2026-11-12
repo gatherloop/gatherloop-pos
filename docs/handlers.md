@@ -58,11 +58,10 @@ to hand the handler a repository:
 
 - Build the usecase that needs the repository in the composition root (`app/{pos,order}/<X>.tsx`),
   the same place every other usecase in the codebase is constructed, and pass the *usecase* down.
-- If a usecase must be reconstructed later once a value becomes known (e.g. a payment reference
-  discovered only after another usecase's fetch resolves), don't rebuild it inline in the handler.
-  Construct it once in the composition root and re-sync it via a dispatched action instead — see
-  `usePaymentCancelSyncedTo` (`presentation/handlers/hooks/usePaymentCancelSyncedTo.ts`) and
-  `PaymentCancelUsecase`'s `SYNC_PARAMS` action for the reference shape.
+- If a usecase needs a value that only becomes known later (e.g. a payment reference discovered
+  after another usecase's fetch resolves), don't rebuild it inline in the handler or sync it after
+  mount. Construct it once in the composition root and pass the value on the action that needs it —
+  see `PaymentCancelUsecase`'s `REQUEST` action for the reference shape.
 
 ## Browser-lifecycle guards live in `utils/`, not `handlers/hooks/`
 
