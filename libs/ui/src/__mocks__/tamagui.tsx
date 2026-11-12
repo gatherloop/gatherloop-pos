@@ -62,7 +62,7 @@ export const Button = ({
   React.createElement(
     'button',
     {
-      type,
+      type: type ?? "button",
       onClick: onPress,
       disabled: disabled ?? false,
       ...(accessibilityLabel ? { 'aria-label': accessibilityLabel } : {}),

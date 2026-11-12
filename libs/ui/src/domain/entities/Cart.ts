@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { Variant } from './Variant';
 import { PublicTable } from './PublicTable';
 import { PaymentMethod } from './Payment';
@@ -36,3 +37,13 @@ export type Cart = {
   createdAt: string;
   pendingPayment: PendingPayment | null;
 };
+
+export type CartItemEditForm = {
+  amount: number;
+  note: string;
+};
+
+export const cartItemEditFormSchema = z.object({
+  amount: z.number().int().min(1),
+  note: z.string().max(255),
+}) satisfies z.ZodType<CartItemEditForm>;

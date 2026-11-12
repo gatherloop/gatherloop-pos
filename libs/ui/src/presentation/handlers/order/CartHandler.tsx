@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { match, P } from 'ts-pattern';
 import { useRouter } from 'solito/router';
 import { Cart } from '../../../domain/entities/Cart';
@@ -138,16 +138,6 @@ export const CartHandler = ({
         ) ?? null
       : null;
 
-  const [seededItemId, setSeededItemId] = useState<number | null>(null);
-  const [amount, setAmount] = useState(1);
-  const [note, setNote] = useState('');
-
-  if (selectedItem && selectedItem.id !== seededItemId) {
-    setAmount(selectedItem.amount);
-    setNote(selectedItem.note);
-    setSeededItemId(selectedItem.id);
-  }
-
   const itemEdit: (CartItemEditScreenProps & { isOpen: true }) | null =
     !selectedItem
       ? null
@@ -157,12 +147,12 @@ export const CartHandler = ({
             if (!isOpen) cart.dispatch({ type: 'CLEAR_ITEM' });
           },
           item: selectedItem,
-          amount,
-          onAmountChange: setAmount,
-          note,
-          onNoteChange: setNote,
+          defaultValues: {
+            amount: selectedItem.amount,
+            note: selectedItem.note,
+          },
           isSaving: mutating,
-          onSavePress: () => {
+          onSubmit: ({ amount, note }) => {
             cart.dispatch({
               type: 'UPDATE_ITEM',
               cartItemId: selectedItem.id,
