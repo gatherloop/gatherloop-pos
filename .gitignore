@@ -154,3 +154,5 @@ web-build/
 apps/kds-mobile/android/
 apps/kds-mobile/ios/
 
+.vercel
+.env*
