@@ -1,0 +1,38 @@
+name: Deploy Order Web to Prod
+on:
+  push:
+    tags:
+      - 'order-web@*'
+jobs:
+  deploy:
+    name: Deploy Order Web to Production
+    runs-on: ubuntu-latest
+
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_ORDER_PROJECT_ID }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Pull Vercel environment
+        run: vercel --cwd apps/order-web pull --yes --environment=production --token=$VERCEL_TOKEN
+
+      - name: Build application
+        run: vercel --cwd apps/order-web build --prod --token=$VERCEL_TOKEN
+
+      - name: Deploy to production
+        run: vercel --cwd apps/order-web deploy --prebuilt --prod --token=$VERCEL_TOKEN
