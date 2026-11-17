@@ -1,16 +1,9 @@
-name: Deploy api to VPS
+name: Deploy API to Prod
 
 on:
   push:
-    branches: [main]
-    paths:
-      - 'apps/api/**'
-      - 'libs/api-contract/**'
-      - 'go.work'
-      - 'package-lock.json'
-      - '.github/workflows/deploy-api.yml'
-  workflow_dispatch:
-
+    tags:
+      - 'api@*'
 jobs:
   build:
     runs-on: ubuntu-latest
