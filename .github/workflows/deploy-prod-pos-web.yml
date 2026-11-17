@@ -2,7 +2,7 @@ name: Deploy POS Web to Prod
 on:
   push:
     tags:
-      - 'pos-web-v*'
+      - 'pos-web@*'
 jobs:
   deploy:
     name: Deploy POS Web to Production
