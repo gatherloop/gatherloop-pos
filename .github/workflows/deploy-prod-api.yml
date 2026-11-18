@@ -75,9 +75,9 @@ jobs:
             cd ${{ secrets.VPS_DEPLOY_PATH }}
             git fetch origin main
             git reset --hard origin/main
-            rm -rf apps/api/dist/release
-            mkdir -p apps/api/dist/release
-            tar -xzf /tmp/api-deploy.tar.gz -C apps/api/dist/release
+            rm -rf apps/api/dist/release/prod
+            mkdir -p apps/api/dist/release/prod
+            tar -xzf /tmp/api-deploy.tar.gz -C apps/api/dist/release/prod
             rm -f /tmp/api-deploy.tar.gz
             cat > apps/api/.env <<'ENV_EOF'
             DB_USERNAME=${{ secrets.DB_USERNAME }}
