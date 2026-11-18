@@ -29,11 +29,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build Android
+      - name: Build Expo
         run: |
-          cd apps/kds-mobile
-          eas build \
-            --platform android \
-            --profile production \
-            --non-interactive \
-            --no-wait
+          npx nx build mobile \
+            --args="--platform android --profile production --non-interactive --no-wait"
