@@ -3,6 +3,13 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'apps/pos-web/**'
+      - 'libs/api-contract/**'
+      - 'libs/ui/**'
+      - 'libs/provider/**'
+      - 'package-lock.json'
+      - '.github/workflows/deploy-staging-pos-web.yml'
 jobs:
   deploy:
     name: Deploy POS Web to Staging
