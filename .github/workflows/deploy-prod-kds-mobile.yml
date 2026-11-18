@@ -29,6 +29,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Install EAS CLI
+        run: npm install --global eas-cli
+
+      - name: Verify EAS CLI
+        run: eas --version
+
       - name: Build Expo
         run: |
           npx nx build kds-mobile \
