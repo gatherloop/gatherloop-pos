@@ -31,7 +31,7 @@ jobs:
 
       - name: Build Android
         run: |
-          cd apps/mobile
+          cd apps/kds-mobile
           eas build \
             --platform android \
             --profile production \
