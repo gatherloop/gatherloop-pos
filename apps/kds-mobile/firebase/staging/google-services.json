@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "542850297602",
+    "project_id": "gatherloop-kds-staging",
+    "storage_bucket": "gatherloop-kds-staging.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:542850297602:android:4afc9718605e4e5bcc9c1b",
+        "android_client_info": {
+          "package_name": "com.gatherloop.kds.staging"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBc66CGumyu1pGoltNG36OAYhTrfFAuWlM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
