@@ -31,5 +31,5 @@ jobs:
 
       - name: Build Expo
         run: |
-          npx nx build mobile \
+          npx nx build kds-mobile \
             --args="--platform android --profile production --non-interactive --no-wait"
